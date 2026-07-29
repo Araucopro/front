@@ -20,20 +20,12 @@
                 },
                 "400": {
                     "description": "Datos de entrada inválidos o stock insuficiente."
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "InventoryMovement"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Crear un movimiento de inventario manual",
-            "tags": ["Inventario"]
+            "tags": [
+                "Inventario"
+            ]
         }
     },
     "/inventory/store/{storeID}": {
@@ -57,23 +49,12 @@
                 },
                 "404": {
                     "description": "Tienda no encontrada."
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "StoreProduct"
-                                }
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Obtener el stock de una tienda específica",
-            "tags": ["Inventario"]
+            "tags": [
+                "Inventario"
+            ]
         }
     },
     "/transfers": {
@@ -109,7 +90,11 @@
                     "in": "query",
                     "description": "Filtrar por estado de la transferencia",
                     "schema": {
-                        "enum": ["PENDING", "COMPLETED", "CANCELLED"],
+                        "enum": [
+                            "PENDING",
+                            "COMPLETED",
+                            "CANCELLED"
+                        ],
                         "type": "string"
                     }
                 },
@@ -139,13 +124,12 @@
             "responses": {
                 "200": {
                     "description": "Listado de transferencias paginado."
-                },
-                "default": {
-                    "description": ""
                 }
             },
             "summary": "Listar historial de transferencias",
-            "tags": ["Transferencias entre Tiendas"]
+            "tags": [
+                "Transferencias entre Tiendas"
+            ]
         },
         "post": {
             "description": "Inicia un proceso de transferencia entre una tienda origen y una tienda destino.",
@@ -167,20 +151,12 @@
                 },
                 "400": {
                     "description": "Datos de entrada inválidos."
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "StoreTransfer"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Crear una nueva transferencia en borrador",
-            "tags": ["Transferencias entre Tiendas"]
+            "tags": [
+                "Transferencias entre Tiendas"
+            ]
         }
     },
     "/transfers/{id}/items": {
@@ -214,20 +190,12 @@
                 },
                 "404": {
                     "description": "Transferencia no encontrada."
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "StoreTransferItem"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Agregar un producto a una transferencia pendiente",
-            "tags": ["Transferencias entre Tiendas"]
+            "tags": [
+                "Transferencias entre Tiendas"
+            ]
         }
     },
     "/transfers/{id}/complete": {
@@ -254,20 +222,12 @@
                 },
                 "404": {
                     "description": "Transferencia no encontrada."
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "StoreTransfer"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Completar transferencia y mover stock",
-            "tags": ["Transferencias entre Tiendas"]
+            "tags": [
+                "Transferencias entre Tiendas"
+            ]
         }
     },
     "/transfers/{id}": {
@@ -290,20 +250,12 @@
                 },
                 "404": {
                     "description": "Transferencia no encontrada."
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Obtener detalles de una transferencia",
-            "tags": ["Transferencias entre Tiendas"]
+            "tags": [
+                "Transferencias entre Tiendas"
+            ]
         }
     }
 }

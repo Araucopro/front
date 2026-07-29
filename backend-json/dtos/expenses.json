@@ -19,7 +19,11 @@
                 "example": 1500.5
             },
             "type": {
-                "enum": ["financial", "operational", "administrative"],
+                "enum": [
+                    "financial",
+                    "operational",
+                    "administrative"
+                ],
                 "type": "string",
                 "description": "Tipo de gasto",
                 "example": "administrative"
@@ -31,7 +35,121 @@
                 "example": "123e4567-e89b-12d3-a456-426614174000"
             }
         },
-        "required": ["name", "deductibleDate", "amount", "type", "storeID"]
+        "required": [
+            "name",
+            "deductibleDate",
+            "amount",
+            "type",
+            "storeID"
+        ]
+    },
+    "ExpenseTypeSummaryDto": {
+        "type": "object",
+        "properties": {
+            "type": {
+                "enum": [
+                    "financial",
+                    "operational",
+                    "administrative"
+                ],
+                "type": "string",
+                "description": "Tipo de gasto",
+                "example": "administrative"
+            },
+            "total": {
+                "type": "number",
+                "description": "Total acumulado para este tipo de gasto",
+                "example": 35000
+            }
+        },
+        "required": [
+            "type",
+            "total"
+        ]
+    },
+    "ExpenseMonthlySummaryMonthDto": {
+        "type": "object",
+        "properties": {
+            "month": {
+                "type": "number",
+                "description": "Número de mes del 1 al 12",
+                "example": 1
+            },
+            "label": {
+                "type": "string",
+                "description": "Nombre del mes",
+                "example": "Enero"
+            },
+            "total": {
+                "type": "number",
+                "description": "Total del mes",
+                "example": 35000
+            },
+            "byType": {
+                "description": "Desglose del mes por tipo de gasto",
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/ExpenseTypeSummaryDto"
+                }
+            }
+        },
+        "required": [
+            "month",
+            "label",
+            "total",
+            "byType"
+        ]
+    },
+    "ExpenseMonthlySummaryTotalsDto": {
+        "type": "object",
+        "properties": {
+            "total": {
+                "type": "number",
+                "description": "Total acumulado del año",
+                "example": 150000
+            },
+            "byType": {
+                "description": "Desglose acumulado del año por tipo de gasto",
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/ExpenseTypeSummaryDto"
+                }
+            }
+        },
+        "required": [
+            "total",
+            "byType"
+        ]
+    },
+    "ExpenseSummaryDto": {
+        "type": "object",
+        "properties": {
+            "year": {
+                "type": "number",
+                "description": "Año consultado",
+                "example": 2026
+            },
+            "months": {
+                "description": "Serie mensual del año actual",
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/ExpenseMonthlySummaryMonthDto"
+                }
+            },
+            "totals": {
+                "description": "Totales acumulados del año",
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/ExpenseMonthlySummaryTotalsDto"
+                    }
+                ]
+            }
+        },
+        "required": [
+            "year",
+            "months",
+            "totals"
+        ]
     },
     "UpdateExpenseDto": {
         "type": "object",
@@ -53,7 +171,11 @@
                 "example": 1500.5
             },
             "type": {
-                "enum": ["financial", "operational", "administrative"],
+                "enum": [
+                    "financial",
+                    "operational",
+                    "administrative"
+                ],
                 "type": "string",
                 "description": "Tipo de gasto",
                 "example": "administrative"

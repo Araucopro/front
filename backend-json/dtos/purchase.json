@@ -21,7 +21,11 @@
                 "example": 37000
             }
         },
-        "required": ["variationID", "quantity", "unitPrice"]
+        "required": [
+            "variationID",
+            "quantity",
+            "unitPrice"
+        ]
     },
     "CreatePurchaseOrderDto": {
         "type": "object",
@@ -42,11 +46,6 @@
                 "description": "Fecha de vencimiento de pago",
                 "example": "2025-11-30"
             },
-            "dteNumber": {
-                "type": "string",
-                "description": "Número de DTE asociado",
-                "example": "123456789"
-            },
             "discount": {
                 "type": "number",
                 "description": "Descuento total en pesos",
@@ -61,12 +60,18 @@
                 }
             }
         },
-        "required": ["storeID", "items"]
+        "required": [
+            "storeID",
+            "items"
+        ]
     },
     "PurchaseOrder": {
         "type": "object",
         "properties": {
             "purchaseOrderID": {
+                "type": "string"
+            },
+            "tenantID": {
                 "type": "string"
             },
             "folio": {
@@ -76,7 +81,21 @@
                 "$ref": "#/components/schemas/Store"
             },
             "paymentStatus": {
-                "type": "object"
+                "enum": [
+                    "Pagado",
+                    "Pendiente",
+                    "Anulado"
+                ],
+                "type": "string"
+            },
+            "status": {
+                "enum": [
+                    "Pendiente",
+                    "Enviado",
+                    "Aceptado",
+                    "Rechazado"
+                ],
+                "type": "string"
             },
             "isThirdParty": {
                 "type": "boolean"
@@ -87,10 +106,6 @@
             },
             "dueDate": {
                 "format": "date-time",
-                "type": "string",
-                "nullable": true
-            },
-            "dteNumber": {
                 "type": "string",
                 "nullable": true
             },
@@ -129,13 +144,14 @@
         },
         "required": [
             "purchaseOrderID",
+            "tenantID",
             "folio",
             "store",
             "paymentStatus",
+            "status",
             "isThirdParty",
             "issueDate",
             "dueDate",
-            "dteNumber",
             "totalProducts",
             "subtotal",
             "discount",
@@ -151,6 +167,9 @@
         "type": "object",
         "properties": {
             "purchaseOrderItemID": {
+                "type": "string"
+            },
+            "tenantID": {
                 "type": "string"
             },
             "purchaseOrder": {
@@ -182,6 +201,7 @@
         },
         "required": [
             "purchaseOrderItemID",
+            "tenantID",
             "purchaseOrder",
             "variation",
             "unitPrice",
@@ -196,19 +216,18 @@
         "type": "object",
         "properties": {
             "paymentStatus": {
+                "enum": [
+                    "Pagado",
+                    "Pendiente",
+                    "Anulado"
+                ],
                 "type": "string",
-                "description": "Estado del pago de la OC",
-                "enum": ["Pagado", "Pendiente", "Anulado"]
+                "description": "Estado del pago de la OC"
             },
             "dueDate": {
                 "type": "string",
                 "description": "Fecha de vencimiento",
                 "example": "2025-11-30"
-            },
-            "dteNumber": {
-                "type": "string",
-                "description": "Número de DTE",
-                "example": "112233"
             },
             "discount": {
                 "type": "number",
@@ -223,6 +242,13 @@
                 "type": "string",
                 "format": "uuid",
                 "description": "Permite cambiar la tienda destino"
+            },
+            "items": {
+                "description": "Actualización del detalle de productos",
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/PurchaseOrderItemDto"
+                }
             }
         }
     },
@@ -230,12 +256,19 @@
         "type": "object",
         "properties": {
             "status": {
+                "enum": [
+                    "Pendiente",
+                    "Enviado",
+                    "Aceptado",
+                    "Rechazado"
+                ],
                 "type": "string",
-                "enum": ["Pagado", "Pendiente", "Anulado"],
-                "description": "Nuevo estado de la orden de compra"
+                "description": "Nuevo estado comercial de la orden de compra"
             }
         },
-        "required": ["status"]
+        "required": [
+            "status"
+        ]
     },
     "VerifyItemDto": {
         "type": "object",
@@ -258,7 +291,10 @@
                 "example": 37000
             }
         },
-        "required": ["variationID", "quantityReceived"]
+        "required": [
+            "variationID",
+            "quantityReceived"
+        ]
     },
     "VerifyPurchaseOrderDto": {
         "type": "object",
@@ -271,6 +307,8 @@
                 }
             }
         },
-        "required": ["items"]
+        "required": [
+            "items"
+        ]
     }
 }

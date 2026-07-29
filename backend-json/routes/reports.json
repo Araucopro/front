@@ -1,0 +1,123 @@
+{
+    "/reports/income-statement": {
+        "get": {
+            "description": "Devuelve la serie mensual del año consultado con ingresos por ventas y purchase orders pagadas, egresos por gastos, detalle de gastos por tipo y neto acumulado.",
+            "operationId": "ReportsController_incomeStatement",
+            "parameters": [
+                {
+                    "name": "year",
+                    "required": false,
+                    "in": "query",
+                    "description": "Año calendario a consultar. Default: año actual.",
+                    "schema": {
+                        "minimum": 2000,
+                        "example": 2026,
+                        "type": "number"
+                    }
+                },
+                {
+                    "name": "storeId",
+                    "required": false,
+                    "in": "query",
+                    "description": "ID de la tienda para filtrar el estado de resultados.",
+                    "schema": {
+                        "example": "store-uuid",
+                        "type": "string"
+                    }
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "Estado de resultados mensual.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "IncomeStatementDto"
+                            }
+                        }
+                    }
+                }
+            },
+            "summary": "Estado de resultados mensual",
+            "tags": [
+                "Reportes"
+            ]
+        }
+    },
+    "/reports/sales": {
+        "get": {
+            "description": "Obtiene resumen de ventas agrupadas por tipo de pago y estado, resúmenes de periodo (hoy, ayer, mes) y listado de ventas dentro del rango. Fechas en ISO 8601.",
+            "operationId": "ReportsController_salesReport",
+            "parameters": [
+                {
+                    "name": "storeId",
+                    "required": false,
+                    "in": "query",
+                    "description": "ID de la tienda para filtrar",
+                    "schema": {
+                        "example": "store-uuid",
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "from",
+                    "required": false,
+                    "in": "query",
+                    "description": "Fecha desde (inclusive) ISO 8601",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "to",
+                    "required": false,
+                    "in": "query",
+                    "description": "Fecha hasta (exclusive) ISO 8601",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "page",
+                    "required": false,
+                    "in": "query",
+                    "description": "Página (paginación) - default 1",
+                    "schema": {
+                        "minimum": 1,
+                        "default": 1,
+                        "example": 1,
+                        "type": "number"
+                    }
+                },
+                {
+                    "name": "limit",
+                    "required": false,
+                    "in": "query",
+                    "description": "Tamaño de página - default 50",
+                    "schema": {
+                        "minimum": 1,
+                        "default": 50,
+                        "example": 50,
+                        "type": "number"
+                    }
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "Reporte de ventas",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "ReportsSaleFilterDto"
+                            }
+                        }
+                    }
+                }
+            },
+            "summary": "Reporte de ventas",
+            "tags": [
+                "Reportes"
+            ]
+        }
+    }
+}

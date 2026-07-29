@@ -26,7 +26,9 @@
                 }
             },
             "summary": "Actualizar precio y registrar historial",
-            "tags": ["Precios de productos"]
+            "tags": [
+                "Precios de productos"
+            ]
         }
     },
     "/pricing/history": {
@@ -34,18 +36,32 @@
             "operationId": "PricingController_getPriceHistory",
             "parameters": [
                 {
-                    "name": "storeID",
-                    "required": true,
+                    "name": "storeProductID",
+                    "required": false,
                     "in": "query",
+                    "description": "Filtra el historial por producto de tienda",
                     "schema": {
+                        "format": "uuid",
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "storeID",
+                    "required": false,
+                    "in": "query",
+                    "description": "Filtra el historial por tienda",
+                    "schema": {
+                        "format": "uuid",
                         "type": "string"
                     }
                 },
                 {
                     "name": "variationID",
-                    "required": true,
+                    "required": false,
                     "in": "query",
+                    "description": "Filtra el historial por variación",
                     "schema": {
+                        "format": "uuid",
                         "type": "string"
                     }
                 }
@@ -65,8 +81,10 @@
                     }
                 }
             },
-            "summary": "Obtener historial de precios de un producto de tienda",
-            "tags": ["Precios de productos"]
+            "summary": "Obtener historial de precios completo o filtrado",
+            "tags": [
+                "Precios de productos"
+            ]
         }
     },
     "/pricing/offers": {
@@ -100,7 +118,9 @@
                 }
             },
             "summary": "Listar todas las ofertas especiales o filtrar por producto",
-            "tags": ["Precios de productos"]
+            "tags": [
+                "Precios de productos"
+            ]
         },
         "post": {
             "operationId": "PricingController_createOffer",
@@ -128,7 +148,9 @@
                 }
             },
             "summary": "Crear una oferta especial",
-            "tags": ["Precios de productos"]
+            "tags": [
+                "Precios de productos"
+            ]
         }
     },
     "/pricing/offers/{id}": {
@@ -167,7 +189,9 @@
                 }
             },
             "summary": "Actualizar una oferta especial",
-            "tags": ["Precios de productos"]
+            "tags": [
+                "Precios de productos"
+            ]
         }
     },
     "/pricing/calculate": {
@@ -197,7 +221,9 @@
                 }
             },
             "summary": "Calcular precio final con motor de precios y contexto opcional",
-            "tags": ["Precios de productos"]
+            "tags": [
+                "Precios de productos"
+            ]
         }
     },
     "/pricing/price-check/{storeProductID}": {
@@ -226,7 +252,9 @@
                 }
             },
             "summary": "Calcular precio final rápido con cantidad 1 e historial activo",
-            "tags": ["Precios de productos"]
+            "tags": [
+                "Precios de productos"
+            ]
         }
     }
 }
