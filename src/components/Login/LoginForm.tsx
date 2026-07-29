@@ -4,16 +4,14 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { LoaderCircle } from "lucide-react"
 import { Button } from "../ui/button"
+import { Input } from "../ui/input"
+import FriendlyLoadingScreen from "../Animations/FriendlyLoadingScreen"
 import { login } from "@/actions/auth/authActions"
 import { getUserStores } from "@/actions/users/getUserStores"
 import { useAuth } from "@/stores/user.store"
 import { toast } from "sonner"
 import { useTienda } from "@/stores/tienda.store"
 import { Role } from "@/lib/userRoles"
-import useDarkMode from "@/hooks/useDarkMode"
-import { Switch } from "../ui/switch"
-import { Input } from "../ui/input"
-import FriendlyLoadingScreen from "../Animations/FriendlyLoadingScreen"
 
 export default function LoginForm() {
     const [email, setEmail] = useState("")
@@ -23,10 +21,9 @@ export default function LoginForm() {
     const router = useRouter()
     const { setUser } = useAuth()
     const { setStoreSelected, setStoresUser } = useTienda()
-    const { isDarkMode, setIsDarkMode } = useDarkMode()
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
+    const handleSubmit = async (event: React.FormEvent) => {
+        event.preventDefault()
 
         if (isLoading) return
 
@@ -69,8 +66,8 @@ export default function LoginForm() {
             router.prefetch(destination)
             navigationStarted = true
             router.push(destination)
-        } catch (err) {
-            console.error(err)
+        } catch (error) {
+            console.error(error)
             toast.error("Error inesperado al iniciar sesión")
         } finally {
             if (!navigationStarted) {
@@ -85,68 +82,70 @@ export default function LoginForm() {
                 <FriendlyLoadingScreen
                     overlay
                     title={loadingMessage}
-                    detail="Estamos preparando BETTY para tu tienda."
+                    detail="Estamos preparando tu espacio de trabajo."
                 />
             )}
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4" aria-busy={isLoading}>
+            <form onSubmit={handleSubmit} className="flex flex-col" aria-busy={isLoading}>
                 <div>
-                    <label className="block text-sm font-medium mb-1" htmlFor="email">
+                    <label className="mb-1.5 block text-xs font-semibold text-[#202938]" htmlFor="email">
                         Correo electrónico
                     </label>
                     <Input
                         id="email"
                         type="email"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-4 py-2 border dark:border-slate-600 dark:bg-slate-600 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onChange={(event) => setEmail(event.target.value)}
+                        placeholder="nombre@empresa.com"
+                        className="h-[46px] w-full rounded-[10px] border-[#dce0e5] bg-white px-4 text-[13px] text-[#171717] shadow-none transition-colors placeholder:text-[#9ca3af] focus-visible:border-[#174531] focus-visible:ring-2 focus-visible:ring-[#174531]/15 focus-visible:ring-offset-0"
                         autoComplete="email"
+                        autoFocus
                         disabled={isLoading}
                         required
                     />
                 </div>
 
-                <div>
-                    <label className="block text-sm font-medium mb-1" htmlFor="password">
+                <div className="mt-7">
+                    <label className="mb-1.5 block text-xs font-semibold text-[#202938]" htmlFor="password">
                         Contraseña
                     </label>
                     <Input
                         id="password"
                         type="password"
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-4 py-2 border dark:border-slate-600 dark:bg-slate-600 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onChange={(event) => setPassword(event.target.value)}
+                        placeholder="••••••••"
+                        className="h-[46px] w-full rounded-[10px] border-[#dce0e5] bg-white px-4 text-[13px] text-[#171717] shadow-none transition-colors placeholder:text-[#171717] focus-visible:border-[#174531] focus-visible:ring-2 focus-visible:ring-[#174531]/15 focus-visible:ring-offset-0"
                         autoComplete="current-password"
                         disabled={isLoading}
                         required
                     />
                 </div>
 
-                <Button type="submit" disabled={isLoading} className="min-h-9">
+                <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="mt-5 h-[46px] rounded-[10px] bg-[#174531] text-sm font-semibold text-white shadow-none hover:bg-[#123a29] focus-visible:ring-[#174531]"
+                >
                     {isLoading ? (
                         <span className="flex items-center justify-center gap-2">
                             <LoaderCircle className="h-4 w-4 animate-spin" />
                             Iniciando sesión...
                         </span>
                     ) : (
-                        "Iniciar sesión"
+                        "Entrar al sistema"
                     )}
                 </Button>
 
-                <div className="pt-10 flex flex-row justify-center items-center gap-2">
-                    {isDarkMode ? (
-                        <span className="text-xs italic">Modo Oscuro</span>
-                    ) : (
-                        <span className="text-xs italic">Modo Claro</span>
-                    )}
-                    <Switch
-                        checked={!!isDarkMode}
-                        title="Clic para cambiar"
-                        onCheckedChange={setIsDarkMode}
-                        disabled={isLoading}
-                        className="bg-gray-300 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-900 flex-shrink-0"
-                    />
-                </div>
+                <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isLoading}
+                    onClick={() => toast.info("La recuperación de contraseña estará disponible próximamente")}
+                    className="mt-2 h-[44px] rounded-[10px] border-[#dce0e5] bg-white text-[13px] font-semibold text-[#707789] shadow-none hover:bg-[#f6f7f8] hover:text-[#4c5361]"
+                >
+                    Olvidé mi contraseña
+                </Button>
             </form>
         </>
     )
