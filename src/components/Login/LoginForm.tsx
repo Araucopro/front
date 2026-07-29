@@ -6,12 +6,13 @@ import { LoaderCircle } from "lucide-react"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import FriendlyLoadingScreen from "../Animations/FriendlyLoadingScreen"
-import { login } from "@/actions/auth/authActions"
+import { login, loginMaster } from "@/actions/auth/authActions"
 import { getUserStores } from "@/actions/users/getUserStores"
 import { useAuth } from "@/stores/user.store"
 import { toast } from "sonner"
 import { useTienda } from "@/stores/tienda.store"
 import { Role } from "@/lib/userRoles"
+import { useMasterAuth } from "@/stores/master.store"
 
 export default function LoginForm() {
     const [email, setEmail] = useState("")
@@ -19,8 +20,9 @@ export default function LoginForm() {
     const [isLoading, setLoading] = useState(false)
     const [loadingMessage, setLoadingMessage] = useState("Verificando tus datos...")
     const router = useRouter()
-    const { setUser } = useAuth()
+    const { setUser, logout: clearTenantSession } = useAuth()
     const { setStoreSelected, setStoresUser } = useTienda()
+    const { setMasterUser, clearMasterUser } = useMasterAuth()
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault()
@@ -33,12 +35,34 @@ export default function LoginForm() {
             setLoading(true)
             setLoadingMessage("Verificando tus datos...")
 
-            const data = await login(email, password)
+            let data: Awaited<ReturnType<typeof login>>
+
+            try {
+                data = await login(email, password)
+            } catch (tenantLoginError) {
+                setLoadingMessage("Verificando acceso master...")
+
+                try {
+                    const masterData = await loginMaster(email, password)
+                    clearTenantSession()
+                    setMasterUser(masterData.masterUser)
+                    setLoadingMessage("Preparando panel master...")
+                    router.prefetch("/master")
+                    navigationStarted = true
+                    toast.success("Sesión master iniciada correctamente")
+                    router.push("/master")
+                    return
+                } catch {
+                    throw tenantLoginError
+                }
+            }
+
             if (!data.user) {
                 toast.error("Email o contraseña incorrectos")
                 return
             }
 
+            clearMasterUser()
             setUser(data.user, data.accessToken)
             setLoadingMessage("Buscando tus tiendas...")
 
