@@ -21,13 +21,12 @@
                     },
                     "401": {
                         "description": "Credenciales inválidas"
-                    },
-                    "default": {
-                        "description": ""
                     }
                 },
                 "summary": "Autenticar usuario y devolver JWT",
-                "tags": ["Autenticación"]
+                "tags": [
+                    "Autenticación"
+                ]
             }
         },
         "/auth/check-status": {
@@ -40,13 +39,12 @@
                     },
                     "401": {
                         "description": "No autorizado"
-                    },
-                    "default": {
-                        "description": ""
                     }
                 },
                 "summary": "Verificar estado de la autenticación y devolver un nuevo JWT",
-                "tags": ["Autenticación"]
+                "tags": [
+                    "Autenticación"
+                ]
             }
         },
         "/users": {
@@ -79,20 +77,12 @@
                     },
                     "500": {
                         "description": "Error interno del servidor."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/User"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Crear un nuevo usuario",
-                "tags": ["Usuarios"]
+                "tags": [
+                    "Usuarios"
+                ]
             },
             "get": {
                 "operationId": "UsersController_findAll",
@@ -110,23 +100,12 @@
                                 }
                             }
                         }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/User"
-                                    }
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Obtener todos los usuarios",
-                "tags": ["Usuarios"]
+                "tags": [
+                    "Usuarios"
+                ]
             }
         },
         "/users/{id}/stores": {
@@ -159,20 +138,12 @@
                     },
                     "404": {
                         "description": "Usuario no encontrado."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Obtener todas las tiendas de un usuario",
-                "tags": ["Usuarios"]
+                "tags": [
+                    "Usuarios"
+                ]
             }
         },
         "/users/{email}": {
@@ -202,20 +173,12 @@
                     },
                     "404": {
                         "description": "Usuario no encontrado."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/User"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Buscar un usuario por su email",
-                "tags": ["Usuarios"]
+                "tags": [
+                    "Usuarios"
+                ]
             }
         },
         "/users/{id}": {
@@ -255,20 +218,12 @@
                     },
                     "404": {
                         "description": "Usuario no encontrado."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/User"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Actualizar un usuario por su ID",
-                "tags": ["Usuarios"]
+                "tags": [
+                    "Usuarios"
+                ]
             },
             "delete": {
                 "operationId": "UsersController_remove",
@@ -289,13 +244,374 @@
                     },
                     "404": {
                         "description": "Usuario no encontrado."
+                    }
+                },
+                "summary": "Eliminar un usuario por su ID",
+                "tags": [
+                    "Usuarios"
+                ]
+            }
+        },
+        "/master/login": {
+            "post": {
+                "operationId": "MasterController_login",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginMasterDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Token de acceso de plataforma de tipo master"
+                    }
+                },
+                "summary": "Iniciar sesión como usuario MASTER de plataforma",
+                "tags": [
+                    "Master Platform Administration"
+                ]
+            }
+        },
+        "/master/tenants": {
+            "get": {
+                "operationId": "MasterController_findAll",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "description": "Cantidad máxima de elementos a retornar por página",
+                        "schema": {
+                            "minimum": 1,
+                            "default": 10,
+                            "example": 10,
+                            "type": "number"
+                        }
                     },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "description": "Número de elementos a omitir desde el inicio (para paginación)",
+                        "schema": {
+                            "minimum": 0,
+                            "default": 0,
+                            "example": 0,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "required": false,
+                        "in": "query",
+                        "description": "Filtrar por estado del tenant",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "PROVISIONING",
+                                "ACTIVE",
+                                "SUSPENDED",
+                                "ARCHIVED"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "required": false,
+                        "in": "query",
+                        "description": "Término de búsqueda por nombre o slug del tenant",
+                        "schema": {
+                            "example": "tienda",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista paginada de tenants"
+                    }
+                },
+                "summary": "Obtener lista paginada de tenants con filtros",
+                "tags": [
+                    "Master Platform Administration"
+                ]
+            },
+            "post": {
+                "operationId": "MasterController_create",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateTenantDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Tenant creado exitosamente"
+                    }
+                },
+                "summary": "Crear un nuevo tenant en la plataforma",
+                "tags": [
+                    "Master Platform Administration"
+                ]
+            }
+        },
+        "/master/tenants/{id}": {
+            "get": {
+                "operationId": "MasterController_findOne",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Detalles del tenant"
+                    }
+                },
+                "summary": "Obtener detalle de un tenant por su ID",
+                "tags": [
+                    "Master Platform Administration"
+                ]
+            },
+            "patch": {
+                "operationId": "MasterController_update",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateTenantDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Tenant actualizado exitosamente"
+                    }
+                },
+                "summary": "Actualizar propiedades de un tenant (maxStores, maxUsers, status, etc.)",
+                "tags": [
+                    "Master Platform Administration"
+                ]
+            }
+        },
+        "/master/tenants/{id}/provision": {
+            "post": {
+                "operationId": "MasterController_provision",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProvisionTenantDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Tenant provisionado exitosamente"
+                    }
+                },
+                "summary": "Provisionar tienda central, usuario admin y datos base para un tenant",
+                "tags": [
+                    "Master Platform Administration"
+                ]
+            }
+        },
+        "/master/tenants/{id}/metrics": {
+            "get": {
+                "operationId": "MasterController_metrics",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
                     "default": {
                         "description": ""
                     }
                 },
-                "summary": "Eliminar un usuario por su ID",
-                "tags": ["Usuarios"]
+                "summary": "Obtener métricas de uso y telemetría de un tenant",
+                "tags": [
+                    "Master Platform Administration"
+                ]
+            }
+        },
+        "/master/tenants/{id}/subscription": {
+            "patch": {
+                "operationId": "MasterController_subscription",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateSubscriptionDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Tenant"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Actualizar tipo de plan y vencimiento de suscripción",
+                "tags": [
+                    "Master Platform Administration"
+                ]
+            }
+        },
+        "/master/tenants/{id}/export": {
+            "get": {
+                "operationId": "MasterController_exportData",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": ""
+                    }
+                },
+                "summary": "Exportar respaldo completo de datos de un tenant",
+                "tags": [
+                    "Master Platform Administration"
+                ]
+            }
+        },
+        "/master/tenants/{id}/status": {
+            "patch": {
+                "operationId": "MasterController_status",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Tenant"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "Master Platform Administration"
+                ]
+            }
+        },
+        "/master/tenants/{id}/impersonate": {
+            "post": {
+                "operationId": "MasterController_impersonate",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ImpersonateTenantDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "Master Platform Administration"
+                ]
             }
         },
         "/stores": {
@@ -326,20 +642,12 @@
                     },
                     "400": {
                         "description": "Datos inválidos o email/nombre duplicado."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Store"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Crear una nueva tienda",
-                "tags": ["Tiendas"]
+                "tags": [
+                    "Tiendas"
+                ]
             },
             "get": {
                 "description": "Retorna el listado completo de tiendas registradas en el sistema.",
@@ -358,23 +666,12 @@
                                 }
                             }
                         }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Store"
-                                    }
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Obtener todas las tiendas",
-                "tags": ["Tiendas"]
+                "tags": [
+                    "Tiendas"
+                ]
             }
         },
         "/stores/{id}/users": {
@@ -407,20 +704,12 @@
                     },
                     "404": {
                         "description": "Tienda no encontrada."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Obtener todos los usuarios de una tienda",
-                "tags": ["Tiendas"]
+                "tags": [
+                    "Tiendas"
+                ]
             }
         },
         "/stores/{id}": {
@@ -451,20 +740,12 @@
                     },
                     "404": {
                         "description": "Tienda no encontrada."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Store"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Obtener una tienda por ID",
-                "tags": ["Tiendas"]
+                "tags": [
+                    "Tiendas"
+                ]
             },
             "patch": {
                 "description": "Modifica los datos de una tienda existente (nombre, dirección, teléfono, etc.).",
@@ -503,20 +784,12 @@
                     },
                     "404": {
                         "description": "Tienda no encontrada."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Store"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Actualizar información de una tienda",
-                "tags": ["Tiendas"]
+                "tags": [
+                    "Tiendas"
+                ]
             },
             "delete": {
                 "description": "Elimina permanentemente una tienda del sistema.",
@@ -538,13 +811,12 @@
                     },
                     "404": {
                         "description": "Tienda no encontrada."
-                    },
-                    "default": {
-                        "description": ""
                     }
                 },
                 "summary": "Eliminar una tienda",
-                "tags": ["Tiendas"]
+                "tags": [
+                    "Tiendas"
+                ]
             }
         },
         "/userstores": {
@@ -575,20 +847,12 @@
                     },
                     "400": {
                         "description": "Datos inválidos."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/UserStore"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Asignar un usuario a una tienda",
-                "tags": ["Usuarios de las Tiendas"]
+                "tags": [
+                    "Usuarios de las Tiendas"
+                ]
             },
             "get": {
                 "description": "Retorna el listado completo de asignaciones entre usuarios y tiendas.",
@@ -607,9 +871,22 @@
                                 }
                             }
                         }
-                    },
-                    "default": {
-                        "description": "",
+                    }
+                },
+                "summary": "Obtener todas las relaciones usuario-tienda",
+                "tags": [
+                    "Usuarios de las Tiendas"
+                ]
+            }
+        },
+        "/userstores/my-stores": {
+            "get": {
+                "description": "Retorna todas las tiendas asignadas al usuario que realiza la petición. Si el usuario es admin del tenant devuelve todas las tiendas del tenant.",
+                "operationId": "UserstoresController_findMyStores",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Lista de tiendas accesibles por el usuario.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -620,10 +897,15 @@
                                 }
                             }
                         }
+                    },
+                    "401": {
+                        "description": "No autorizado."
                     }
                 },
-                "summary": "Obtener todas las relaciones usuario-tienda",
-                "tags": ["Usuarios de las Tiendas"]
+                "summary": "Obtener las tiendas del usuario autenticado",
+                "tags": [
+                    "Usuarios de las Tiendas"
+                ]
             }
         },
         "/userstores/{id}": {
@@ -657,23 +939,12 @@
                     },
                     "404": {
                         "description": "Usuario no encontrado."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/UserStore"
-                                    }
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Obtener tiendas de un usuario",
-                "tags": ["Usuarios de las Tiendas"]
+                "tags": [
+                    "Usuarios de las Tiendas"
+                ]
             },
             "delete": {
                 "description": "Elimina la relación entre un usuario y una tienda, revocando el acceso del usuario a esa tienda.",
@@ -695,13 +966,12 @@
                     },
                     "404": {
                         "description": "Asignación no encontrada."
-                    },
-                    "default": {
-                        "description": ""
                     }
                 },
                 "summary": "Eliminar asignación usuario-tienda",
-                "tags": ["Usuarios de las Tiendas"]
+                "tags": [
+                    "Usuarios de las Tiendas"
+                ]
             }
         },
         "/products": {
@@ -728,20 +998,12 @@
                                 }
                             }
                         }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Product"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Crear un nuevo producto con sus variantes",
-                "tags": ["Productos"]
+                "tags": [
+                    "Productos"
+                ]
             },
             "get": {
                 "operationId": "ProductsController_findAll",
@@ -784,23 +1046,12 @@
                                 }
                             }
                         }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Product"
-                                    }
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Obtener todos los productos",
-                "tags": ["Productos"]
+                "tags": [
+                    "Productos"
+                ]
             }
         },
         "/products/{id}": {
@@ -830,20 +1081,12 @@
                     },
                     "404": {
                         "description": "Producto no encontrado."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Product"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Buscar un producto por su ID",
-                "tags": ["Productos"]
+                "tags": [
+                    "Productos"
+                ]
             },
             "patch": {
                 "operationId": "ProductsController_update",
@@ -878,20 +1121,12 @@
                                 }
                             }
                         }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Product"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Actualizar un producto por su ID",
-                "tags": ["Productos"]
+                "tags": [
+                    "Productos"
+                ]
             },
             "delete": {
                 "operationId": "ProductsController_remove",
@@ -909,13 +1144,12 @@
                 "responses": {
                     "204": {
                         "description": "Producto eliminado exitosamente."
-                    },
-                    "default": {
-                        "description": ""
                     }
                 },
                 "summary": "Eliminar un producto por su ID",
-                "tags": ["Productos"]
+                "tags": [
+                    "Productos"
+                ]
             }
         },
         "/pricing/update": {
@@ -945,7 +1179,9 @@
                     }
                 },
                 "summary": "Actualizar precio y registrar historial",
-                "tags": ["Precios de productos"]
+                "tags": [
+                    "Precios de productos"
+                ]
             }
         },
         "/pricing/history": {
@@ -999,7 +1235,9 @@
                     }
                 },
                 "summary": "Obtener historial de precios completo o filtrado",
-                "tags": ["Precios de productos"]
+                "tags": [
+                    "Precios de productos"
+                ]
             }
         },
         "/pricing/offers": {
@@ -1033,7 +1271,9 @@
                     }
                 },
                 "summary": "Listar todas las ofertas especiales o filtrar por producto",
-                "tags": ["Precios de productos"]
+                "tags": [
+                    "Precios de productos"
+                ]
             },
             "post": {
                 "operationId": "PricingController_createOffer",
@@ -1061,7 +1301,9 @@
                     }
                 },
                 "summary": "Crear una oferta especial",
-                "tags": ["Precios de productos"]
+                "tags": [
+                    "Precios de productos"
+                ]
             }
         },
         "/pricing/offers/{id}": {
@@ -1100,7 +1342,9 @@
                     }
                 },
                 "summary": "Actualizar una oferta especial",
-                "tags": ["Precios de productos"]
+                "tags": [
+                    "Precios de productos"
+                ]
             }
         },
         "/pricing/calculate": {
@@ -1130,7 +1374,9 @@
                     }
                 },
                 "summary": "Calcular precio final con motor de precios y contexto opcional",
-                "tags": ["Precios de productos"]
+                "tags": [
+                    "Precios de productos"
+                ]
             }
         },
         "/pricing/price-check/{storeProductID}": {
@@ -1159,7 +1405,9 @@
                     }
                 },
                 "summary": "Calcular precio final rápido con cantidad 1 e historial activo",
-                "tags": ["Precios de productos"]
+                "tags": [
+                    "Precios de productos"
+                ]
             }
         },
         "/categories": {
@@ -1187,20 +1435,12 @@
                                 }
                             }
                         }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Category"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Crear una nueva categoría",
-                "tags": ["Categorías"]
+                "tags": [
+                    "Categorías"
+                ]
             },
             "get": {
                 "description": "Retorna solo las categorías principales (sin padre) con sus subcategorías anidadas en la propiedad children.",
@@ -1219,23 +1459,12 @@
                                 }
                             }
                         }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Category"
-                                    }
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Obtener todas las categorías raíz",
-                "tags": ["Categorías"]
+                "tags": [
+                    "Categorías"
+                ]
             }
         },
         "/categories/{id}": {
@@ -1266,20 +1495,12 @@
                     },
                     "404": {
                         "description": "Categoría no encontrada."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Obtener una categoría por ID",
-                "tags": ["Categorías"]
+                "tags": [
+                    "Categorías"
+                ]
             },
             "patch": {
                 "description": "Modifica el nombre o la categoría padre de una categoría existente.",
@@ -1318,13 +1539,12 @@
                     },
                     "404": {
                         "description": "Categoría no encontrada."
-                    },
-                    "default": {
-                        "description": ""
                     }
                 },
                 "summary": "Actualizar una categoría",
-                "tags": ["Categorías"]
+                "tags": [
+                    "Categorías"
+                ]
             },
             "delete": {
                 "description": "Elimina una categoría del sistema. Si tiene subcategorías, estas también serán eliminadas.",
@@ -1346,13 +1566,12 @@
                     },
                     "404": {
                         "description": "Categoría no encontrada."
-                    },
-                    "default": {
-                        "description": ""
                     }
                 },
                 "summary": "Eliminar una categoría",
-                "tags": ["Categorías"]
+                "tags": [
+                    "Categorías"
+                ]
             }
         },
         "/storeproduct/transfer": {
@@ -1379,13 +1598,12 @@
                     },
                     "404": {
                         "description": "Tienda o Producto no encontrado."
-                    },
-                    "default": {
-                        "description": ""
                     }
                 },
                 "summary": "Transferir stock de la central a una tienda",
-                "tags": ["Productos de la Tienda"]
+                "tags": [
+                    "Productos de la Tienda"
+                ]
             }
         },
         "/storeproduct/inventory": {
@@ -1416,23 +1634,12 @@
                                 }
                             }
                         }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Product"
-                                    }
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Consultar inventario de una tienda",
-                "tags": ["Productos de la Tienda"]
+                "tags": [
+                    "Productos de la Tienda"
+                ]
             }
         },
         "/storeproduct/{id}": {
@@ -1473,197 +1680,12 @@
                     },
                     "404": {
                         "description": "Producto de tienda no encontrado."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/StoreProduct"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Actualizar un producto en tienda (Inventario/Precios)",
-                "tags": ["Productos de la Tienda"]
-            }
-        },
-        "/sales": {
-            "post": {
-                "description": "Registra una nueva venta para una tienda específica. Si la tienda es Central, se descuenta del stock global de variaciones. Si es una tienda asociada (franquicia, etc.), se descuenta del stock local de la tienda (StoreProduct).",
-                "operationId": "SalesController_create",
-                "parameters": [],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/CreateSaleDto"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "Venta creada exitosamente.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Sale"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Stock insuficiente o datos inválidos."
-                    },
-                    "404": {
-                        "description": "Tienda o Producto no encontrado."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Sale"
-                                }
-                            }
-                        }
-                    }
-                },
-                "summary": "Registrar una venta",
-                "tags": ["Ventas"]
-            },
-            "get": {
-                "description": "Retorna un listado de todas las ventas realizadas, ordenadas por fecha de creación (más recientes primero).",
-                "operationId": "SalesController_findAll",
-                "parameters": [],
-                "responses": {
-                    "200": {
-                        "description": "Lista de ventas.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Sale"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Sale"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "summary": "Obtener todas las ventas registradas",
-                "tags": ["Ventas"]
-            }
-        },
-        "/sales/{id}": {
-            "get": {
-                "description": "Retorna la información completa de una venta incluyendo productos, cantidades, precios y estado.",
-                "operationId": "SalesController_findOne",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "ID de la venta",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Venta encontrada.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Sale"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Venta no encontrada."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Sale"
-                                }
-                            }
-                        }
-                    }
-                },
-                "summary": "Obtener detalle de una venta específica",
-                "tags": ["Ventas"]
-            }
-        },
-        "/sales/{id}/status": {
-            "patch": {
-                "description": "Permite cambiar el estado de una venta entre Pendiente, Pagado o Anulado.",
-                "operationId": "SalesController_updateStatus",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "ID de la venta",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/UpdateSaleStatusDto"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Estado actualizado exitosamente.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Sale"
-                                }
-                            }
-                        }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Sale"
-                                }
-                            }
-                        }
-                    }
-                },
-                "summary": "Actualizar el estado de una venta",
-                "tags": ["Ventas"]
+                "tags": [
+                    "Productos de la Tienda"
+                ]
             }
         },
         "/reports/income-statement": {
@@ -1703,20 +1725,12 @@
                                 }
                             }
                         }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/IncomeStatementDto"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Estado de resultados mensual",
-                "tags": ["Reportes"]
+                "tags": [
+                    "Reportes"
+                ]
             }
         },
         "/reports/sales": {
@@ -1726,7 +1740,7 @@
                 "parameters": [
                     {
                         "name": "storeId",
-                        "required": true,
+                        "required": false,
                         "in": "query",
                         "description": "ID de la tienda para filtrar",
                         "schema": {
@@ -1787,13 +1801,12 @@
                                 }
                             }
                         }
-                    },
-                    "default": {
-                        "description": ""
                     }
                 },
                 "summary": "Reporte de ventas",
-                "tags": ["Reportes"]
+                "tags": [
+                    "Reportes"
+                ]
             }
         },
         "/purchase-orders": {
@@ -1820,20 +1833,12 @@
                                 }
                             }
                         }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/PurchaseOrder"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Crear una orden de compra",
-                "tags": ["Ordenes de Compra"]
+                "tags": [
+                    "Ordenes de Compra"
+                ]
             },
             "get": {
                 "operationId": "PurchaseOrdersController_findAll",
@@ -1851,23 +1856,12 @@
                                 }
                             }
                         }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/PurchaseOrder"
-                                    }
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Listar órdenes de compra",
-                "tags": ["Ordenes de Compra"]
+                "tags": [
+                    "Ordenes de Compra"
+                ]
             }
         },
         "/purchase-orders/{id}": {
@@ -1894,20 +1888,12 @@
                                 }
                             }
                         }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/PurchaseOrder"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Obtener detalle de una orden de compra",
-                "tags": ["Ordenes de Compra"]
+                "tags": [
+                    "Ordenes de Compra"
+                ]
             },
             "patch": {
                 "operationId": "PurchaseOrdersController_update",
@@ -1942,20 +1928,12 @@
                                 }
                             }
                         }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/PurchaseOrder"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Actualizar datos generales de la orden de compra",
-                "tags": ["Ordenes de Compra"]
+                "tags": [
+                    "Ordenes de Compra"
+                ]
             }
         },
         "/purchase-orders/{id}/status": {
@@ -1984,17 +1962,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Estado de orden de compra actualizado.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/PurchaseOrder"
-                                }
-                            }
-                        }
-                    },
-                    "default": {
-                        "description": "",
+                        "description": "Estado comercial de la orden de compra actualizado.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -2004,8 +1972,10 @@
                         }
                     }
                 },
-                "summary": "Actualizar el estado/pago de la orden de compra",
-                "tags": ["Ordenes de Compra"]
+                "summary": "Actualizar el estado comercial de la orden de compra",
+                "tags": [
+                    "Ordenes de Compra"
+                ]
             }
         },
         "/purchase-orders/{id}/verify": {
@@ -2035,13 +2005,12 @@
                 "responses": {
                     "200": {
                         "description": "Verificación procesada exitosamente."
-                    },
-                    "default": {
-                        "description": ""
                     }
                 },
                 "summary": "Verificar productos recibidos para la orden de compra",
-                "tags": ["Ordenes de Compra"]
+                "tags": [
+                    "Ordenes de Compra"
+                ]
             }
         },
         "/expenses": {
@@ -2072,20 +2041,12 @@
                     },
                     "400": {
                         "description": "Datos de entrada inválidos."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Expense"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Registrar un nuevo gasto",
-                "tags": ["Gestión de Gastos"]
+                "tags": [
+                    "Gestión de Gastos"
+                ]
             },
             "get": {
                 "description": "Obtiene una lista completa de todos los gastos registrados en el sistema.",
@@ -2104,23 +2065,12 @@
                                 }
                             }
                         }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Expense"
-                                    }
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Consultar todos los gastos",
-                "tags": ["Gestión de Gastos"]
+                "tags": [
+                    "Gestión de Gastos"
+                ]
             }
         },
         "/expenses/summary": {
@@ -2150,20 +2100,12 @@
                                 }
                             }
                         }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ExpenseSummaryDto"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Resumen de gastos",
-                "tags": ["Gestión de Gastos"]
+                "tags": [
+                    "Gestión de Gastos"
+                ]
             }
         },
         "/expenses/{id}": {
@@ -2194,20 +2136,12 @@
                     },
                     "404": {
                         "description": "Gasto no encontrado en el sistema."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Expense"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Consultar un gasto por su ID",
-                "tags": ["Gestión de Gastos"]
+                "tags": [
+                    "Gestión de Gastos"
+                ]
             },
             "patch": {
                 "description": "Modifica los datos de un gasto existente identificado por su ID.",
@@ -2246,20 +2180,12 @@
                     },
                     "404": {
                         "description": "Gasto no encontrado para actualizar."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Actualizar la información de un gasto",
-                "tags": ["Gestión de Gastos"]
+                "tags": [
+                    "Gestión de Gastos"
+                ]
             },
             "delete": {
                 "description": "Remueve permanentemente un gasto del sistema mediante su identificador.",
@@ -2281,20 +2207,12 @@
                     },
                     "404": {
                         "description": "Gasto no encontrado para eliminar."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Expense"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Eliminar un registro de gasto",
-                "tags": ["Gestión de Gastos"]
+                "tags": [
+                    "Gestión de Gastos"
+                ]
             }
         },
         "/inventory/movements": {
@@ -2318,20 +2236,12 @@
                     },
                     "400": {
                         "description": "Datos de entrada inválidos o stock insuficiente."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/InventoryMovement"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Crear un movimiento de inventario manual",
-                "tags": ["Inventario"]
+                "tags": [
+                    "Inventario"
+                ]
             }
         },
         "/inventory/store/{storeID}": {
@@ -2355,23 +2265,12 @@
                     },
                     "404": {
                         "description": "Tienda no encontrada."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/StoreProduct"
-                                    }
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Obtener el stock de una tienda específica",
-                "tags": ["Inventario"]
+                "tags": [
+                    "Inventario"
+                ]
             }
         },
         "/transfers": {
@@ -2407,7 +2306,11 @@
                         "in": "query",
                         "description": "Filtrar por estado de la transferencia",
                         "schema": {
-                            "enum": ["PENDING", "COMPLETED", "CANCELLED"],
+                            "enum": [
+                                "PENDING",
+                                "COMPLETED",
+                                "CANCELLED"
+                            ],
                             "type": "string"
                         }
                     },
@@ -2437,13 +2340,12 @@
                 "responses": {
                     "200": {
                         "description": "Listado de transferencias paginado."
-                    },
-                    "default": {
-                        "description": ""
                     }
                 },
                 "summary": "Listar historial de transferencias",
-                "tags": ["Transferencias entre Tiendas"]
+                "tags": [
+                    "Transferencias entre Tiendas"
+                ]
             },
             "post": {
                 "description": "Inicia un proceso de transferencia entre una tienda origen y una tienda destino.",
@@ -2465,20 +2367,12 @@
                     },
                     "400": {
                         "description": "Datos de entrada inválidos."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/StoreTransfer"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Crear una nueva transferencia en borrador",
-                "tags": ["Transferencias entre Tiendas"]
+                "tags": [
+                    "Transferencias entre Tiendas"
+                ]
             }
         },
         "/transfers/{id}/items": {
@@ -2512,20 +2406,12 @@
                     },
                     "404": {
                         "description": "Transferencia no encontrada."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/StoreTransferItem"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Agregar un producto a una transferencia pendiente",
-                "tags": ["Transferencias entre Tiendas"]
+                "tags": [
+                    "Transferencias entre Tiendas"
+                ]
             }
         },
         "/transfers/{id}/complete": {
@@ -2552,20 +2438,12 @@
                     },
                     "404": {
                         "description": "Transferencia no encontrada."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/StoreTransfer"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Completar transferencia y mover stock",
-                "tags": ["Transferencias entre Tiendas"]
+                "tags": [
+                    "Transferencias entre Tiendas"
+                ]
             }
         },
         "/transfers/{id}": {
@@ -2588,20 +2466,12 @@
                     },
                     "404": {
                         "description": "Transferencia no encontrada."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Obtener detalles de una transferencia",
-                "tags": ["Transferencias entre Tiendas"]
+                "tags": [
+                    "Transferencias entre Tiendas"
+                ]
             }
         },
         "/seed": {
@@ -2611,20 +2481,12 @@
                 "responses": {
                     "200": {
                         "description": "Datos cargados correctamente"
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "string"
-                                }
-                            }
-                        }
                     }
                 },
-                "summary": "Ejecutar carga de datos masiva (Reinicia la BD)",
-                "tags": ["Seed (Datos de Prueba)"]
+                "summary": "Ejecutar carga de datos masiva (Restringido a usuario MASTER)",
+                "tags": [
+                    "Seed (Datos de Prueba)"
+                ]
             }
         },
         "/store-monthly-targets": {
@@ -2651,20 +2513,12 @@
                                 }
                             }
                         }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/StoreMonthlyTarget"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Crear una meta mensual para una tienda",
-                "tags": ["Metas Mensuales de Tienda"]
+                "tags": [
+                    "Metas Mensuales de Tienda"
+                ]
             },
             "get": {
                 "operationId": "StoreMonthlyTargetsController_findAll",
@@ -2682,23 +2536,12 @@
                                 }
                             }
                         }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/StoreMonthlyTarget"
-                                    }
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Listar todas las metas mensuales",
-                "tags": ["Metas Mensuales de Tienda"]
+                "tags": [
+                    "Metas Mensuales de Tienda"
+                ]
             }
         },
         "/store-monthly-targets/{storeID}": {
@@ -2730,20 +2573,12 @@
                     },
                     "404": {
                         "description": "Tienda no encontrada."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "number"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Obtener la meta mensual de una tienda por ID. period opcional: YYYY-MM-DD, YYYY-MM o YYYY/MM/DD, YYYY/MM",
-                "tags": ["Metas Mensuales de Tienda"]
+                "tags": [
+                    "Metas Mensuales de Tienda"
+                ]
             },
             "post": {
                 "operationId": "StoreMonthlyTargetsController_upsert",
@@ -2778,20 +2613,12 @@
                                 }
                             }
                         }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/StoreMonthlyTarget"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Crear o actualizar la meta mensual para la tienda en el periodo dado (por defecto mes actual).",
-                "tags": ["Metas Mensuales de Tienda"]
+                "tags": [
+                    "Metas Mensuales de Tienda"
+                ]
             }
         },
         "/store-monthly-targets/{id}": {
@@ -2832,20 +2659,12 @@
                     },
                     "400": {
                         "description": "La meta pertenece a un mes pasado o el payload es inválido."
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/StoreMonthlyTarget"
-                                }
-                            }
-                        }
                     }
                 },
                 "summary": "Actualizar una meta mensual",
-                "tags": ["Metas Mensuales de Tienda"]
+                "tags": [
+                    "Metas Mensuales de Tienda"
+                ]
             },
             "delete": {
                 "description": "Solo permite eliminar metas del mes actual o de meses futuros.",
@@ -2864,13 +2683,55 @@
                 "responses": {
                     "204": {
                         "description": "Meta mensual eliminada exitosamente."
-                    },
-                    "default": {
-                        "description": ""
                     }
                 },
                 "summary": "Eliminar una meta mensual",
-                "tags": ["Metas Mensuales de Tienda"]
+                "tags": [
+                    "Metas Mensuales de Tienda"
+                ]
+            }
+        },
+        "/v2/dte/document": {
+            "post": {
+                "description": "Recibe el payload del facturador, lo normaliza al modelo interno y persiste el documento local junto con la OC asociada cuando corresponde.",
+                "operationId": "DteController_create",
+                "parameters": [
+                    {
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "description": "Clave idempotente para evitar duplicados",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateDteDocumentDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DteDocumentResponseDto"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Crear documento DTE compatible con v2_dte_document",
+                "tags": [
+                    "DTE"
+                ]
             }
         }
     },
@@ -2910,7 +2771,10 @@
                         "description": "Contraseña del usuario (mínimo 6 caracteres)"
                     }
                 },
-                "required": ["email", "password"]
+                "required": [
+                    "email",
+                    "password"
+                ]
             },
             "CreateUserDto": {
                 "type": "object",
@@ -2927,7 +2791,12 @@
                         "example": "Juan Pérez"
                     },
                     "role": {
-                        "enum": ["admin", "store_manager", "consignado", "tercero"],
+                        "enum": [
+                            "admin",
+                            "store_manager",
+                            "consignado",
+                            "tercero"
+                        ],
                         "type": "string",
                         "description": "El rol asignado al usuario.",
                         "example": "store_manager"
@@ -2944,12 +2813,20 @@
                         "example": "contraseñaSegura123"
                     }
                 },
-                "required": ["email", "name", "role", "password"]
+                "required": [
+                    "email",
+                    "name",
+                    "role",
+                    "password"
+                ]
             },
             "User": {
                 "type": "object",
                 "properties": {
                     "userID": {
+                        "type": "string"
+                    },
+                    "tenantID": {
                         "type": "string"
                     },
                     "email": {
@@ -2959,7 +2836,12 @@
                         "type": "string"
                     },
                     "role": {
-                        "enum": ["admin", "store_manager", "consignado", "tercero"],
+                        "enum": [
+                            "admin",
+                            "store_manager",
+                            "consignado",
+                            "tercero"
+                        ],
                         "type": "string"
                     },
                     "userImg": {
@@ -2968,6 +2850,9 @@
                     },
                     "password": {
                         "type": "string"
+                    },
+                    "sessionVersion": {
+                        "type": "number"
                     },
                     "userStores": {
                         "type": "array",
@@ -2986,11 +2871,13 @@
                 },
                 "required": [
                     "userID",
+                    "tenantID",
                     "email",
                     "name",
                     "role",
                     "userImg",
                     "password",
+                    "sessionVersion",
                     "userStores",
                     "createdAt",
                     "updatedAt"
@@ -3021,7 +2908,11 @@
                         "example": 250.75
                     },
                     "type": {
-                        "enum": ["financial", "operational", "administrative"],
+                        "enum": [
+                            "financial",
+                            "operational",
+                            "administrative"
+                        ],
                         "type": "string",
                         "description": "Categoría del gasto",
                         "example": "administrative"
@@ -3036,16 +2927,32 @@
                         "type": "string",
                         "description": "Fecha de la última actualización"
                     },
+                    "tenantID": {
+                        "type": "string"
+                    },
                     "store": {
                         "$ref": "#/components/schemas/Store"
                     }
                 },
-                "required": ["id", "name", "deductibleDate", "amount", "type", "createdAt", "updatedAt", "store"]
+                "required": [
+                    "id",
+                    "name",
+                    "deductibleDate",
+                    "amount",
+                    "type",
+                    "createdAt",
+                    "updatedAt",
+                    "tenantID",
+                    "store"
+                ]
             },
             "StoreMonthlyTarget": {
                 "type": "object",
                 "properties": {
                     "id": {
+                        "type": "string"
+                    },
+                    "tenantID": {
                         "type": "string"
                     },
                     "store": {
@@ -3067,12 +2974,23 @@
                         "type": "string"
                     }
                 },
-                "required": ["id", "store", "period", "targetAmount", "createdAt", "updatedAt"]
+                "required": [
+                    "id",
+                    "tenantID",
+                    "store",
+                    "period",
+                    "targetAmount",
+                    "createdAt",
+                    "updatedAt"
+                ]
             },
             "Store": {
                 "type": "object",
                 "properties": {
                     "storeID": {
+                        "type": "string"
+                    },
+                    "tenantID": {
                         "type": "string"
                     },
                     "location": {
@@ -3101,11 +3019,32 @@
                         "type": "string"
                     },
                     "type": {
-                        "enum": ["central", "franchise", "consignment", "third_party"],
+                        "enum": [
+                            "central",
+                            "franchise",
+                            "consignment",
+                            "third_party"
+                        ],
                         "type": "string"
                     },
                     "isCentralStore": {
                         "type": "boolean"
+                    },
+                    "giro": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "acteco": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "cdgSIISucur": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "businessName": {
+                        "type": "string",
+                        "nullable": true
                     },
                     "userStores": {
                         "type": "array",
@@ -3136,6 +3075,7 @@
                 },
                 "required": [
                     "storeID",
+                    "tenantID",
                     "location",
                     "rut",
                     "address",
@@ -3159,6 +3099,9 @@
                     "userStoreID": {
                         "type": "string"
                     },
+                    "tenantID": {
+                        "type": "string"
+                    },
                     "user": {
                         "$ref": "#/components/schemas/User"
                     },
@@ -3174,7 +3117,14 @@
                         "type": "string"
                     }
                 },
-                "required": ["userStoreID", "user", "store", "createdAt", "updatedAt"]
+                "required": [
+                    "userStoreID",
+                    "tenantID",
+                    "user",
+                    "store",
+                    "createdAt",
+                    "updatedAt"
+                ]
             },
             "UpdateUserDto": {
                 "type": "object",
@@ -3184,7 +3134,12 @@
                     },
                     "role": {
                         "type": "string",
-                        "enum": ["admin", "store_manager", "consignado", "tercero"]
+                        "enum": [
+                            "admin",
+                            "store_manager",
+                            "consignado",
+                            "tercero"
+                        ]
                     },
                     "userImg": {
                         "type": "string"
@@ -3192,6 +3147,285 @@
                     "password": {
                         "type": "string",
                         "minLength": 6
+                    }
+                }
+            },
+            "LoginMasterDto": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "example": "soporte@araucopro.com"
+                    },
+                    "password": {
+                        "type": "string",
+                        "minLength": 6,
+                        "example": "Araucopro"
+                    }
+                },
+                "required": [
+                    "email",
+                    "password"
+                ]
+            },
+            "CreateTenantDto": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "minLength": 2,
+                        "example": "Tienda",
+                        "description": "Nombre del tenant / empresa"
+                    },
+                    "status": {
+                        "enum": [
+                            "PROVISIONING",
+                            "ACTIVE",
+                            "SUSPENDED",
+                            "ARCHIVED"
+                        ],
+                        "type": "string",
+                        "default": "ACTIVE",
+                        "example": "ACTIVE",
+                        "description": "Estado inicial del tenant"
+                    },
+                    "maxStores": {
+                        "type": "number",
+                        "minimum": 1,
+                        "example": 5,
+                        "default": 5,
+                        "description": "Cantidad máxima de tiendas permitidas"
+                    },
+                    "maxUsers": {
+                        "type": "number",
+                        "minimum": 1,
+                        "example": 5,
+                        "default": 5,
+                        "description": "Cantidad máxima de usuarios permitidos"
+                    },
+                    "timeZone": {
+                        "type": "string",
+                        "example": "America/Santiago",
+                        "default": "America/Santiago",
+                        "description": "Zona horaria del tenant"
+                    },
+                    "locale": {
+                        "type": "string",
+                        "example": "es-CL",
+                        "default": "es-CL",
+                        "description": "Locale del tenant"
+                    }
+                },
+                "required": [
+                    "name"
+                ]
+            },
+            "UpdateTenantDto": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "minLength": 2,
+                        "example": "Tienda",
+                        "description": "Nombre del tenant / empresa"
+                    },
+                    "status": {
+                        "enum": [
+                            "PROVISIONING",
+                            "ACTIVE",
+                            "SUSPENDED",
+                            "ARCHIVED"
+                        ],
+                        "type": "string",
+                        "default": "ACTIVE",
+                        "example": "ACTIVE",
+                        "description": "Estado inicial del tenant"
+                    },
+                    "maxStores": {
+                        "type": "number",
+                        "minimum": 1,
+                        "example": 5,
+                        "default": 5,
+                        "description": "Cantidad máxima de tiendas permitidas"
+                    },
+                    "maxUsers": {
+                        "type": "number",
+                        "minimum": 1,
+                        "example": 5,
+                        "default": 5,
+                        "description": "Cantidad máxima de usuarios permitidos"
+                    },
+                    "timeZone": {
+                        "type": "string",
+                        "example": "America/Santiago",
+                        "default": "America/Santiago",
+                        "description": "Zona horaria del tenant"
+                    },
+                    "locale": {
+                        "type": "string",
+                        "example": "es-CL",
+                        "default": "es-CL",
+                        "description": "Locale del tenant"
+                    }
+                }
+            },
+            "ProvisionTenantDto": {
+                "type": "object",
+                "properties": {
+                    "adminEmail": {
+                        "type": "string",
+                        "format": "email",
+                        "example": "admin@empresa.com",
+                        "description": "Email del usuario administrador inicial del tenant"
+                    },
+                    "adminPassword": {
+                        "type": "string",
+                        "minLength": 6,
+                        "example": "Password123!",
+                        "description": "Contraseña del usuario administrador inicial"
+                    },
+                    "adminFirstName": {
+                        "type": "string",
+                        "example": "Juan",
+                        "description": "Nombre del usuario administrador"
+                    },
+                    "adminLastName": {
+                        "type": "string",
+                        "example": "Pérez",
+                        "description": "Apellido del usuario administrador"
+                    },
+                    "centralStoreName": {
+                        "type": "string",
+                        "example": "Tienda Central Matriz",
+                        "description": "Nombre de la tienda central inicial"
+                    },
+                    "centralStoreAddress": {
+                        "type": "string",
+                        "example": "Av. Providencia 1234",
+                        "description": "Dirección de la tienda central"
+                    },
+                    "centralStoreCode": {
+                        "type": "string",
+                        "example": "STORE-CENTRAL-01",
+                        "description": "Código interno de la tienda central"
+                    }
+                },
+                "required": [
+                    "adminEmail",
+                    "adminPassword",
+                    "adminFirstName",
+                    "adminLastName",
+                    "centralStoreName"
+                ]
+            },
+            "UpdateSubscriptionDto": {
+                "type": "object",
+                "properties": {
+                    "planType": {
+                        "enum": [
+                            "BASIC",
+                            "STANDARD",
+                            "ENTERPRISE",
+                            "CUSTOM"
+                        ],
+                        "type": "string",
+                        "example": "ENTERPRISE",
+                        "description": "Tipo de plan asignado al tenant"
+                    },
+                    "subscriptionExpiresAt": {
+                        "type": "string",
+                        "example": "2026-12-31T23:59:59.000Z",
+                        "description": "Fecha de expiración de la suscripción (ISO String)"
+                    },
+                    "autoRenew": {
+                        "type": "boolean",
+                        "example": true,
+                        "description": "Si la suscripción se renueva automáticamente"
+                    }
+                }
+            },
+            "Tenant": {
+                "type": "object",
+                "properties": {
+                    "tenantID": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "slug": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "enum": [
+                            "PROVISIONING",
+                            "ACTIVE",
+                            "SUSPENDED",
+                            "ARCHIVED"
+                        ],
+                        "type": "string"
+                    },
+                    "maxStores": {
+                        "type": "number"
+                    },
+                    "maxUsers": {
+                        "type": "number"
+                    },
+                    "planType": {
+                        "enum": [
+                            "BASIC",
+                            "STANDARD",
+                            "ENTERPRISE",
+                            "CUSTOM"
+                        ],
+                        "type": "string"
+                    },
+                    "subscriptionExpiresAt": {
+                        "format": "date-time",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "autoRenew": {
+                        "type": "boolean"
+                    },
+                    "timeZone": {
+                        "type": "string"
+                    },
+                    "locale": {
+                        "type": "string"
+                    },
+                    "createdAt": {
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "updatedAt": {
+                        "format": "date-time",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "tenantID",
+                    "name",
+                    "slug",
+                    "status",
+                    "maxStores",
+                    "maxUsers",
+                    "planType",
+                    "subscriptionExpiresAt",
+                    "autoRenew",
+                    "timeZone",
+                    "locale",
+                    "createdAt",
+                    "updatedAt"
+                ]
+            },
+            "ImpersonateTenantDto": {
+                "type": "object",
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "example": "Soporte técnico / Auditoría"
                     }
                 }
             },
@@ -3250,7 +3484,12 @@
                         "example": "Tienda Principal"
                     },
                     "type": {
-                        "enum": ["central", "franchise", "consignment", "third_party"],
+                        "enum": [
+                            "central",
+                            "franchise",
+                            "consignment",
+                            "third_party"
+                        ],
                         "type": "string",
                         "description": "Tipo de tienda según el negocio",
                         "default": "third_party"
@@ -3260,9 +3499,42 @@
                         "description": "Indica si es una tienda central (valor por defecto: false)",
                         "example": false,
                         "default": false
+                    },
+                    "giro": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "description": "Giro comercial de la tienda para emisión de DTE",
+                        "example": "VENTA AL POR MENOR DE PRENDAS DE VESTIR"
+                    },
+                    "acteco": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "description": "Código de actividad económica SII (Acteco)",
+                        "example": "477100"
+                    },
+                    "cdgSIISucur": {
+                        "type": "string",
+                        "maxLength": 64,
+                        "description": "Código de sucursal entregado por el SII",
+                        "example": "0"
+                    },
+                    "businessName": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "description": "Razón social del emisor (si difiere del nombre comercial)",
+                        "example": "COMERCIAL ARAUCO SPA"
                     }
                 },
-                "required": ["location", "rut", "address", "phone", "city", "email", "name", "type"]
+                "required": [
+                    "location",
+                    "rut",
+                    "address",
+                    "phone",
+                    "city",
+                    "email",
+                    "name",
+                    "type"
+                ]
             },
             "UpdateStoreDto": {
                 "type": "object",
@@ -3319,7 +3591,12 @@
                         "example": "Tienda Principal"
                     },
                     "type": {
-                        "enum": ["central", "franchise", "consignment", "third_party"],
+                        "enum": [
+                            "central",
+                            "franchise",
+                            "consignment",
+                            "third_party"
+                        ],
                         "type": "string",
                         "description": "Tipo de tienda según el negocio",
                         "default": "third_party"
@@ -3329,6 +3606,30 @@
                         "description": "Indica si es una tienda central (valor por defecto: false)",
                         "example": false,
                         "default": false
+                    },
+                    "giro": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "description": "Giro comercial de la tienda para emisión de DTE",
+                        "example": "VENTA AL POR MENOR DE PRENDAS DE VESTIR"
+                    },
+                    "acteco": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "description": "Código de actividad económica SII (Acteco)",
+                        "example": "477100"
+                    },
+                    "cdgSIISucur": {
+                        "type": "string",
+                        "maxLength": 64,
+                        "description": "Código de sucursal entregado por el SII",
+                        "example": "0"
+                    },
+                    "businessName": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "description": "Razón social del emisor (si difiere del nombre comercial)",
+                        "example": "COMERCIAL ARAUCO SPA"
                     }
                 }
             },
@@ -3348,7 +3649,10 @@
                         "example": "123e4567-e89b-12d3-a456-426614174001"
                     }
                 },
-                "required": ["userID", "storeID"]
+                "required": [
+                    "userID",
+                    "storeID"
+                ]
             },
             "CreateProductVariationDto": {
                 "type": "object",
@@ -3385,9 +3689,19 @@
                         "type": "string",
                         "description": "Talla de la variante",
                         "example": "L"
+                    },
+                    "supplierSku": {
+                        "type": "string",
+                        "description": "SKU asignado por el proveedor para órdenes de compra y recepciones",
+                        "example": "PROV-SKU-9988"
                     }
                 },
-                "required": ["sku", "priceCost", "priceList", "stock"]
+                "required": [
+                    "sku",
+                    "priceCost",
+                    "priceList",
+                    "stock"
+                ]
             },
             "CreateProductDto": {
                 "type": "object",
@@ -3414,7 +3728,11 @@
                         "example": "Marca Famosa"
                     },
                     "genre": {
-                        "enum": ["Hombre", "Mujer", "Unisex"],
+                        "enum": [
+                            "Hombre",
+                            "Mujer",
+                            "Unisex"
+                        ],
                         "type": "string",
                         "description": "Género al que se dirige el producto",
                         "example": "Unisex"
@@ -3433,12 +3751,18 @@
                         }
                     }
                 },
-                "required": ["name", "variations"]
+                "required": [
+                    "name",
+                    "variations"
+                ]
             },
             "SpecialOffer": {
                 "type": "object",
                 "properties": {
                     "offerID": {
+                        "type": "string"
+                    },
+                    "tenantID": {
                         "type": "string"
                     },
                     "storeProduct": {
@@ -3448,14 +3772,21 @@
                         "type": "string"
                     },
                     "discountType": {
-                        "enum": ["PERCENTAGE", "FIXED_AMOUNT", "FIXED_PRICE"],
+                        "enum": [
+                            "PERCENTAGE",
+                            "FIXED_AMOUNT",
+                            "FIXED_PRICE"
+                        ],
                         "type": "string"
                     },
                     "value": {
                         "type": "number"
                     },
                     "scope": {
-                        "enum": ["UNIT", "TOTAL"],
+                        "enum": [
+                            "UNIT",
+                            "TOTAL"
+                        ],
                         "type": "string"
                     },
                     "exclusive": {
@@ -3483,6 +3814,7 @@
                 },
                 "required": [
                     "offerID",
+                    "tenantID",
                     "storeProduct",
                     "discountType",
                     "value",
@@ -3498,6 +3830,9 @@
                 "type": "object",
                 "properties": {
                     "storeProductID": {
+                        "type": "string"
+                    },
+                    "tenantID": {
                         "type": "string"
                     },
                     "store": {
@@ -3533,6 +3868,7 @@
                 },
                 "required": [
                     "storeProductID",
+                    "tenantID",
                     "store",
                     "variation",
                     "stock",
@@ -3546,6 +3882,9 @@
                 "type": "object",
                 "properties": {
                     "variationID": {
+                        "type": "string"
+                    },
+                    "tenantID": {
                         "type": "string"
                     },
                     "product": {
@@ -3566,6 +3905,10 @@
                     "size": {
                         "type": "string"
                     },
+                    "supplierSku": {
+                        "type": "string",
+                        "nullable": true
+                    },
                     "createdAt": {
                         "format": "date-time",
                         "type": "string"
@@ -3575,12 +3918,23 @@
                         "type": "string"
                     }
                 },
-                "required": ["variationID", "product", "storeProducts", "sku", "createdAt", "updatedAt"]
+                "required": [
+                    "variationID",
+                    "tenantID",
+                    "product",
+                    "storeProducts",
+                    "sku",
+                    "createdAt",
+                    "updatedAt"
+                ]
             },
             "Product": {
                 "type": "object",
                 "properties": {
                     "productID": {
+                        "type": "string"
+                    },
+                    "tenantID": {
                         "type": "string"
                     },
                     "image": {
@@ -3599,7 +3953,11 @@
                         "type": "string"
                     },
                     "genre": {
-                        "enum": ["Hombre", "Mujer", "Unisex"],
+                        "enum": [
+                            "Hombre",
+                            "Mujer",
+                            "Unisex"
+                        ],
                         "type": "string"
                     },
                     "description": {
@@ -3620,12 +3978,23 @@
                         "type": "string"
                     }
                 },
-                "required": ["productID", "category", "name", "variations", "createdAt", "updatedAt"]
+                "required": [
+                    "productID",
+                    "tenantID",
+                    "category",
+                    "name",
+                    "variations",
+                    "createdAt",
+                    "updatedAt"
+                ]
             },
             "Category": {
                 "type": "object",
                 "properties": {
                     "categoryID": {
+                        "type": "string"
+                    },
+                    "tenantID": {
                         "type": "string"
                     },
                     "parentID": {
@@ -3650,7 +4019,15 @@
                         }
                     }
                 },
-                "required": ["categoryID", "parentID", "name", "parent", "children", "products"]
+                "required": [
+                    "categoryID",
+                    "tenantID",
+                    "parentID",
+                    "name",
+                    "parent",
+                    "children",
+                    "products"
+                ]
             },
             "UpdateProductDto": {
                 "type": "object",
@@ -3677,7 +4054,11 @@
                         "example": "Marca Famosa"
                     },
                     "genre": {
-                        "enum": ["Hombre", "Mujer", "Unisex"],
+                        "enum": [
+                            "Hombre",
+                            "Mujer",
+                            "Unisex"
+                        ],
                         "type": "string",
                         "description": "Género al que se dirige el producto",
                         "example": "Unisex"
@@ -3711,7 +4092,10 @@
                         "description": "ID de la variación del producto"
                     },
                     "priceType": {
-                        "enum": ["cost", "list"],
+                        "enum": [
+                            "cost",
+                            "list"
+                        ],
                         "type": "string",
                         "description": "Tipo de precio: COST (Costo) o LIST (Venta)"
                     },
@@ -3728,7 +4112,12 @@
                         "description": "Nombre o ID del usuario que realizó el cambio"
                     }
                 },
-                "required": ["storeID", "variationID", "priceType", "newPrice"]
+                "required": [
+                    "storeID",
+                    "variationID",
+                    "priceType",
+                    "newPrice"
+                ]
             },
             "PriceHistory": {
                 "type": "object",
@@ -3736,11 +4125,17 @@
                     "historyID": {
                         "type": "string"
                     },
+                    "tenantID": {
+                        "type": "string"
+                    },
                     "storeProduct": {
                         "$ref": "#/components/schemas/StoreProduct"
                     },
                     "priceType": {
-                        "enum": ["cost", "list"],
+                        "enum": [
+                            "cost",
+                            "list"
+                        ],
                         "type": "string"
                     },
                     "oldPrice": {
@@ -3760,7 +4155,15 @@
                         "type": "string"
                     }
                 },
-                "required": ["historyID", "storeProduct", "priceType", "oldPrice", "newPrice", "effectiveDate"]
+                "required": [
+                    "historyID",
+                    "tenantID",
+                    "storeProduct",
+                    "priceType",
+                    "oldPrice",
+                    "newPrice",
+                    "effectiveDate"
+                ]
             },
             "CreateSpecialOfferDto": {
                 "type": "object",
@@ -3775,7 +4178,11 @@
                         "description": "Descripción o motivo de la oferta"
                     },
                     "discountType": {
-                        "enum": ["PERCENTAGE", "FIXED_AMOUNT", "FIXED_PRICE"],
+                        "enum": [
+                            "PERCENTAGE",
+                            "FIXED_AMOUNT",
+                            "FIXED_PRICE"
+                        ],
                         "type": "string",
                         "description": "Tipo de descuento: PERCENTAGE, FIXED_AMOUNT, FIXED_PRICE"
                     },
@@ -3784,7 +4191,10 @@
                         "description": "Valor numérico del descuento o precio final"
                     },
                     "scope": {
-                        "enum": ["UNIT", "TOTAL"],
+                        "enum": [
+                            "UNIT",
+                            "TOTAL"
+                        ],
                         "type": "string",
                         "description": "Ámbito del descuento: UNIT (por unidad) o TOTAL (sobre el total)"
                     },
@@ -3807,7 +4217,12 @@
                         "default": true
                     }
                 },
-                "required": ["storeProductID", "discountType", "value", "startDate"]
+                "required": [
+                    "storeProductID",
+                    "discountType",
+                    "value",
+                    "startDate"
+                ]
             },
             "UpdateSpecialOfferDto": {
                 "type": "object",
@@ -3822,7 +4237,11 @@
                         "description": "Descripción o motivo de la oferta"
                     },
                     "discountType": {
-                        "enum": ["PERCENTAGE", "FIXED_AMOUNT", "FIXED_PRICE"],
+                        "enum": [
+                            "PERCENTAGE",
+                            "FIXED_AMOUNT",
+                            "FIXED_PRICE"
+                        ],
                         "type": "string",
                         "description": "Tipo de descuento: PERCENTAGE, FIXED_AMOUNT, FIXED_PRICE"
                     },
@@ -3831,7 +4250,10 @@
                         "description": "Valor numérico del descuento o precio final"
                     },
                     "scope": {
-                        "enum": ["UNIT", "TOTAL"],
+                        "enum": [
+                            "UNIT",
+                            "TOTAL"
+                        ],
                         "type": "string",
                         "description": "Ámbito del descuento: UNIT (por unidad) o TOTAL (sobre el total)"
                     },
@@ -3896,7 +4318,9 @@
                         "example": "2026-04-15T12:00:00Z"
                     }
                 },
-                "required": ["storeProductID"]
+                "required": [
+                    "storeProductID"
+                ]
             },
             "CreateCategoryDto": {
                 "type": "object",
@@ -3914,7 +4338,9 @@
                         "nullable": true
                     }
                 },
-                "required": ["name"]
+                "required": [
+                    "name"
+                ]
             },
             "UpdateCategoryDto": {
                 "type": "object",
@@ -3955,7 +4381,11 @@
                         "example": 12000
                     }
                 },
-                "required": ["variationID", "stock", "priceCost"]
+                "required": [
+                    "variationID",
+                    "stock",
+                    "priceCost"
+                ]
             },
             "TransferStockDto": {
                 "type": "object",
@@ -3981,7 +4411,10 @@
                         }
                     }
                 },
-                "required": ["targetStoreID", "items"]
+                "required": [
+                    "targetStoreID",
+                    "items"
+                ]
             },
             "UpdateStoreProductDto": {
                 "type": "object",
@@ -4006,164 +4439,15 @@
                     }
                 }
             },
-            "SaleProductItemDto": {
-                "type": "object",
-                "properties": {
-                    "variationID": {
-                        "type": "string",
-                        "format": "uuid",
-                        "description": "ID de la variación del producto a vender",
-                        "example": "123e4567-e89b-12d3-a456-426614174000"
-                    },
-                    "quantity": {
-                        "type": "number",
-                        "minimum": 1,
-                        "description": "Cantidad de unidades a vender",
-                        "example": 10
-                    },
-                    "unitPrice": {
-                        "type": "number",
-                        "minimum": 0,
-                        "description": "Precio unitario de venta",
-                        "example": 15000
-                    }
-                },
-                "required": ["variationID", "quantity", "unitPrice"]
-            },
-            "CreateSaleDto": {
-                "type": "object",
-                "properties": {
-                    "storeID": {
-                        "type": "string",
-                        "format": "uuid",
-                        "description": "ID de la tienda que realiza la compra",
-                        "example": "123e4567-e89b-12d3-a456-426614174001"
-                    },
-                    "paymentType": {
-                        "type": "string",
-                        "enum": ["Efectivo", "Debito", "Credito"],
-                        "description": "Método de pago utilizado para la transacción",
-                        "example": "Credito"
-                    },
-                    "items": {
-                        "description": "Lista de productos y cantidades a vender",
-                        "example": [
-                            {
-                                "variationID": "123e4567-e89b-12d3-a456-426614174000",
-                                "quantity": 10,
-                                "unitPrice": 15000
-                            }
-                        ],
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/SaleProductItemDto"
-                        }
-                    }
-                },
-                "required": ["storeID", "paymentType", "items"]
-            },
-            "Sale": {
-                "type": "object",
-                "properties": {
-                    "saleID": {
-                        "type": "string"
-                    },
-                    "store": {
-                        "$ref": "#/components/schemas/Store"
-                    },
-                    "status": {
-                        "type": "object"
-                    },
-                    "total": {
-                        "type": "number"
-                    },
-                    "paymentType": {
-                        "type": "object"
-                    },
-                    "saleProducts": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/SaleProduct"
-                        }
-                    },
-                    "createdAt": {
-                        "format": "date-time",
-                        "type": "string"
-                    },
-                    "updatedAt": {
-                        "format": "date-time",
-                        "type": "string"
-                    }
-                },
-                "required": [
-                    "saleID",
-                    "store",
-                    "status",
-                    "total",
-                    "paymentType",
-                    "saleProducts",
-                    "createdAt",
-                    "updatedAt"
-                ]
-            },
-            "SaleProduct": {
-                "type": "object",
-                "properties": {
-                    "saleProductID": {
-                        "type": "string"
-                    },
-                    "sale": {
-                        "$ref": "#/components/schemas/Sale"
-                    },
-                    "variation": {
-                        "$ref": "#/components/schemas/ProductVariation"
-                    },
-                    "unitPrice": {
-                        "type": "number"
-                    },
-                    "subtotal": {
-                        "type": "number"
-                    },
-                    "quantitySold": {
-                        "type": "number"
-                    },
-                    "createdAt": {
-                        "format": "date-time",
-                        "type": "string"
-                    },
-                    "updatedAt": {
-                        "format": "date-time",
-                        "type": "string"
-                    }
-                },
-                "required": [
-                    "saleProductID",
-                    "sale",
-                    "variation",
-                    "unitPrice",
-                    "subtotal",
-                    "quantitySold",
-                    "createdAt",
-                    "updatedAt"
-                ]
-            },
-            "UpdateSaleStatusDto": {
-                "type": "object",
-                "properties": {
-                    "status": {
-                        "type": "string",
-                        "enum": ["Pagado", "Pendiente", "Anulado"],
-                        "description": "Nuevo estado de la venta. Pagado: transacción completada, Pendiente: esperando pago, Anulado: venta cancelada",
-                        "example": "Pagado"
-                    }
-                },
-                "required": ["status"]
-            },
             "IncomeStatementExpenseDetailDto": {
                 "type": "object",
                 "properties": {
                     "type": {
-                        "enum": ["financial", "operational", "administrative"],
+                        "enum": [
+                            "financial",
+                            "operational",
+                            "administrative"
+                        ],
                         "type": "string",
                         "description": "Tipo de gasto",
                         "example": "administrative"
@@ -4174,7 +4458,10 @@
                         "example": 15000
                     }
                 },
-                "required": ["type", "total"]
+                "required": [
+                    "type",
+                    "total"
+                ]
             },
             "IncomeStatementMonthDto": {
                 "type": "object",
@@ -4257,7 +4544,12 @@
                         "example": 850000
                     }
                 },
-                "required": ["salesIncome", "purchaseOrdersIncome", "expenses", "net"]
+                "required": [
+                    "salesIncome",
+                    "purchaseOrdersIncome",
+                    "expenses",
+                    "net"
+                ]
             },
             "IncomeStatementDto": {
                 "type": "object",
@@ -4288,7 +4580,11 @@
                         ]
                     }
                 },
-                "required": ["year", "months", "totals"]
+                "required": [
+                    "year",
+                    "months",
+                    "totals"
+                ]
             },
             "ReportsSaleFilterDto": {
                 "type": "object",
@@ -4344,7 +4640,11 @@
                         "example": 37000
                     }
                 },
-                "required": ["variationID", "quantity", "unitPrice"]
+                "required": [
+                    "variationID",
+                    "quantity",
+                    "unitPrice"
+                ]
             },
             "CreatePurchaseOrderDto": {
                 "type": "object",
@@ -4365,11 +4665,6 @@
                         "description": "Fecha de vencimiento de pago",
                         "example": "2025-11-30"
                     },
-                    "dteNumber": {
-                        "type": "string",
-                        "description": "Número de DTE asociado",
-                        "example": "123456789"
-                    },
                     "discount": {
                         "type": "number",
                         "description": "Descuento total en pesos",
@@ -4384,12 +4679,18 @@
                         }
                     }
                 },
-                "required": ["storeID", "items"]
+                "required": [
+                    "storeID",
+                    "items"
+                ]
             },
             "PurchaseOrder": {
                 "type": "object",
                 "properties": {
                     "purchaseOrderID": {
+                        "type": "string"
+                    },
+                    "tenantID": {
                         "type": "string"
                     },
                     "folio": {
@@ -4399,7 +4700,21 @@
                         "$ref": "#/components/schemas/Store"
                     },
                     "paymentStatus": {
-                        "type": "object"
+                        "enum": [
+                            "Pagado",
+                            "Pendiente",
+                            "Anulado"
+                        ],
+                        "type": "string"
+                    },
+                    "status": {
+                        "enum": [
+                            "Pendiente",
+                            "Enviado",
+                            "Aceptado",
+                            "Rechazado"
+                        ],
+                        "type": "string"
                     },
                     "isThirdParty": {
                         "type": "boolean"
@@ -4410,10 +4725,6 @@
                     },
                     "dueDate": {
                         "format": "date-time",
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "dteNumber": {
                         "type": "string",
                         "nullable": true
                     },
@@ -4452,13 +4763,14 @@
                 },
                 "required": [
                     "purchaseOrderID",
+                    "tenantID",
                     "folio",
                     "store",
                     "paymentStatus",
+                    "status",
                     "isThirdParty",
                     "issueDate",
                     "dueDate",
-                    "dteNumber",
                     "totalProducts",
                     "subtotal",
                     "discount",
@@ -4474,6 +4786,9 @@
                 "type": "object",
                 "properties": {
                     "purchaseOrderItemID": {
+                        "type": "string"
+                    },
+                    "tenantID": {
                         "type": "string"
                     },
                     "purchaseOrder": {
@@ -4505,6 +4820,7 @@
                 },
                 "required": [
                     "purchaseOrderItemID",
+                    "tenantID",
                     "purchaseOrder",
                     "variation",
                     "unitPrice",
@@ -4519,19 +4835,18 @@
                 "type": "object",
                 "properties": {
                     "paymentStatus": {
+                        "enum": [
+                            "Pagado",
+                            "Pendiente",
+                            "Anulado"
+                        ],
                         "type": "string",
-                        "description": "Estado del pago de la OC",
-                        "enum": ["Pagado", "Pendiente", "Anulado"]
+                        "description": "Estado del pago de la OC"
                     },
                     "dueDate": {
                         "type": "string",
                         "description": "Fecha de vencimiento",
                         "example": "2025-11-30"
-                    },
-                    "dteNumber": {
-                        "type": "string",
-                        "description": "Número de DTE",
-                        "example": "112233"
                     },
                     "discount": {
                         "type": "number",
@@ -4560,12 +4875,19 @@
                 "type": "object",
                 "properties": {
                     "status": {
+                        "enum": [
+                            "Pendiente",
+                            "Enviado",
+                            "Aceptado",
+                            "Rechazado"
+                        ],
                         "type": "string",
-                        "enum": ["Pagado", "Pendiente", "Anulado"],
-                        "description": "Nuevo estado de la orden de compra"
+                        "description": "Nuevo estado comercial de la orden de compra"
                     }
                 },
-                "required": ["status"]
+                "required": [
+                    "status"
+                ]
             },
             "VerifyItemDto": {
                 "type": "object",
@@ -4588,7 +4910,10 @@
                         "example": 37000
                     }
                 },
-                "required": ["variationID", "quantityReceived"]
+                "required": [
+                    "variationID",
+                    "quantityReceived"
+                ]
             },
             "VerifyPurchaseOrderDto": {
                 "type": "object",
@@ -4601,7 +4926,9 @@
                         }
                     }
                 },
-                "required": ["items"]
+                "required": [
+                    "items"
+                ]
             },
             "CreateExpenseDto": {
                 "type": "object",
@@ -4623,7 +4950,11 @@
                         "example": 1500.5
                     },
                     "type": {
-                        "enum": ["financial", "operational", "administrative"],
+                        "enum": [
+                            "financial",
+                            "operational",
+                            "administrative"
+                        ],
                         "type": "string",
                         "description": "Tipo de gasto",
                         "example": "administrative"
@@ -4635,13 +4966,23 @@
                         "example": "123e4567-e89b-12d3-a456-426614174000"
                     }
                 },
-                "required": ["name", "deductibleDate", "amount", "type", "storeID"]
+                "required": [
+                    "name",
+                    "deductibleDate",
+                    "amount",
+                    "type",
+                    "storeID"
+                ]
             },
             "ExpenseTypeSummaryDto": {
                 "type": "object",
                 "properties": {
                     "type": {
-                        "enum": ["financial", "operational", "administrative"],
+                        "enum": [
+                            "financial",
+                            "operational",
+                            "administrative"
+                        ],
                         "type": "string",
                         "description": "Tipo de gasto",
                         "example": "administrative"
@@ -4652,7 +4993,10 @@
                         "example": 35000
                     }
                 },
-                "required": ["type", "total"]
+                "required": [
+                    "type",
+                    "total"
+                ]
             },
             "ExpenseMonthlySummaryMonthDto": {
                 "type": "object",
@@ -4680,7 +5024,12 @@
                         }
                     }
                 },
-                "required": ["month", "label", "total", "byType"]
+                "required": [
+                    "month",
+                    "label",
+                    "total",
+                    "byType"
+                ]
             },
             "ExpenseMonthlySummaryTotalsDto": {
                 "type": "object",
@@ -4698,7 +5047,10 @@
                         }
                     }
                 },
-                "required": ["total", "byType"]
+                "required": [
+                    "total",
+                    "byType"
+                ]
             },
             "ExpenseSummaryDto": {
                 "type": "object",
@@ -4724,7 +5076,11 @@
                         ]
                     }
                 },
-                "required": ["year", "months", "totals"]
+                "required": [
+                    "year",
+                    "months",
+                    "totals"
+                ]
             },
             "UpdateExpenseDto": {
                 "type": "object",
@@ -4746,7 +5102,11 @@
                         "example": 1500.5
                     },
                     "type": {
-                        "enum": ["financial", "operational", "administrative"],
+                        "enum": [
+                            "financial",
+                            "operational",
+                            "administrative"
+                        ],
                         "type": "string",
                         "description": "Tipo de gasto",
                         "example": "administrative"
@@ -4785,7 +5145,13 @@
                         "example": 100
                     },
                     "reason": {
-                        "enum": ["SALE", "PURCHASE", "ADJUSTMENT", "TRANSFER_IN", "TRANSFER_OUT"],
+                        "enum": [
+                            "SALE",
+                            "PURCHASE",
+                            "ADJUSTMENT",
+                            "TRANSFER_IN",
+                            "TRANSFER_OUT"
+                        ],
                         "type": "string",
                         "description": "Motivo del movimiento",
                         "example": "ADJUSTMENT"
@@ -4796,45 +5162,11 @@
                         "example": "REF-12345"
                     }
                 },
-                "required": ["storeID", "variationID", "reason"]
-            },
-            "InventoryMovement": {
-                "type": "object",
-                "properties": {
-                    "movementID": {
-                        "type": "string",
-                        "description": "ID único del movimiento",
-                        "example": "550e8400-e29b-41d4-a716-446655440000"
-                    },
-                    "delta": {
-                        "type": "number",
-                        "description": "Cambio neto en el stock (positivo para entradas, negativo para salidas)",
-                        "example": -5
-                    },
-                    "reason": {
-                        "enum": ["SALE", "PURCHASE", "ADJUSTMENT", "TRANSFER_IN", "TRANSFER_OUT"],
-                        "type": "string",
-                        "description": "Motivo del movimiento de inventario",
-                        "example": "SALE"
-                    },
-                    "referenceID": {
-                        "type": "string",
-                        "description": "ID de referencia externa (ID de venta, ID de transferencia, etc.)",
-                        "example": "SALE-99123"
-                    },
-                    "createdAt": {
-                        "format": "date-time",
-                        "type": "string",
-                        "description": "Fecha y hora del movimiento"
-                    },
-                    "store": {
-                        "$ref": "#/components/schemas/Store"
-                    },
-                    "variation": {
-                        "$ref": "#/components/schemas/ProductVariation"
-                    }
-                },
-                "required": ["movementID", "delta", "reason", "createdAt", "store", "variation"]
+                "required": [
+                    "storeID",
+                    "variationID",
+                    "reason"
+                ]
             },
             "CreateStoreTransferDto": {
                 "type": "object",
@@ -4852,84 +5184,10 @@
                         "example": "660f9501-f30c-52e5-b827-557766551111"
                     }
                 },
-                "required": ["originStoreID", "destinationStoreID"]
-            },
-            "StoreTransfer": {
-                "type": "object",
-                "properties": {
-                    "transferID": {
-                        "type": "string",
-                        "description": "ID de la transferencia",
-                        "example": "550e8400-e29b-41d4-a716-446655440000"
-                    },
-                    "status": {
-                        "enum": ["PENDING", "COMPLETED", "CANCELLED"],
-                        "type": "string",
-                        "description": "Estado actual de la transferencia",
-                        "example": "PENDING"
-                    },
-                    "items": {
-                        "description": "Lista de productos incluidos en la transferencia",
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/StoreTransferItem"
-                        }
-                    },
-                    "createdAt": {
-                        "format": "date-time",
-                        "type": "string",
-                        "description": "Fecha de creación del registro"
-                    },
-                    "updatedAt": {
-                        "format": "date-time",
-                        "type": "string",
-                        "description": "Fecha de última modificación"
-                    },
-                    "completedAt": {
-                        "format": "date-time",
-                        "type": "string",
-                        "description": "Fecha y hora en que se completó la transferencia",
-                        "nullable": true
-                    },
-                    "originStore": {
-                        "$ref": "#/components/schemas/Store"
-                    },
-                    "destinationStore": {
-                        "$ref": "#/components/schemas/Store"
-                    }
-                },
                 "required": [
-                    "transferID",
-                    "status",
-                    "items",
-                    "createdAt",
-                    "updatedAt",
-                    "originStore",
-                    "destinationStore"
+                    "originStoreID",
+                    "destinationStoreID"
                 ]
-            },
-            "StoreTransferItem": {
-                "type": "object",
-                "properties": {
-                    "transferItemID": {
-                        "type": "string",
-                        "description": "ID del item en la transferencia",
-                        "example": "550e8400-e29b-41d4-a716-446655440000"
-                    },
-                    "quantity": {
-                        "type": "number",
-                        "description": "Cantidad de unidades transferidas",
-                        "example": 10,
-                        "minimum": 1
-                    },
-                    "transfer": {
-                        "$ref": "#/components/schemas/StoreTransfer"
-                    },
-                    "variation": {
-                        "$ref": "#/components/schemas/ProductVariation"
-                    }
-                },
-                "required": ["transferItemID", "quantity", "transfer", "variation"]
             },
             "AddTransferItemDto": {
                 "type": "object",
@@ -4947,7 +5205,10 @@
                         "example": 10
                     }
                 },
-                "required": ["variationID", "quantity"]
+                "required": [
+                    "variationID",
+                    "quantity"
+                ]
             },
             "CreateStoreMonthlyTargetDto": {
                 "type": "object",
@@ -4970,7 +5231,11 @@
                         "example": 25000000
                     }
                 },
-                "required": ["storeID", "period", "targetAmount"]
+                "required": [
+                    "storeID",
+                    "period",
+                    "targetAmount"
+                ]
             },
             "UpsertStoreMonthlyTargetDto": {
                 "type": "object",
@@ -4987,7 +5252,9 @@
                         "example": 26000000
                     }
                 },
-                "required": ["targetAmount"]
+                "required": [
+                    "targetAmount"
+                ]
             },
             "UpdateStoreMonthlyTargetDto": {
                 "type": "object",
@@ -4999,6 +5266,422 @@
                         "example": 26000000
                     }
                 }
+            },
+            "DteIdDocDto": {
+                "type": "object",
+                "properties": {
+                    "TipoDTE": {
+                        "type": "number",
+                        "description": "Tipo de DTE",
+                        "example": 33
+                    },
+                    "Folio": {
+                        "type": "number",
+                        "description": "Folio del documento",
+                        "example": 26005
+                    },
+                    "FchEmis": {
+                        "type": "string",
+                        "description": "Fecha de emisión",
+                        "example": "2025-03-23"
+                    },
+                    "TpoTranCompra": {
+                        "type": "string",
+                        "description": "Tipo de transacción compra",
+                        "example": "1"
+                    },
+                    "TpoTranVenta": {
+                        "type": "string",
+                        "description": "Tipo de transacción venta",
+                        "example": "1"
+                    },
+                    "FmaPago": {
+                        "type": "string",
+                        "description": "Forma de pago",
+                        "example": "2"
+                    }
+                },
+                "required": [
+                    "FchEmis"
+                ]
+            },
+            "DteEmisorDto": {
+                "type": "object",
+                "properties": {
+                    "RUTEmisor": {
+                        "type": "string",
+                        "description": "RUT del emisor",
+                        "example": "76795561-8"
+                    },
+                    "RznSoc": {
+                        "type": "string",
+                        "description": "Razón social",
+                        "example": "HAULMER SPA"
+                    },
+                    "GiroEmis": {
+                        "type": "string",
+                        "description": "Giro comercial del emisor",
+                        "example": "VENTA AL POR MENOR POR CORREO, POR INTERNET Y VIA TELEFONICA"
+                    },
+                    "Acteco": {
+                        "description": "Códigos de actividad",
+                        "example": [
+                            "479100"
+                        ],
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "DirOrigen": {
+                        "type": "string",
+                        "description": "Dirección origen",
+                        "example": "ARTURO PRAT 527 CURICO"
+                    },
+                    "CmnaOrigen": {
+                        "type": "string",
+                        "description": "Comuna de origen",
+                        "example": "Curicó"
+                    },
+                    "Telefono": {
+                        "type": "string",
+                        "description": "Teléfono",
+                        "example": "0 0"
+                    },
+                    "CdgSIISucur": {
+                        "type": "string",
+                        "description": "Código sucursal SII",
+                        "example": "81303347"
+                    }
+                },
+                "required": [
+                    "RUTEmisor",
+                    "RznSoc"
+                ]
+            },
+            "DteReceptorDto": {
+                "type": "object",
+                "properties": {
+                    "RUTRecep": {
+                        "type": "string",
+                        "description": "RUT del receptor",
+                        "example": "76430498-5"
+                    },
+                    "RznSocRecep": {
+                        "type": "string",
+                        "description": "Razón social receptor",
+                        "example": "HOSTY SPA"
+                    },
+                    "GiroRecep": {
+                        "type": "string",
+                        "description": "Giro receptor",
+                        "example": "ACTIVIDADES DE CONSULTORIA DE INFORMATICA"
+                    },
+                    "DirRecep": {
+                        "type": "string",
+                        "description": "Dirección receptor",
+                        "example": "ARTURO PRAT 527 3 piso OF 1"
+                    },
+                    "CmnaRecep": {
+                        "type": "string",
+                        "description": "Comuna receptor",
+                        "example": "Curicó"
+                    }
+                },
+                "required": [
+                    "RUTRecep",
+                    "RznSocRecep"
+                ]
+            },
+            "DteTotalesDto": {
+                "type": "object",
+                "properties": {
+                    "MntNeto": {
+                        "type": "number",
+                        "description": "Monto neto",
+                        "example": 10600
+                    },
+                    "TasaIVA": {
+                        "type": "string",
+                        "description": "Tasa IVA",
+                        "example": "19"
+                    },
+                    "IVA": {
+                        "type": "number",
+                        "description": "IVA",
+                        "example": 2014
+                    },
+                    "MntTotal": {
+                        "type": "number",
+                        "description": "Monto total",
+                        "example": 12614
+                    },
+                    "MontoPeriodo": {
+                        "type": "number",
+                        "description": "Monto del período",
+                        "example": 12614
+                    },
+                    "VlrPagar": {
+                        "type": "number",
+                        "description": "Valor a pagar",
+                        "example": 12614
+                    }
+                }
+            },
+            "DteEncabezadoDto": {
+                "type": "object",
+                "properties": {
+                    "IdDoc": {
+                        "$ref": "#/components/schemas/DteIdDocDto"
+                    },
+                    "Emisor": {
+                        "$ref": "#/components/schemas/DteEmisorDto"
+                    },
+                    "Receptor": {
+                        "$ref": "#/components/schemas/DteReceptorDto"
+                    },
+                    "Totales": {
+                        "$ref": "#/components/schemas/DteTotalesDto"
+                    }
+                },
+                "required": [
+                    "IdDoc",
+                    "Emisor",
+                    "Receptor"
+                ]
+            },
+            "DteCodigoItemDto": {
+                "type": "object",
+                "properties": {
+                    "TpoCodigo": {
+                        "type": "string",
+                        "description": "Tipo de código",
+                        "example": "INT1"
+                    },
+                    "VlrCodigo": {
+                        "type": "string",
+                        "description": "Valor del código",
+                        "example": "101122146100"
+                    }
+                }
+            },
+            "DteDetalleItemDto": {
+                "type": "object",
+                "properties": {
+                    "NroLinDet": {
+                        "type": "number",
+                        "description": "Línea de detalle",
+                        "example": 1
+                    },
+                    "NmbItem": {
+                        "type": "string",
+                        "description": "Nombre del ítem",
+                        "example": "Cama para Perros William"
+                    },
+                    "QtyItem": {
+                        "type": "number",
+                        "description": "Cantidad",
+                        "example": 1
+                    },
+                    "PrcItem": {
+                        "type": "number",
+                        "description": "Precio unitario",
+                        "example": 39990
+                    },
+                    "MontoItem": {
+                        "type": "number",
+                        "description": "Monto del ítem",
+                        "example": 39990
+                    },
+                    "IndExe": {
+                        "type": "string",
+                        "description": "Indica exento",
+                        "example": "1"
+                    },
+                    "CdgItem": {
+                        "$ref": "#/components/schemas/DteCodigoItemDto"
+                    }
+                },
+                "required": [
+                    "NroLinDet",
+                    "NmbItem",
+                    "QtyItem"
+                ]
+            },
+            "DteDto": {
+                "type": "object",
+                "properties": {
+                    "Encabezado": {
+                        "$ref": "#/components/schemas/DteEncabezadoDto"
+                    },
+                    "Detalle": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DteDetalleItemDto"
+                        }
+                    }
+                },
+                "required": [
+                    "Encabezado",
+                    "Detalle"
+                ]
+            },
+            "DteCustomerDto": {
+                "type": "object",
+                "properties": {
+                    "fullName": {
+                        "type": "string",
+                        "description": "Nombre completo",
+                        "example": "Cliente Ejemplo"
+                    },
+                    "email": {
+                        "type": "string",
+                        "description": "Correo electrónico",
+                        "example": "cliente@correo.com"
+                    }
+                }
+            },
+            "DteExternalReferenceDto": {
+                "type": "object",
+                "properties": {
+                    "hyperlinkText": {
+                        "type": "string",
+                        "description": "Texto del enlace",
+                        "example": "Orden de Compra #7788489532"
+                    },
+                    "hyperlinkURL": {
+                        "type": "string",
+                        "description": "URL del enlace",
+                        "example": "https://www.miurl.com/orden-de-compra/334"
+                    }
+                }
+            },
+            "DteCustomizePageDto": {
+                "type": "object",
+                "properties": {
+                    "externalReference": {
+                        "$ref": "#/components/schemas/DteExternalReferenceDto"
+                    },
+                    "urlLogo": {
+                        "type": "string",
+                        "description": "URL del logo personalizado",
+                        "example": "https://www.miurl.com/logo.jpg"
+                    }
+                }
+            },
+            "DteDocumentReferenceDto": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "description": "Tipo de documento referenciado",
+                        "example": "801"
+                    },
+                    "id": {
+                        "type": "string",
+                        "description": "ID del documento referenciado",
+                        "example": "334"
+                    },
+                    "date": {
+                        "type": "string",
+                        "description": "Fecha del documento referenciado",
+                        "example": "2025-01-31"
+                    }
+                }
+            },
+            "DteSelfServiceDto": {
+                "type": "object",
+                "properties": {
+                    "issueBoleta": {
+                        "type": "boolean",
+                        "description": "Emite boleta automáticamente",
+                        "example": true
+                    },
+                    "allowFactura": {
+                        "type": "boolean",
+                        "description": "Permite convertir a factura",
+                        "example": true
+                    },
+                    "documentReference": {
+                        "$ref": "#/components/schemas/DteDocumentReferenceDto"
+                    }
+                },
+                "required": [
+                    "issueBoleta",
+                    "allowFactura"
+                ]
+            },
+            "CreateDteDocumentDto": {
+                "type": "object",
+                "properties": {
+                    "purchaseOrderID": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ID de la orden de compra aceptada que origina el DTE",
+                        "example": "123e4567-e89b-12d3-a456-426614174000"
+                    },
+                    "response": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "TOKEN",
+                                "FOLIO",
+                                "STATUS",
+                                "PDF",
+                                "XML",
+                                "SELF_SERVICE"
+                            ]
+                        },
+                        "description": "Campos de salida que solicita el cliente",
+                        "example": [
+                            "FOLIO",
+                            "SELF_SERVICE"
+                        ]
+                    },
+                    "dte": {
+                        "$ref": "#/components/schemas/DteDto"
+                    },
+                    "customer": {
+                        "$ref": "#/components/schemas/DteCustomerDto"
+                    },
+                    "customizePage": {
+                        "$ref": "#/components/schemas/DteCustomizePageDto"
+                    },
+                    "selfService": {
+                        "$ref": "#/components/schemas/DteSelfServiceDto"
+                    }
+                },
+                "required": [
+                    "response",
+                    "dte",
+                    "selfService"
+                ]
+            },
+            "DteDocumentResponseDto": {
+                "type": "object",
+                "properties": {
+                    "TOKEN": {
+                        "type": "string",
+                        "description": "Token del documento generado",
+                        "example": "b822a58da11856bb09423a0a6fba59f5e089bd738e01d3ea670c45d4686f66d6"
+                    },
+                    "FOLIO": {
+                        "type": "number",
+                        "description": "Folio del documento",
+                        "example": 3130
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Estado de emisión del documento",
+                        "example": "EMITIDO"
+                    }
+                },
+                "required": [
+                    "TOKEN",
+                    "FOLIO",
+                    "status"
+                ]
             }
         }
     },
