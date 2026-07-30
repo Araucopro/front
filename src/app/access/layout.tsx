@@ -2,7 +2,9 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { AUTH_COOKIE_NAME, AUTH_SESSION_COOKIE_NAME, AUTH_SESSION_TYPES } from "@/lib/auth-session"
 
-export default async function Home() {
+export const dynamic = "force-dynamic"
+
+export default async function AccessLayout({ children }: { children: React.ReactNode }) {
     const cookieStore = await cookies()
     const authToken = cookieStore.get(AUTH_COOKIE_NAME)?.value
     const sessionType = cookieStore.get(AUTH_SESSION_COOKIE_NAME)?.value
@@ -11,5 +13,9 @@ export default async function Home() {
         redirect("/login")
     }
 
-    redirect(sessionType === AUTH_SESSION_TYPES.MASTER ? "/access" : "/home")
+    if (sessionType !== AUTH_SESSION_TYPES.MASTER) {
+        redirect("/home")
+    }
+
+    return children
 }

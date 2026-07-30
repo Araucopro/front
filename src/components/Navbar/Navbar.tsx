@@ -2,6 +2,7 @@
 import { useTienda } from "@/stores/tienda.store"
 import { logout as logoutSession } from "@/actions/auth/authActions"
 import { useAuth } from "@/stores/user.store"
+import { useMasterAuth } from "@/stores/master.store"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
@@ -10,12 +11,14 @@ import { FaChevronDown, FaSignOutAlt, FaUser } from "react-icons/fa"
 export default function Navbar() {
     const router = useRouter()
     const { user, logout } = useAuth()
+    const clearMasterUser = useMasterAuth((state) => state.clearMasterUser)
     const { storeSelected } = useTienda()
     const [isMenuOpen, setIsMenuOpen] = useState(false)
 
     const handleLogout = async () => {
         await logoutSession()
         logout()
+        clearMasterUser()
         router.replace("/login")
         setIsMenuOpen(false)
     }

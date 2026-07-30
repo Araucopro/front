@@ -13,8 +13,12 @@ import type {
     IProvisionTenant,
     IProvisionTenantResponse,
     ITenant,
+    ITenantExportResponse,
     ITenantListParams,
     ITenantListResponse,
+    ITenantMetrics,
+    IUpdateTenantSubscription,
+    TenantStatus,
 } from "@/interfaces/master/ITenant"
 
 async function assertMasterSession() {
@@ -61,6 +65,52 @@ export async function provisionTenant(
         {
             method: "POST",
             body: JSON.stringify(payload),
+        },
+    )
+}
+
+export async function getTenantMetrics(tenantID: string): Promise<ITenantMetrics> {
+    await assertMasterSession()
+
+    return fetcher<ITenantMetrics>(
+        `${API_URL}/master/tenants/${encodeURIComponent(tenantID)}/metrics`,
+    )
+}
+
+export async function updateTenantSubscription(
+    tenantID: string,
+    payload: IUpdateTenantSubscription,
+): Promise<ITenant> {
+    await assertMasterSession()
+
+    return fetcher<ITenant>(
+        `${API_URL}/master/tenants/${encodeURIComponent(tenantID)}/subscription`,
+        {
+            method: "PATCH",
+            body: JSON.stringify(payload),
+        },
+    )
+}
+
+export async function exportTenantData(tenantID: string): Promise<ITenantExportResponse> {
+    await assertMasterSession()
+
+    return fetcher<ITenantExportResponse>(
+        `${API_URL}/master/tenants/${encodeURIComponent(tenantID)}/export`,
+    )
+}
+
+export async function updateTenantStatus(
+    tenantID: string,
+    status: TenantStatus,
+): Promise<ITenant> {
+    await assertMasterSession()
+
+    return fetcher<ITenant>(
+        `${API_URL}/master/tenants/${encodeURIComponent(tenantID)}/status`,
+        {
+            method: "PATCH",
+            body: JSON.stringify({ status }),
         },
     )
 }

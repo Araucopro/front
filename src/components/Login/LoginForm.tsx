@@ -46,11 +46,11 @@ export default function LoginForm() {
                     const masterData = await loginMaster(email, password)
                     clearTenantSession()
                     setMasterUser(masterData.masterUser)
-                    setLoadingMessage("Preparando panel master...")
-                    router.prefetch("/master")
+                    setLoadingMessage("Preparando tus accesos...")
+                    router.prefetch("/access")
                     navigationStarted = true
                     toast.success("Sesión master iniciada correctamente")
-                    router.push("/master")
+                    router.push("/access")
                     return
                 } catch {
                     throw tenantLoginError

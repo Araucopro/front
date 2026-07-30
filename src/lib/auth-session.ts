@@ -1,5 +1,7 @@
 export const AUTH_COOKIE_NAME = "auth_token"
 export const AUTH_SESSION_COOKIE_NAME = "auth_session_type"
+export const MASTER_AUTH_COOKIE_NAME = "master_auth_token"
+export const MASTER_IMPERSONATION_COOKIE_NAME = "master_impersonation"
 
 export const AUTH_COOKIE_MAX_AGE = 60 * 60 * 24
 

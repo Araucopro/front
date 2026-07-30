@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { ChevronLeft, ChevronRight, Loader2, RefreshCw } from "lucide-react"
 import { getTenants } from "@/actions/master/tenantActions"
+import TenantManagementDialog from "@/components/Master/TenantManagementDialog"
 import TenantProvisioningDialog from "@/components/Master/TenantProvisioningDialog"
 import type { ITenant, ITenantListResponse, TenantStatus } from "@/interfaces/master/ITenant"
 import { toast } from "sonner"
@@ -57,6 +58,8 @@ export default function TenantManagement({
     const [isLoading, setIsLoading] = useState(false)
     const [isProvisioningOpen, setIsProvisioningOpen] = useState(false)
     const [selectedTenant, setSelectedTenant] = useState<TenantReference | null>(null)
+    const [isManagementOpen, setIsManagementOpen] = useState(false)
+    const [managedTenant, setManagedTenant] = useState<ITenant | null>(null)
 
     const currentPage = Math.floor(tenants.offset / tenants.limit) + 1
     const totalPages = Math.max(1, Math.ceil(tenants.total / tenants.limit))
@@ -85,6 +88,11 @@ export default function TenantManagement({
     const resumeProvisioning = (tenant: ITenant) => {
         setSelectedTenant({ tenantID: tenant.tenantID, name: tenant.name })
         setIsProvisioningOpen(true)
+    }
+
+    const manageTenant = (tenant: ITenant) => {
+        setManagedTenant(tenant)
+        setIsManagementOpen(true)
     }
 
     return (
@@ -185,16 +193,23 @@ export default function TenantManagement({
                                             </span>
                                         </td>
                                         <td className="px-5 py-3.5">
-                                            {tenant.status === "PROVISIONING" ? (
-                                                <button
-                                                    onClick={() => resumeProvisioning(tenant)}
-                                                    className="whitespace-nowrap rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-[9px] font-bold text-amber-800 hover:bg-amber-100"
-                                                >
-                                                    Continuar provisión
-                                                </button>
-                                            ) : (
-                                                <span className="text-[10px] text-[#a1aab6]">—</span>
-                                            )}
+                                            <div className="flex items-center gap-2">
+                                                {tenant.status === "PROVISIONING" ? (
+                                                    <button
+                                                        onClick={() => resumeProvisioning(tenant)}
+                                                        className="whitespace-nowrap rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-[9px] font-bold text-amber-800 hover:bg-amber-100"
+                                                    >
+                                                        Continuar provisión
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => manageTenant(tenant)}
+                                                        className="whitespace-nowrap rounded-md border border-[#b9c7d3] bg-white px-3 py-1.5 text-[9px] font-bold text-[#294157] hover:bg-[#f5f7f8]"
+                                                    >
+                                                        Gestionar
+                                                    </button>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -233,6 +248,13 @@ export default function TenantManagement({
                 tenant={selectedTenant}
                 onOpenChange={setIsProvisioningOpen}
                 onTenantsChanged={() => loadTenants(0)}
+            />
+
+            <TenantManagementDialog
+                open={isManagementOpen}
+                tenant={managedTenant}
+                onOpenChange={setIsManagementOpen}
+                onTenantChanged={() => loadTenants(tenants.offset)}
             />
         </section>
     )

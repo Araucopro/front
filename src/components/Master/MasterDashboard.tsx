@@ -102,7 +102,15 @@ const monthlySales = [
     { month: "Dic 26", sales: "$2.6M", income: "$320.014", height: 94 },
 ]
 
-function MasterSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => void }) {
+function MasterSidebar({
+    mobileOpen,
+    onClose,
+    onAccess,
+}: {
+    mobileOpen: boolean
+    onClose: () => void
+    onAccess: () => void
+}) {
     const [isLightMode, setIsLightMode] = useState(true)
 
     const handleMockNavigation = (label: string) => {
@@ -122,7 +130,10 @@ function MasterSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: 
                 }`}
             >
                 <div className="px-2 pt-4">
-                    <button className="flex w-full items-center justify-between rounded-md bg-[#20364c] px-2.5 py-2 text-[9px] uppercase tracking-[0.18em] text-white">
+                    <button
+                        onClick={onAccess}
+                        className="flex w-full items-center justify-between rounded-md bg-[#20364c] px-2.5 py-2 text-[9px] uppercase tracking-[0.18em] text-white"
+                    >
                         Mis accesos
                         <FaChevronDown className="h-2 w-2" />
                     </button>
@@ -234,7 +245,11 @@ export default function MasterDashboard({ initialTenants, initialError }: Master
                 </div>
             </header>
 
-            <MasterSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+            <MasterSidebar
+                mobileOpen={mobileOpen}
+                onClose={() => setMobileOpen(false)}
+                onAccess={() => router.push("/access")}
+            />
 
             <main className="min-h-svh px-4 pb-8 pt-[70px] lg:ml-[186px] lg:px-7">
                 <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

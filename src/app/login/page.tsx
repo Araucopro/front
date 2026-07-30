@@ -9,7 +9,7 @@ export default async function LoginPage() {
     const sessionType = cookieStore.get(AUTH_SESSION_COOKIE_NAME)?.value
 
     if (authToken) {
-        redirect(sessionType === AUTH_SESSION_TYPES.MASTER ? "/master" : "/home")
+        redirect(sessionType === AUTH_SESSION_TYPES.MASTER ? "/access" : "/home")
     }
 
     return <LoginScreen />
