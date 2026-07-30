@@ -3,8 +3,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { useTienda } from "@/stores/tienda.store"
 import { getSales } from "@/actions/sales/getSales"
-import { getWooOrdersForRange } from "@/actions/woocommerce/getWooOrder"
-import { mapWooOrderToSale } from "@/utils/mappers/woocommerceToSale"
 import { getResume } from "@/actions/totals/getResume"
 import { getMetaMensual } from "@/actions/totals/getMetaMensual"
 import { getAllProducts } from "@/actions/products/getAllProducts"
@@ -67,7 +65,7 @@ function classifyChannel(sale: ISaleResponse): "web" | "mayorista" | "presencial
     const role = ((sale.Store as any)?.role ?? "").toLowerCase()
     const sid = (sale.storeID ?? "").toLowerCase()
 
-    // Canal Web: solo órdenes WooCommerce
+    // Canal web informado por las ventas del backend.
     if (sid === "web" || role === "web") return "web"
 
     // Canal Mayorista: tiendas propias (type === "central")
@@ -234,22 +232,16 @@ export default function ControlDashboardClient() {
         setLoading(true)
         try {
             const todayStr = getChileYYYYMMDD(new Date())
-            const now = new Date()
-            const yearStart = new Date(now.getFullYear() - 1, now.getMonth() + 1, 1, 0, 0, 0, 0)
-            const yearEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
-
-            const [resumeData, salesData, productsData, categoriesData, metaData, wooOrdersData] = await Promise.all([
+            const [resumeData, salesData, productsData, categoriesData, metaData] = await Promise.all([
                 getResume(storeSelected.storeID, todayStr),
                 getSales(), // Sin filtro de tienda para análisis multi-canal
                 getAllProducts(),
                 getAllCategories(),
                 getMetaMensual(storeSelected.storeID),
-                getWooOrdersForRange(yearStart, yearEnd),
             ])
-            const wooSales = Array.isArray(wooOrdersData) ? wooOrdersData.map(mapWooOrderToSale) : []
             const dbSales = Array.isArray(salesData) ? salesData : []
             setResume(resumeData ?? EMPTY_RESUME)
-            setAllSales([...dbSales, ...wooSales])
+            setAllSales(dbSales)
             setProducts(Array.isArray(productsData) ? productsData : [])
             setCategories(Array.isArray(categoriesData) ? categoriesData : [])
             setGoalTotal(typeof metaData === "number" ? metaData : 0)

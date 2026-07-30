@@ -104,12 +104,7 @@ const SalesTable: React.FC<Props> = ({ items }) => {
 
     const urlRedirectToSingleSale = (item: TableItem) => {
         if ("saleID" in item) {
-            // Es venta
-            if (item.storeID === "web") {
-                push(`/home/ventaweb/${item.saleID}?storeID=${item.storeID}`)
-            } else {
-                push(`/home/${item.saleID}?storeID=${item.storeID}`)
-            }
+            push(`/home/${item.saleID}?storeID=${item.storeID}`)
         } else {
             // Es orden de compra (IPurchaseOrder)
             push(`/home/order/${item.purchaseOrderID}?storeID=${item.storeID}`)

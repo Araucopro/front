@@ -4,13 +4,11 @@ import { getAllPurchaseOrders } from "@/actions/purchase-orders/getAllPurchaseOr
 import { getSales } from "@/actions/sales/getSales"
 import { getAllStores } from "@/actions/stores/getAllStores"
 import { getResume } from "@/actions/totals/getResume"
-import { getWooCommerceOrders } from "@/actions/woocommerce/getWooOrder"
 import { IStore } from "@/interfaces/stores/IStore"
 import { IPurchaseOrder } from "@/interfaces/orders/IPurchaseOrder"
 import { IResume } from "@/interfaces/sales/ISalesResume"
 import { ISaleResponse } from "@/interfaces/sales/ISale"
 import { getChileDateMeta, getChileYYYYMMDD, isYYYYMMDD, toChileMiddayUTC } from "@/utils/chile-date"
-import { mapWooOrderToSale } from "@/utils/mappers/woocommerceToSale"
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -114,7 +112,6 @@ export const buildHomeViewModel = async (rawStoreID: string, rawDate: string): P
     // evita una cascada de red en la primera carga de Caja.
     const storesPromise = getAllStores()
     const salesPromise = getSales(apiSalesStoreID || "")
-    const wooOrdersPromise = getWooCommerceOrders(dateRef)
     const allOrdersPromise = getAllPurchaseOrders()
     const allProductsPromise = getProductsForSale(storeID)
 
@@ -126,22 +123,18 @@ export const buildHomeViewModel = async (rawStoreID: string, rawDate: string): P
     const storeIndex = buildStoreIndex(stores)
     const chartStoreID = specialFilter ? (stores[0]?.storeID ?? storeID) : storeID
 
-    const [salesSource, wooOrders, resume, allOrders, allProducts] = await Promise.all([
+    const [salesSource, resume, allOrders, allProducts] = await Promise.all([
         salesPromise,
-        wooOrdersPromise,
         getResume(chartStoreID || "", date),
         allOrdersPromise,
         allProductsPromise,
     ])
 
-    const wooSales = wooOrders.map(mapWooOrderToSale)
     const tableSales = filterSalesByScope(salesSource, storeID, storeIndex)
     const scopedResumeSales = filterSalesForResume(tableSales, date)
-    const esCentral = storeID === "all" || storeID === "propias" || storeIndex.get(storeID)?.isCentralStore === true
-    const filteredWooSales = esCentral ? wooSales : []
-    const allSalesForResume = [...scopedResumeSales, ...filteredWooSales]
+    const allSalesForResume = scopedResumeSales
     const purchaseOrders = filterOrdersByScope(allOrders, storeID, storeIndex)
-    const items = sortByCreatedAtDesc([...tableSales, ...filteredWooSales, ...purchaseOrders])
+    const items = sortByCreatedAtDesc([...tableSales, ...purchaseOrders])
 
     return {
         stores,

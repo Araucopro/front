@@ -20,6 +20,13 @@ import type { IconType } from "react-icons"
 import { logout as logoutSession } from "@/actions/auth/authActions"
 import { useMasterAuth } from "@/stores/master.store"
 import { toast } from "sonner"
+import TenantManagement from "@/components/Master/TenantManagement"
+import type { ITenantListResponse } from "@/interfaces/master/ITenant"
+
+interface MasterDashboardProps {
+    initialTenants?: ITenantListResponse
+    initialError?: string
+}
 
 interface MasterNavigationGroup {
     label: string
@@ -55,9 +62,9 @@ const navigationGroups: MasterNavigationGroup[] = [
 
 const metrics = [
     {
-        label: "Negocios activos",
+        label: "Negocios registrados",
         value: "6",
-        detail: "tenants en producción",
+        detail: "tenants en la plataforma",
         valueClassName: "text-[#122238]",
     },
     {
@@ -93,63 +100,6 @@ const monthlySales = [
     { month: "Oct 26", sales: "$2.3M", income: "$279.501", height: 82 },
     { month: "Nov 26", sales: "$2.5M", income: "$307.014", height: 90 },
     { month: "Dic 26", sales: "$2.6M", income: "$320.014", height: 94 },
-]
-
-const businesses = [
-    {
-        name: "Desi Avocco",
-        rut: "76.543.210-K",
-        industry: "retail",
-        representative: "acontreras@desi.cl",
-        users: 6,
-        sales: "$62.000.000",
-        commission: "$512.380",
-    },
-    {
-        name: "Ferretería El Maestro",
-        rut: "76.234.567-3",
-        industry: "🔨 Ferretería",
-        representative: "jmartinez@elmaestro.cl",
-        users: 4,
-        sales: "$38.000.000",
-        commission: "$303.240",
-    },
-    {
-        name: "Super Los Robles",
-        rut: "76.891.234-1",
-        industry: "🛒 Supermercado",
-        representative: "clopez@losrobles.cl",
-        users: 5,
-        sales: "$70.000.000",
-        commission: "$582.220",
-    },
-    {
-        name: "Minimarket Don Pepe",
-        rut: "76.112.334-5",
-        industry: "🛒 Supermercado",
-        representative: "donpepe@minimarket.cl",
-        users: 3,
-        sales: "$63.000.000",
-        commission: "$511.780",
-    },
-    {
-        name: "Supermercado San Diego",
-        rut: "76.321.890-2",
-        industry: "🛒 Supermercado",
-        representative: "acontreras@araucopro.com",
-        users: 4,
-        sales: "$53.000.000",
-        commission: "$437.610",
-    },
-    {
-        name: "Ferretería Geobosques",
-        rut: "76.456.123-7",
-        industry: "🔨 Ferretería",
-        representative: "acontreras@araucopro.com",
-        users: 3,
-        sales: "$34.000.000",
-        commission: "$271.170",
-    },
 ]
 
 function MasterSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => void }) {
@@ -226,11 +176,12 @@ function MasterSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: 
     )
 }
 
-export default function MasterDashboard() {
+export default function MasterDashboard({ initialTenants, initialError }: MasterDashboardProps) {
     const router = useRouter()
     const { masterUser, clearMasterUser } = useMasterAuth()
     const [mobileOpen, setMobileOpen] = useState(false)
     const [isLoggingOut, setIsLoggingOut] = useState(false)
+    const [tenantTotal, setTenantTotal] = useState<number | null>(initialTenants?.total ?? null)
 
     const handleLogout = async () => {
         if (isLoggingOut) return
@@ -287,7 +238,7 @@ export default function MasterDashboard() {
 
             <main className="min-h-svh px-4 pb-8 pt-[70px] lg:ml-[186px] lg:px-7">
                 <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    {metrics.map((metric) => (
+                    {metrics.map((metric, index) => (
                         <article
                             key={metric.label}
                             className="min-h-[122px] rounded-[13px] border border-[#dfe2e7] bg-white px-5 py-5 shadow-[0_1px_2px_rgba(16,36,56,0.02)]"
@@ -296,7 +247,7 @@ export default function MasterDashboard() {
                                 {metric.label}
                             </p>
                             <p className={`mt-3 text-[26px] font-extrabold leading-none tracking-tight ${metric.valueClassName}`}>
-                                {metric.value}
+                                {index === 0 ? tenantTotal ?? "—" : metric.value}
                             </p>
                             <p className="mt-3 text-[10px] text-[#697587]">{metric.detail}</p>
                         </article>
@@ -375,60 +326,11 @@ export default function MasterDashboard() {
                     </div>
                 </section>
 
-                <section className="mt-6">
-                    <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                        <h2 className="text-sm font-extrabold">Negocios registrados</h2>
-                        <button
-                            onClick={() => toast.info("El alta de negocios se implementará en una siguiente etapa")}
-                            className="rounded-[10px] bg-[#0e5c3b] px-5 py-3 text-xs font-bold text-white shadow-sm hover:bg-[#0b4e32]"
-                        >
-                            + Dar de alta nuevo negocio
-                        </button>
-                    </div>
-
-                    <div className="overflow-hidden rounded-[13px] border border-[#dfe2e7] bg-white">
-                        <div className="overflow-x-auto">
-                            <table className="w-full min-w-[970px] border-collapse text-left">
-                                <thead>
-                                    <tr className="border-b border-[#dfe2e7] bg-[#fbfbfc]">
-                                        {["Negocio", "RUT", "Rubro", "Representante", "Usuarios", "Ventas / mes", "Comisión", "Estado"].map(
-                                            (heading) => (
-                                                <th
-                                                    key={heading}
-                                                    className="px-5 py-3.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-[#5f6b7c]"
-                                                >
-                                                    {heading}
-                                                </th>
-                                            ),
-                                        )}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {businesses.map((business) => (
-                                        <tr key={business.rut} className="border-b border-[#eceef1] last:border-0">
-                                            <td className="px-5 py-3.5 text-[11px] font-extrabold text-[#122238]">{business.name}</td>
-                                            <td className="px-5 py-3.5 font-mono text-[10px] text-[#536174]">{business.rut}</td>
-                                            <td className="px-5 py-3.5 text-[10px] text-[#39485b]">{business.industry}</td>
-                                            <td className="px-5 py-3.5 font-mono text-[10px] text-[#536174]">
-                                                {business.representative}
-                                            </td>
-                                            <td className="px-5 py-3.5 text-center text-[11px] font-bold">{business.users}</td>
-                                            <td className="px-5 py-3.5 font-mono text-[11px] font-bold text-[#096234]">{business.sales}</td>
-                                            <td className="px-5 py-3.5 font-mono text-[11px] font-bold text-[#c24e00]">
-                                                {business.commission}
-                                            </td>
-                                            <td className="px-5 py-3.5">
-                                                <span className="rounded-full bg-[#ccf8e4] px-3 py-1 text-[9px] font-semibold text-[#08744a]">
-                                                    Activo
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
+                <TenantManagement
+                    initialTenants={initialTenants}
+                    initialError={initialError}
+                    onTotalChange={setTenantTotal}
+                />
             </main>
 
             {mobileOpen && (
