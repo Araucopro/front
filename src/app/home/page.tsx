@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation"
 import { checkStatus } from "@/actions/auth/authActions"
 import { getUserStores } from "@/actions/users/getUserStores"
 import HomeDashboard from "../../components/Home/HomeDashboard"
@@ -23,7 +22,15 @@ export default async function HomePage({ searchParams }: SearchParams) {
     const viewModel = await buildHomeViewModel(effectiveStoreID, date)
 
     if (!viewModel) {
-        redirect("/login")
+        return (
+            <div className="mx-auto mt-12 max-w-xl rounded-xl border border-amber-200 bg-amber-50 px-6 py-8 text-center text-amber-950 shadow-sm">
+                <h2 className="text-lg font-bold">No hay una tienda disponible</h2>
+                <p className="mt-2 text-sm text-amber-800">
+                    La sesión está activa, pero no fue posible encontrar información para la tienda seleccionada.
+                    Verifica que el tenant tenga una tienda configurada o cambia de acceso desde la franja superior.
+                </p>
+            </div>
+        )
     }
 
     return (

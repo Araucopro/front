@@ -9,6 +9,7 @@ import {
     AUTH_SESSION_TYPES,
     MASTER_AUTH_COOKIE_NAME,
     MASTER_IMPERSONATION_COOKIE_NAME,
+    MASTER_PENDING_IMPERSONATION_COOKIE_NAME,
     type AuthSessionType,
 } from "@/lib/auth-session"
 import { cookies } from "next/headers"
@@ -51,6 +52,11 @@ const setSessionCookies = async (accessToken: string, sessionType: AuthSessionTy
     }
 
     cookieStore.set(MASTER_IMPERSONATION_COOKIE_NAME, "", {
+        ...cookieOptions,
+        maxAge: 0,
+        httpOnly: true,
+    })
+    cookieStore.set(MASTER_PENDING_IMPERSONATION_COOKIE_NAME, "", {
         ...cookieOptions,
         maxAge: 0,
         httpOnly: true,
@@ -113,6 +119,7 @@ export async function logout() {
     cookieStore.set(AUTH_SESSION_COOKIE_NAME, "", expiredCookieOptions)
     cookieStore.set(MASTER_AUTH_COOKIE_NAME, "", { ...expiredCookieOptions, httpOnly: true })
     cookieStore.set(MASTER_IMPERSONATION_COOKIE_NAME, "", { ...expiredCookieOptions, httpOnly: true })
+    cookieStore.set(MASTER_PENDING_IMPERSONATION_COOKIE_NAME, "", { ...expiredCookieOptions, httpOnly: true })
 
     return { ok: true }
 }

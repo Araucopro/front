@@ -3,10 +3,12 @@
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Building2, ChevronRight, Loader2, LogOut, Search, ShieldCheck, Zap } from "lucide-react"
-import { startTenantImpersonation, stopTenantImpersonation } from "@/actions/master/impersonationActions"
+import {
+    completeTenantImpersonation,
+    startTenantImpersonation,
+    stopTenantImpersonation,
+} from "@/actions/master/impersonationActions"
 import { logout as logoutSession } from "@/actions/auth/authActions"
-import { getAllStores } from "@/actions/stores/getAllStores"
-import { getAllUsers } from "@/actions/users/getAllUsers"
 import {
     Dialog,
     DialogContent,
@@ -80,10 +82,13 @@ export default function AccessSelector({ initialTenants, initialError }: AccessS
 
         try {
             setIsEntering(true)
-            await startTenantImpersonation(selectedTenant.tenantID, selectedTenant.name, reason)
+            const { stores, users } = await startTenantImpersonation(
+                selectedTenant.tenantID,
+                selectedTenant.name,
+                reason,
+            )
             impersonationStarted = true
 
-            const [stores, users] = await Promise.all([getAllStores(), getAllUsers()])
             const tenantAdmin = users.find((user) => user.role === "admin")
 
             if (!tenantAdmin) {
@@ -100,10 +105,8 @@ export default function AccessSelector({ initialTenants, initialError }: AccessS
             setStoresUser(stores)
             setStoreSelected(stores[0])
 
-            const destination = `/home?storeID=${encodeURIComponent(stores[0].storeID)}`
-            router.prefetch(destination)
             toast.success(`Ahora estás viendo ${selectedTenant.name} como administrador`)
-            router.replace(destination)
+            await completeTenantImpersonation(stores[0].storeID)
         } catch (error) {
             if (impersonationStarted) {
                 await stopTenantImpersonation().catch(() => null)
