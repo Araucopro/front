@@ -163,20 +163,20 @@ export default function Sidebar() {
                                 {!shouldShowCollapsed && (
                                     <div className="relative h-[106px] w-[160px] lg:h-[126px] lg:w-[190px]">
                                         <Image
-                                            src="/brand/betty.claro.transparent.png"
-                                            alt="BETTY Software Retail"
+                                            src="/brand/araucoPro.png"
+                                            alt="AraucoPro Software Retail"
                                             fill
                                             priority
                                             sizes="(max-width: 1024px) 160px, 190px"
-                                            className="block object-cover dark:hidden"
+                                            className="block object-contain dark:hidden"
                                         />
                                         <Image
-                                            src="/brand/betty.dark.transparent2.png"
-                                            alt="BETTY Software Retail"
+                                            src="/brand/araucoProDark.png"
+                                            alt="AraucoPro Software Retail"
                                             fill
                                             priority
                                             sizes="(max-width: 1024px) 160px, 190px"
-                                            className="hidden object-cover dark:block"
+                                            className="hidden object-contain dark:block"
                                         />
                                     </div>
                                 )}

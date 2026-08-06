@@ -112,7 +112,10 @@ export default function LoginForm() {
 
             <form onSubmit={handleSubmit} className="flex flex-col" aria-busy={isLoading}>
                 <div>
-                    <label className="mb-1.5 block text-xs font-semibold text-[#202938]" htmlFor="email">
+                    <label
+                        className="mb-1.5 block text-xs font-semibold text-[#202938] dark:text-slate-200"
+                        htmlFor="email"
+                    >
                         Correo electrónico
                     </label>
                     <Input
@@ -121,7 +124,7 @@ export default function LoginForm() {
                         value={email}
                         onChange={(event) => setEmail(event.target.value)}
                         placeholder="nombre@empresa.com"
-                        className="h-[46px] w-full rounded-[10px] border-[#dce0e5] bg-white px-4 text-[13px] text-[#171717] shadow-none transition-colors placeholder:text-[#9ca3af] focus-visible:border-[#174531] focus-visible:ring-2 focus-visible:ring-[#174531]/15 focus-visible:ring-offset-0"
+                        className="h-[46px] w-full rounded-[10px] border-[#dce0e5] bg-white px-4 text-[13px] text-[#171717] shadow-none transition-colors placeholder:text-[#9ca3af] focus-visible:border-[#174531] focus-visible:ring-2 focus-visible:ring-[#174531]/15 focus-visible:ring-offset-0 dark:border-white/10 dark:bg-[#0a1718] dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus-visible:border-lime-300 dark:focus-visible:ring-lime-300/20"
                         autoComplete="email"
                         autoFocus
                         disabled={isLoading}
@@ -130,7 +133,10 @@ export default function LoginForm() {
                 </div>
 
                 <div className="mt-7">
-                    <label className="mb-1.5 block text-xs font-semibold text-[#202938]" htmlFor="password">
+                    <label
+                        className="mb-1.5 block text-xs font-semibold text-[#202938] dark:text-slate-200"
+                        htmlFor="password"
+                    >
                         Contraseña
                     </label>
                     <Input
@@ -139,7 +145,7 @@ export default function LoginForm() {
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
                         placeholder="••••••••"
-                        className="h-[46px] w-full rounded-[10px] border-[#dce0e5] bg-white px-4 text-[13px] text-[#171717] shadow-none transition-colors placeholder:text-[#171717] focus-visible:border-[#174531] focus-visible:ring-2 focus-visible:ring-[#174531]/15 focus-visible:ring-offset-0"
+                        className="h-[46px] w-full rounded-[10px] border-[#dce0e5] bg-white px-4 text-[13px] text-[#171717] shadow-none transition-colors placeholder:text-[#171717] focus-visible:border-[#174531] focus-visible:ring-2 focus-visible:ring-[#174531]/15 focus-visible:ring-offset-0 dark:border-white/10 dark:bg-[#0a1718] dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus-visible:border-lime-300 dark:focus-visible:ring-lime-300/20"
                         autoComplete="current-password"
                         disabled={isLoading}
                         required
@@ -149,7 +155,7 @@ export default function LoginForm() {
                 <Button
                     type="submit"
                     disabled={isLoading}
-                    className="mt-5 h-[46px] rounded-[10px] bg-[#174531] text-sm font-semibold text-white shadow-none hover:bg-[#123a29] focus-visible:ring-[#174531]"
+                    className="mt-5 h-[46px] rounded-[10px] bg-[#174531] text-sm font-semibold text-white shadow-none hover:bg-[#123a29] focus-visible:ring-[#174531] dark:bg-[#4f7d3b] dark:hover:bg-[#5d9147] dark:focus-visible:ring-lime-300"
                 >
                     {isLoading ? (
                         <span className="flex items-center justify-center gap-2">
@@ -166,7 +172,7 @@ export default function LoginForm() {
                     variant="outline"
                     disabled={isLoading}
                     onClick={() => toast.info("La recuperación de contraseña estará disponible próximamente")}
-                    className="mt-2 h-[44px] rounded-[10px] border-[#dce0e5] bg-white text-[13px] font-semibold text-[#707789] shadow-none hover:bg-[#f6f7f8] hover:text-[#4c5361]"
+                    className="mt-2 h-[44px] rounded-[10px] border-[#dce0e5] bg-white text-[13px] font-semibold text-[#707789] shadow-none hover:bg-[#f6f7f8] hover:text-[#4c5361] dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
                 >
                     Olvidé mi contraseña
                 </Button>

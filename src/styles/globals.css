@@ -22,6 +22,19 @@
 ::-webkit-scrollbar-thumb:hover {
     background-color: #555;
 }
+
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+}
+
+.theme-view-transition *,
+.theme-view-transition *::before,
+.theme-view-transition *::after {
+    transition: none !important;
+}
+
 @keyframes friendly-loading-message {
     0%,
     28% {
