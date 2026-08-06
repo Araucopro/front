@@ -14,7 +14,7 @@ export const normalizeText = (value: unknown): string =>
 
 export const isCountableSaleStatus = (status: unknown): boolean => {
     const normalizedStatus = normalizeText(status)
-    return normalizedStatus === "pagado" || normalizedStatus === "anulado"
+    return ["pagado", "anulado", "emitida", "convertida"].includes(normalizedStatus)
 }
 
 export const isCashPayment = (paymentType: unknown): boolean => normalizeText(paymentType) === "efectivo"

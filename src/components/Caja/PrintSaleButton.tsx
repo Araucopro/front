@@ -9,6 +9,14 @@ export default function PrintSaleButton({ sale }: { sale: ISaleResponse }) {
     const handlePrint = useCallback(() => {
         if (typeof window === "undefined") return
 
+        if (sale.dte?.PDF) {
+            const pdfUrl = /^(https?:|data:)/.test(sale.dte.PDF)
+                ? sale.dte.PDF
+                : `data:application/pdf;base64,${sale.dte.PDF}`
+            window.open(pdfUrl, "_blank", "noopener,noreferrer")
+            return
+        }
+
         const printWindow = window.open("", "_blank", "width=600,height=800")
         if (!printWindow) return
 
@@ -74,7 +82,7 @@ export default function PrintSaleButton({ sale }: { sale: ISaleResponse }) {
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow"
             onClick={handlePrint}
         >
-            Imprimir
+            {sale.dte?.PDF ? "Ver documento oficial" : "Imprimir"}
         </Button>
     )
 }

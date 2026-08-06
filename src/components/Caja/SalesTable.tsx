@@ -13,6 +13,12 @@ import { Search } from "lucide-react"
 
 type TableItem = ISaleResponse | IPurchaseOrder
 
+const saleTypeLabels: Record<string, string> = {
+    BOLETA: "Boleta",
+    FACTURA: "Factura",
+    NOTA_VENTA: "Nota de venta",
+}
+
 interface Props {
     items: TableItem[]
 }
@@ -79,6 +85,8 @@ const buildSearchText = (item: TableItem) => {
             productsText,
             saleFullyNulled ? "Venta anulada por completo" : "",
             statusText,
+            item.saleType,
+            item.dte?.FOLIO,
             item.paymentType,
             amountText,
         ].join(" ")
@@ -130,6 +138,7 @@ const SalesTable: React.FC<Props> = ({ items }) => {
                         <TableHead align="center">Fecha</TableHead>
                         <TableHead align="center">Productos</TableHead>
                         <TableHead align="center">Estado</TableHead>
+                        <TableHead align="center">Documento</TableHead>
                         <TableHead align="center">Tipo de pago</TableHead>
                         <TableHead align="center">Monto</TableHead>
                     </TableRow>
@@ -137,7 +146,7 @@ const SalesTable: React.FC<Props> = ({ items }) => {
                 <TableBody className="max-h-96 overflow-y-auto">
                     {filteredItems.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={6}>No hay ventas ni órdenes para mostrar.</TableCell>
+                            <TableCell colSpan={7}>No hay ventas ni órdenes para mostrar.</TableCell>
                         </TableRow>
                     ) : (
                         filteredItems.map((item) => {
@@ -189,7 +198,9 @@ const SalesTable: React.FC<Props> = ({ items }) => {
                                         </TableCell>
                                         <TableCell
                                             className={`font-medium ${
-                                                item.status === "Pagado"
+                                                item.status === "Pagado" ||
+                                                item.status === "EMITIDA" ||
+                                                item.status === "CONVERTIDA"
                                                     ? "text-green-600"
                                                     : item.status === "Pendiente"
                                                       ? "text-yellow-500"
@@ -201,6 +212,12 @@ const SalesTable: React.FC<Props> = ({ items }) => {
                                                       totalNulledUnits === 1 ? "producto" : "productos"
                                                   })`
                                                 : item.status}
+                                        </TableCell>
+                                        <TableCell align="center">
+                                            <p>{item.saleType ? saleTypeLabels[item.saleType] ?? item.saleType : "Venta"}</p>
+                                            {item.dte?.FOLIO && (
+                                                <p className="text-xs text-gray-500">Folio {item.dte.FOLIO}</p>
+                                            )}
                                         </TableCell>
                                         <TableCell align="center">{item.paymentType}</TableCell>
                                         <TableCell align="left">
@@ -242,6 +259,7 @@ const SalesTable: React.FC<Props> = ({ items }) => {
                                         >
                                             {item.status}
                                         </TableCell>
+                                        <TableCell align="center">Orden de compra</TableCell>
                                         <TableCell align="center">
                                             {(item as IPurchaseOrder).isThirdParty ? "Tercero" : "Interna"}
                                         </TableCell>

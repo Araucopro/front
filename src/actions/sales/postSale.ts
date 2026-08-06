@@ -1,20 +1,25 @@
 import { API_URL } from "@/lib/enviroments"
 import { fetcher } from "@/lib/fetcher"
-import { ISaleRequest } from "@/interfaces/sales/ISale"
-
-interface ResponseSale {
-    message: string
-    saleID: string
-    total: number
-}
+import { ISaleOperationResponse, ISaleRequest } from "@/interfaces/sales/ISale"
+import { normalizeSaleOperation, type RawSaleOperation } from "@/lib/normalize-sale"
 
 /**
  * Registra una nueva venta en el sistema.
  * POST /sales
  */
-export const createNewSale = async (saleData: ISaleRequest) => {
-    return fetcher<ResponseSale>(`${API_URL}/sales`, {
+export const createNewSale = async (
+    storeID: string,
+    saleData: ISaleRequest,
+    idempotencyKey = crypto.randomUUID(),
+): Promise<ISaleOperationResponse> => {
+    const response = await fetcher<RawSaleOperation>(`${API_URL}/sales`, {
         method: "POST",
+        headers: {
+            "X-Store-ID": storeID,
+            "Idempotency-Key": idempotencyKey,
+        },
         body: JSON.stringify(saleData),
     })
+
+    return normalizeSaleOperation(response, storeID)
 }

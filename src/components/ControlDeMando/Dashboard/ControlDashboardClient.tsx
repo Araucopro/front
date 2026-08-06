@@ -234,7 +234,7 @@ export default function ControlDashboardClient() {
             const todayStr = getChileYYYYMMDD(new Date())
             const [resumeData, salesData, productsData, categoriesData, metaData] = await Promise.all([
                 getResume(storeSelected.storeID, todayStr),
-                getSales(), // Sin filtro de tienda para análisis multi-canal
+                getSales(storeSelected.storeID),
                 getAllProducts(),
                 getAllCategories(),
                 getMetaMensual(storeSelected.storeID),

@@ -106,12 +106,8 @@ export const buildHomeViewModel = async (rawStoreID: string, rawDate: string): P
     const date = isYYYYMMDD(rawDate) ? rawDate : getChileYYYYMMDD(new Date())
     const dateRef = toChileMiddayUTC(date)
     const specialFilter = isSpecialStoreFilter(storeID)
-    const apiSalesStoreID = specialFilter ? "" : storeID
-
-    // Estas consultas no dependen entre sí. Iniciarlas antes de esperar las tiendas
-    // evita una cascada de red en la primera carga de Caja.
+    // Estas consultas no dependen de la tienda activa y pueden iniciar en paralelo.
     const storesPromise = getAllStores()
-    const salesPromise = getSales(apiSalesStoreID || "")
     const allOrdersPromise = getAllPurchaseOrders()
     const allProductsPromise = getProductsForSale(storeID)
 
@@ -122,6 +118,8 @@ export const buildHomeViewModel = async (rawStoreID: string, rawDate: string): P
 
     const storeIndex = buildStoreIndex(stores)
     const chartStoreID = specialFilter ? (stores[0]?.storeID ?? storeID) : storeID
+    const salesStores = stores.filter((store) => matchesStoreScope(storeID, store))
+    const salesPromise = Promise.all(salesStores.map((store) => getSales(store.storeID))).then((pages) => pages.flat())
 
     const [salesSource, resume, allOrders, allProducts] = await Promise.all([
         salesPromise,
@@ -130,7 +128,11 @@ export const buildHomeViewModel = async (rawStoreID: string, rawDate: string): P
         allProductsPromise,
     ])
 
-    const tableSales = filterSalesByScope(salesSource, storeID, storeIndex)
+    const salesWithStores = salesSource.map((sale) => ({
+        ...sale,
+        Store: sale.Store?.storeID ? sale.Store : (storeIndex.get(sale.storeID) ?? sale.Store),
+    }))
+    const tableSales = filterSalesByScope(salesWithStores, storeID, storeIndex)
     const scopedResumeSales = filterSalesForResume(tableSales, date)
     const allSalesForResume = scopedResumeSales
     const purchaseOrders = filterOrdersByScope(allOrders, storeID, storeIndex)
