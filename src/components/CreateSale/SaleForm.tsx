@@ -18,6 +18,9 @@ import { getPriceCheck } from "@/actions/pricing/getPriceCheck"
 import { getChileYYYYMMDD } from "@/utils/chile-date"
 
 const isSpecialStoreFilter = (value: string | null) => value === "all" || value === "propias" || value === "consignadas"
+const saleTypes = new Set<SaleType>(["BOLETA", "FACTURA", "NOTA_VENTA"])
+const getSaleTypeFromParam = (value: string | null): SaleType =>
+    value && saleTypes.has(value as SaleType) ? (value as SaleType) : "NOTA_VENTA"
 
 export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) => {
     const router = useRouter()
@@ -27,9 +30,8 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
     const { storeSelected } = useTienda()
     const [loading, setLoading] = useState(false)
     const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false)
-    const [saleType, setSaleType] = useState<SaleType>("NOTA_VENTA")
+    const [saleType, setSaleType] = useState<SaleType>(() => getSaleTypeFromParam(searchParams.get("saleType")))
     const [issueDate, setIssueDate] = useState(() => getChileYYYYMMDD(new Date()))
-    const [manualDiscount, setManualDiscount] = useState(0)
     const [receiver, setReceiver] = useState<ISaleReceiver>({
         rut: "",
         name: "",
@@ -48,7 +50,6 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
             return acc + item.quantity * price
         }, 0)
     }, [cartItems])
-    const estimatedTotal = total * (1 - manualDiscount / 100)
 
     const discountableStoreProducts = useMemo<DiscountStoreProductOption[]>(() => {
         const seen = new Set<string>()
@@ -110,18 +111,18 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
                 saleType,
                 paymentType: paymentMethod,
                 issueDate: issueDate || undefined,
-                manualDiscount,
-                receiver:
-                    shouldSendReceiver
-                        ? {
+                ...(shouldSendReceiver
+                    ? {
+                          receiver: {
                               rut: receiver.rut.trim(),
                               name: receiver.name.trim(),
                               email: receiver.email?.trim() || undefined,
                               address: receiver.address.trim(),
                               city: receiver.city.trim(),
                               giro: receiver.giro.trim(),
-                          }
-                        : undefined,
+                          },
+                      }
+                    : {}),
                 items: cartItems.map((item) => ({
                     storeProductID: item.storeProductID,
                     quantity: item.quantity,
@@ -154,13 +155,17 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
         }
     }, [clearCart])
 
+    useEffect(() => {
+        setSaleType(getSaleTypeFromParam(searchParams.get("saleType")))
+    }, [searchParams])
+
     return (
         <>
             <ScanInput initialProducts={initialProducts} />
 
             <CartTable />
             <div className="flex flex-col gap-6 mt-4">
-                <div className="grid gap-4 rounded-lg border border-gray-200 p-4 dark:border-gray-700 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 rounded-lg border border-gray-200 p-4 dark:border-gray-700 sm:grid-cols-2 lg:grid-cols-3">
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Documento</label>
                         <Select value={saleType} onValueChange={(value: SaleType) => setSaleType(value)}>
@@ -196,24 +201,6 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
                             type="date"
                             value={issueDate}
                             onChange={(event) => setIssueDate(event.target.value)}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <label
-                            htmlFor="manualDiscount"
-                            className="text-sm font-medium text-gray-700 dark:text-slate-300"
-                        >
-                            Descuento manual (%)
-                        </label>
-                        <Input
-                            id="manualDiscount"
-                            type="number"
-                            min={0}
-                            max={100}
-                            value={manualDiscount}
-                            onChange={(event) =>
-                                setManualDiscount(Math.min(100, Math.max(0, Number(event.target.value) || 0)))
-                            }
                         />
                     </div>
                 </div>
@@ -267,11 +254,8 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
                 <div className="flex flex-col items-end justify-between gap-4 md:flex-row md:items-center">
                     <div>
                         <p className="text-xl font-semibold text-gray-800 dark:text-white">
-                            Total estimado: ${toPrice(estimatedTotal)}
+                            Total estimado: ${toPrice(total)}
                         </p>
-                        {manualDiscount > 0 && (
-                            <p className="text-xs text-gray-500">Subtotal antes del descuento: ${toPrice(total)}</p>
-                        )}
                     </div>
                     <Button
                         disabled={loading || cartItems.length === 0}

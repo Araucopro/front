@@ -25,7 +25,6 @@ export interface ISaleRequest {
     saleType: SaleType
     paymentType: PaymentType
     issueDate?: string
-    manualDiscount?: number
     receiver?: ISaleReceiver
     items: ISaleItemRequest[]
 }
