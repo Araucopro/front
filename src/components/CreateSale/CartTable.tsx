@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import Image from "next/image"
 import { Input } from "../ui/input"
 import { toPrice } from "@/utils/priceFormat"
-import { Trash2 } from "lucide-react"
+import { ShoppingCart, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 export const CartTable = () => {
@@ -12,15 +12,16 @@ export const CartTable = () => {
 
     if (cartItems.length === 0) {
         return (
-            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                <p className="text-lg">El carrito está vacío</p>
-                <p>Agrega productos para comenzar una venta.</p>
+            <div className="flex min-h-[150px] flex-col items-center justify-center rounded-lg border border-slate-200 bg-white text-center text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-gray-400">
+                <ShoppingCart className="mb-3 h-8 w-8 text-slate-400" />
+                <p className="text-sm font-medium">El carrito está vacío</p>
+                <p className="text-sm">Agrega productos para comenzar una venta.</p>
             </div>
         )
     }
 
     return (
-        <div className="overflow-x-auto mb-6 rounded-lg border ">
+        <div className="mb-6 overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
             <Table>
                 <TableHeader>
                     <TableRow>
@@ -41,7 +42,7 @@ export const CartTable = () => {
                                         height={100}
                                         src={item.productImage}
                                         alt={item.productName}
-                                        className="w-10 h-10 object-cover rounded"
+                                        className="h-10 w-10 rounded object-cover"
                                     />
                                 )}
                                 <span>
@@ -65,10 +66,10 @@ export const CartTable = () => {
                                             }
                                             updateQuantity(item.storeProductID, Number(e.target.value))
                                         }}
-                                        className="w-16 text-center rounded border border-gray-300 p-1"
+                                        className="w-16 rounded border border-gray-300 p-1 text-center"
                                     />
 
-                                    <p className="text-xs text-gray-500 mt-1">Stock: {item.stockQuantity}</p>
+                                    <p className="mt-1 text-xs text-gray-500">Stock: {item.stockQuantity}</p>
                                 </div>
                             </TableCell>
 
@@ -82,7 +83,7 @@ export const CartTable = () => {
                                             ${toPrice(item.finalPrice)}
                                         </span>
                                         {item.activeOffer?.description && (
-                                            <span className="text-[10px] text-orange-500 italic">
+                                            <span className="text-[10px] italic text-orange-500">
                                                 {item.activeOffer.description}
                                             </span>
                                         )}

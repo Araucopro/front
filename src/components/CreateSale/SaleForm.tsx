@@ -31,7 +31,6 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
     const [loading, setLoading] = useState(false)
     const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false)
     const [saleType, setSaleType] = useState<SaleType>(() => getSaleTypeFromParam(searchParams.get("saleType")))
-    const [issueDate, setIssueDate] = useState(() => getChileYYYYMMDD(new Date()))
     const [receiver, setReceiver] = useState<ISaleReceiver>({
         rut: "",
         name: "",
@@ -104,13 +103,14 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
             }
 
             setLoading(true)
+            const currentIssueDate = getChileYYYYMMDD(new Date())
             const shouldSendReceiver =
                 saleType === "FACTURA" ||
                 (saleType === "NOTA_VENTA" && Boolean(receiver.rut.trim() && receiver.name.trim()))
             const toSubmitSale: ISaleRequest = {
                 saleType,
                 paymentType: paymentMethod,
-                issueDate: issueDate || undefined,
+                issueDate: currentIssueDate,
                 ...(shouldSendReceiver
                     ? {
                           receiver: {
@@ -161,11 +161,12 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
 
     return (
         <>
-            <ScanInput initialProducts={initialProducts} />
+            <div className="p-4">
+                <ScanInput initialProducts={initialProducts} />
 
-            <CartTable />
-            <div className="flex flex-col gap-6 mt-4">
-                <div className="grid gap-4 rounded-lg border border-gray-200 p-4 dark:border-gray-700 sm:grid-cols-2 lg:grid-cols-3">
+                <CartTable />
+                <div className="mt-4 flex flex-col gap-6">
+                <div className="grid gap-4 rounded-lg border border-gray-200 p-4 dark:border-gray-700 sm:grid-cols-2">
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Documento</label>
                         <Select value={saleType} onValueChange={(value: SaleType) => setSaleType(value)}>
@@ -191,17 +192,6 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
                                 <SelectItem value="Credito">Crédito</SelectItem>
                             </SelectContent>
                         </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <label htmlFor="issueDate" className="text-sm font-medium text-gray-700 dark:text-slate-300">
-                            Fecha de emisión
-                        </label>
-                        <Input
-                            id="issueDate"
-                            type="date"
-                            value={issueDate}
-                            onChange={(event) => setIssueDate(event.target.value)}
-                        />
                     </div>
                 </div>
 
@@ -281,6 +271,7 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
                             </p>
                         )}
                     </div>
+                </div>
                 </div>
             </div>
             <DiscountModal

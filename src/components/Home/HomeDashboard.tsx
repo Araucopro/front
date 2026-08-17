@@ -43,41 +43,68 @@ export default function HomeDashboard({
     const bankDepositSummary = salesToBankDepositSummary(allSalesForResume, dateRef)
 
     return (
-        <div className="space-y-6 px-4 py-4 sm:space-y-8 sm:px-6 sm:py-6 md:px-8 lg:space-y-10">
-            <div className="flex flex-col flex-wrap items-center justify-between gap-2 sm:flex-row sm:items-start">
-                <FilterControls stores={stores} />
-                <DailyResumeCards salesResume={salesResume} />
-            </div>
-
-            <h2 className="px-1 text-lg font-semibold text-slate-800 dark:text-slate-100">
-                Desempeño del mes de {monthLabel}
-            </h2>
+        <div className="space-y-4 px-4 py-3 sm:px-6 md:px-8">
+            <FilterControls stores={stores} variant="channel" />
 
             <Suspense fallback={<SalesAndResumeSkeleton />}>
                 <Accordion type="single" collapsible className="w-full">
-                    <AccordionItem value="item-1">
-                        <AccordionTrigger>
+                    <AccordionItem
+                        value="month-progress"
+                        className="overflow-hidden rounded-lg border border-slate-200 bg-white px-4 shadow-sm dark:border-slate-700 dark:bg-slate-900"
+                    >
+                        <AccordionTrigger className="py-3 text-sm font-bold hover:no-underline">
                             <div className="flex items-center gap-3">
-                                <ChartBarIcon />
-                                Panel de estadísticas globales
+                                <span className="text-xs">▶</span>
+                                <span>Ver avances del mes</span>
                             </div>
+                            <span className="mr-4 hidden text-xs font-medium text-slate-500 sm:inline">
+                                Ver resumen
+                            </span>
                         </AccordionTrigger>
-                        <AccordionContent className="block space-y-6 lg:grid lg:grid-cols-3 lg:items-start lg:gap-4 xl:gap-4 lg:space-y-0">
-                            <ResumeLeftSideChart saleResume={resume} />
-                            <TotalSalesResumeGraph resume={resume} date={date} />
-                            <ResumeRightSideChart saleResume={resume} bankDepositSummary={bankDepositSummary} />
+                        <AccordionContent className="space-y-4 pb-4 pt-1">
+                            <DailyResumeCards salesResume={salesResume} />
+                            <div className="space-y-3">
+                                <h2 className="px-1 text-base font-semibold text-slate-800 dark:text-slate-100">
+                                    Desempeño del mes de {monthLabel}
+                                </h2>
+                                <div className="flex items-center gap-2 border-b border-slate-200 pb-3 text-sm font-semibold dark:border-slate-700">
+                                    <ChartBarIcon className="h-5 w-5" />
+                                    <span>Panel de estadísticas globales</span>
+                                </div>
+                                <div className="block space-y-4 lg:grid lg:grid-cols-3 lg:items-start lg:gap-4 lg:space-y-0">
+                                    <ResumeLeftSideChart saleResume={resume} />
+                                    <TotalSalesResumeGraph resume={resume} date={date} />
+                                    <ResumeRightSideChart
+                                        saleResume={resume}
+                                        bankDepositSummary={bankDepositSummary}
+                                    />
+                                </div>
+                            </div>
                         </AccordionContent>
                     </AccordionItem>
                 </Accordion>
             </Suspense>
 
-            <div className="overflow-hidden rounded-lg border border-gray-200 shadow-md dark:border-gray-700">
-                <SaleForm initialProducts={allProducts} />
-            </div>
+            <section className="space-y-3">
+                <div className="flex items-center gap-2 px-1 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                    <span>✦</span>
+                    <span>Punto de venta</span>
+                </div>
+                <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <SaleForm initialProducts={allProducts} />
+                </div>
+            </section>
 
-            <div className="overflow-hidden rounded-lg border border-gray-200 shadow-md dark:border-gray-700">
+            <section className="space-y-3">
+                <div className="flex items-center gap-3 py-2">
+                    <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+                    <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                        Diario de ventas
+                    </span>
+                    <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+                </div>
                 <SalesTable items={items} />
-            </div>
+            </section>
         </div>
     )
 }

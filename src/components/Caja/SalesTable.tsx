@@ -5,11 +5,10 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Input } from "@/components/ui/input"
 import { ISaleResponse } from "@/interfaces/sales/ISale"
 import { IPurchaseOrder } from "@/interfaces/orders/IPurchaseOrder"
-import DateCell from "../DateCell"
 import { useRouter } from "next/navigation"
 import { toPrice } from "@/utils/priceFormat"
 import { getAnulatedProducts } from "@/lib/getAnulatedProducts"
-import { Search } from "lucide-react"
+import { CalendarDays, MoreHorizontal, RefreshCw, Search } from "lucide-react"
 
 type TableItem = ISaleResponse | IPurchaseOrder
 
@@ -32,59 +31,87 @@ const normalizeText = (value: unknown) => {
         .trim()
 }
 
-const buildSearchText = (item: TableItem) => {
-    const createdAt = (item as any)?.createdAt
-    const createdAtDate = createdAt ? new Date(createdAt) : null
-    const dateSearch =
-        createdAtDate && !Number.isNaN(createdAtDate.getTime())
-            ? [
-                  createdAtDate.toISOString(),
-                  createdAtDate.toLocaleDateString("es-CL"),
-                  createdAtDate.toLocaleString("es-CL"),
-              ].join(" ")
-            : String(createdAt ?? "")
+const dateFormatter = new Intl.DateTimeFormat("es-CL", {
+    weekday: "short",
+    day: "2-digit",
+    month: "long",
+    timeZone: "America/Santiago",
+})
 
-    // Venta
+const monthFormatter = new Intl.DateTimeFormat("es-CL", {
+    month: "long",
+    year: "numeric",
+    timeZone: "America/Santiago",
+})
+
+const timeFormatter = new Intl.DateTimeFormat("es-CL", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "America/Santiago",
+})
+
+const getItemDate = (item: TableItem) => {
+    const date = new Date(item.createdAt)
+    return Number.isNaN(date.getTime()) ? new Date(0) : date
+}
+
+const formatDayLabel = (date: Date) => dateFormatter.format(date).replace(".", "").toUpperCase()
+
+const formatMonthLabel = (date: Date) => monthFormatter.format(date).toUpperCase()
+
+const getStoreName = (item: TableItem) => item.Store?.name || "Sucursal"
+
+const getSaleTotals = (item: ISaleResponse) => {
+    const nulledProducts = getAnulatedProducts(item)
+    const totalNulledAmount = nulledProducts.reduce((acc, p) => acc + p.quantitySold * Number(p.unitPrice), 0)
+    const totalNulledUnits = nulledProducts.reduce((acc, p) => acc + p.quantitySold, 0)
+
+    return {
+        nulledProducts,
+        totalNulledAmount,
+        totalNulledUnits,
+    }
+}
+
+const getProductsSearchText = (item: TableItem) => {
     if ("saleID" in item) {
-        const storeName = item.Store?.name || "Sucursal"
-        const nulledProducts = getAnulatedProducts(item)
-        const totalNulledAmount = nulledProducts.reduce((acc, p) => acc + p.quantitySold * Number(p.unitPrice), 0)
-        const totalNulledUnits = nulledProducts.reduce((acc, p) => acc + p.quantitySold, 0)
-
-        const productsText = (item.SaleProducts ?? [])
+        const { nulledProducts } = getSaleTotals(item)
+        return (item.SaleProducts ?? [])
             .map((sp) => {
                 const nulled = nulledProducts.find((np) => np.saleProductID === sp.saleProductID)
                 const actualQuantity = sp.quantitySold - (nulled?.quantitySold || 0)
-                if (actualQuantity <= 0) return null
+                if (actualQuantity <= 0) return ""
 
                 const label =
                     (sp?.variation?.sku ?? `${sp?.variation?.color ?? ""} ${sp?.variation?.size ?? ""}`.trim()) ||
                     "Producto"
                 return `${actualQuantity} x ${label}`
             })
-            .filter(Boolean)
             .join(" ")
+    }
 
-        const saleFullyNulled =
-            (item.SaleProducts ?? []).length > 0 &&
-            (item.SaleProducts ?? []).every((sp) => {
-                const nulled = nulledProducts.find((np) => np.saleProductID === sp.saleProductID)
-                return sp.quantitySold - (nulled?.quantitySold || 0) <= 0
-            })
+    const itemsOrdered = item.PurchaseOrderItems?.reduce((acc, poi) => acc + poi.quantity, 0) ?? 0
+    return `${itemsOrdered} unidades`
+}
 
-        const statusText =
-            item.status === "Anulado" && totalNulledUnits > 0
-                ? `Anulado (${totalNulledUnits} ${totalNulledUnits === 1 ? "producto" : "productos"})`
-                : item.status
+const buildSearchText = (item: TableItem) => {
+    const date = getItemDate(item)
+    const amountText =
+        "saleID" in item
+            ? typeof item.total === "number"
+                ? `$${toPrice(item.total - getSaleTotals(item).totalNulledAmount)}`
+                : "Sin dato"
+            : item.total
+              ? `$${toPrice(Number(item.total))}`
+              : "Sin dato"
 
-        const amountText = typeof item.total === "number" ? `$${toPrice(item.total - totalNulledAmount)}` : "Sin dato"
-
+    if ("saleID" in item) {
         return [
-            storeName,
-            dateSearch,
-            productsText,
-            saleFullyNulled ? "Venta anulada por completo" : "",
-            statusText,
+            getStoreName(item),
+            date.toISOString(),
+            date.toLocaleString("es-CL"),
+            getProductsSearchText(item),
+            item.status,
             item.saleType,
             item.dte?.FOLIO,
             item.paymentType,
@@ -92,187 +119,291 @@ const buildSearchText = (item: TableItem) => {
         ].join(" ")
     }
 
-    // Orden de compra
-    const storeName = item.Store?.name || "Sucursal"
-    const itemsOrdered = (item as IPurchaseOrder).PurchaseOrderItems?.reduce((acc, poi) => acc + poi.quantity, 0) ?? 0
-    const amountText = item.total ? `$${toPrice(Number(item.total))}` : "Sin dato"
-    const typeLabel = (item as IPurchaseOrder).isThirdParty ? "Tercero" : "Interna"
-    return [storeName, dateSearch, `${itemsOrdered} unidades`, item.status, typeLabel, amountText].join(" ")
+    const typeLabel = item.isThirdParty ? "Tercero" : "Interna"
+    return [getStoreName(item), date.toISOString(), date.toLocaleString("es-CL"), getProductsSearchText(item), item.status, typeLabel, amountText].join(
+        " ",
+    )
+}
+
+const statusClassName = (status: string) => {
+    if (["Pagado", "EMITIDA", "CONVERTIDA"].includes(status)) {
+        return "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200"
+    }
+    if (status === "Pendiente") {
+        return "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-200"
+    }
+    return "bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-200"
+}
+
+const paymentClassName = (paymentType?: string) => {
+    if (paymentType === "Efectivo") {
+        return "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200"
+    }
+    if (paymentType === "Debito" || paymentType === "Credito") {
+        return "bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-200"
+    }
+    return "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
 }
 
 const SalesTable: React.FC<Props> = ({ items }) => {
-    const { push } = useRouter()
-
+    const router = useRouter()
     const [searchTerm, setSearchTerm] = useState("")
+
     const filteredItems = useMemo(() => {
         const query = normalizeText(searchTerm)
         if (!query) return items
         return items.filter((item) => normalizeText(buildSearchText(item)).includes(query))
     }, [items, searchTerm])
 
+    const groupedItems = useMemo(() => {
+        const groups = new Map<string, TableItem[]>()
+
+        for (const item of filteredItems) {
+            const month = formatMonthLabel(getItemDate(item))
+            groups.set(month, [...(groups.get(month) ?? []), item])
+        }
+
+        return Array.from(groups.entries())
+    }, [filteredItems])
+
     const urlRedirectToSingleSale = (item: TableItem) => {
         if ("saleID" in item) {
-            push(`/home/${item.saleID}?storeID=${item.storeID}`)
-        } else {
-            // Es orden de compra (IPurchaseOrder)
-            push(`/home/order/${item.purchaseOrderID}?storeID=${item.storeID}`)
+            router.push(`/home/${item.saleID}?storeID=${item.storeID}`)
+            return
         }
+
+        router.push(`/home/order/${item.purchaseOrderID}?storeID=${item.storeID}`)
     }
+
     return (
-        <div className="dark:bg-gray-800 bg-white rounded shadow overflow-hidden">
-            <div className="p-3 border-b border-gray-200 dark:border-gray-700">
-                <div className="relative max-w-md">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <div className="overflow-hidden rounded-lg bg-transparent">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row">
+                <div className="relative flex-1">
+                    <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-500" />
                     <Input
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Buscar por origen, fecha, productos, estado, tipo de pago o monto..."
-                        className="pl-9"
+                        placeholder="Buscar por producto, código, talla, tipo de pago, estado..."
+                        className="h-11 rounded-lg border-slate-200 bg-white pl-11 shadow-sm dark:border-slate-700 dark:bg-slate-900"
                     />
                 </div>
+                <div className="flex items-center gap-3">
+                    <div className="flex h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                        <CalendarDays className="h-4 w-4 text-blue-500" />
+                        <span className="text-slate-500">Periodo:</span>
+                        <span className="font-semibold">Todas las fechas</span>
+                    </div>
+                    <button
+                        type="button"
+                        title="Actualizar diario"
+                        onClick={() => router.refresh()}
+                        className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                    >
+                        <RefreshCw className="h-4 w-4" />
+                    </button>
+                </div>
             </div>
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead align="center">Origen</TableHead>
-                        <TableHead align="center">Fecha</TableHead>
-                        <TableHead align="center">Productos</TableHead>
-                        <TableHead align="center">Estado</TableHead>
-                        <TableHead align="center">Documento</TableHead>
-                        <TableHead align="center">Tipo de pago</TableHead>
-                        <TableHead align="center">Monto</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody className="max-h-96 overflow-y-auto">
-                    {filteredItems.length === 0 ? (
-                        <TableRow>
-                            <TableCell colSpan={7}>No hay ventas ni órdenes para mostrar.</TableCell>
-                        </TableRow>
-                    ) : (
-                        filteredItems.map((item) => {
-                            // Venta
-                            if ("saleID" in item) {
-                                const storeName = item.Store?.name || "Sucursal"
-                                const nulledProducts = getAnulatedProducts(item)
-                                const totalNulledAmount = nulledProducts.reduce(
-                                    (acc, p) => acc + p.quantitySold * Number(p.unitPrice),
-                                    0,
-                                )
-                                const totalNulledUnits = nulledProducts.reduce((acc, p) => acc + p.quantitySold, 0)
 
-                                return (
-                                    <TableRow
-                                        key={item.saleID}
-                                        className="cursor-pointer"
-                                        onClick={() => urlRedirectToSingleSale(item)}
-                                    >
-                                        <TableCell align="left">{storeName}</TableCell>
-                                        <TableCell align="left">
-                                            <DateCell date={item.createdAt} />
+            <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+                <Table>
+                    <TableHeader>
+                        <TableRow className="bg-slate-50 dark:bg-slate-950">
+                            <TableHead className="w-[180px] text-[11px] uppercase tracking-[0.12em]">Hora</TableHead>
+                            <TableHead className="text-[11px] uppercase tracking-[0.12em]">Origen</TableHead>
+                            <TableHead className="text-[11px] uppercase tracking-[0.12em]">Productos</TableHead>
+                            <TableHead className="text-[11px] uppercase tracking-[0.12em]">Tipo de pago</TableHead>
+                            <TableHead className="text-[11px] uppercase tracking-[0.12em]">Total</TableHead>
+                            <TableHead className="text-[11px] uppercase tracking-[0.12em]">Estado</TableHead>
+                            <TableHead className="w-12" />
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {groupedItems.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={7} className="py-10 text-center text-sm text-slate-500">
+                                    No hay ventas ni órdenes para mostrar.
+                                </TableCell>
+                            </TableRow>
+                        ) : (
+                            groupedItems.map(([month, monthItems]) => (
+                                <React.Fragment key={month}>
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={7}
+                                            className="bg-slate-950 py-2 text-xs font-bold uppercase text-white dark:bg-slate-800"
+                                        >
+                                            <span className="mr-2">▣</span>
+                                            {month}
                                         </TableCell>
-                                        <TableCell align="left" className="max-w-96">
-                                            {(item.SaleProducts ?? []).map((sp) => {
+                                    </TableRow>
+                                    {monthItems.map((item) => {
+                                        const date = getItemDate(item)
+
+                                        if ("saleID" in item) {
+                                            const { nulledProducts, totalNulledAmount, totalNulledUnits } =
+                                                getSaleTotals(item)
+                                            const products = (item.SaleProducts ?? []).map((sp) => {
                                                 const nulled = nulledProducts.find(
                                                     (np) => np.saleProductID === sp.saleProductID,
                                                 )
                                                 const actualQuantity = sp.quantitySold - (nulled?.quantitySold || 0)
-
                                                 if (actualQuantity <= 0) return null
 
                                                 const label =
                                                     (sp?.variation?.sku ??
                                                         `${sp?.variation?.color ?? ""} ${sp?.variation?.size ?? ""}`.trim()) ||
                                                     "Producto"
+
                                                 return (
                                                     <p key={sp.saleProductID}>
                                                         {actualQuantity} x {label}
                                                     </p>
                                                 )
-                                            })}
-                                            {(item.SaleProducts ?? []).every((sp) => {
-                                                const nulled = nulledProducts.find(
-                                                    (np) => np.saleProductID === sp.saleProductID,
-                                                )
-                                                return sp.quantitySold - (nulled?.quantitySold || 0) <= 0
-                                            }) && <p className="text-rose-600 italic">Venta anulada por completo</p>}
-                                        </TableCell>
-                                        <TableCell
-                                            className={`font-medium ${
-                                                item.status === "Pagado" ||
-                                                item.status === "EMITIDA" ||
-                                                item.status === "CONVERTIDA"
-                                                    ? "text-green-600"
-                                                    : item.status === "Pendiente"
-                                                      ? "text-yellow-500"
-                                                      : "text-rose-700"
-                                            }`}
-                                        >
-                                            {item.status === "Anulado" && totalNulledUnits > 0
-                                                ? `Anulado (${totalNulledUnits} ${
-                                                      totalNulledUnits === 1 ? "producto" : "productos"
-                                                  })`
-                                                : item.status}
-                                        </TableCell>
-                                        <TableCell align="center">
-                                            <p>{item.saleType ? saleTypeLabels[item.saleType] ?? item.saleType : "Venta"}</p>
-                                            {item.dte?.FOLIO && (
-                                                <p className="text-xs text-gray-500">Folio {item.dte.FOLIO}</p>
-                                            )}
-                                        </TableCell>
-                                        <TableCell align="center">{item.paymentType}</TableCell>
-                                        <TableCell align="left">
-                                            {typeof item.total === "number"
-                                                ? `$${toPrice(item.total - totalNulledAmount)}`
-                                                : "Sin dato"}
-                                        </TableCell>
-                                    </TableRow>
-                                )
-                            } else {
-                                // Orden de compra
-                                const storeName = item.Store?.name || "Sucursal"
-                                const itemsOrdered =
-                                    (item as IPurchaseOrder).PurchaseOrderItems?.reduce(
-                                        (acc, poi) => acc + poi.quantity,
-                                        0,
-                                    ) ?? 0
-                                return (
-                                    <TableRow
-                                        key={item.purchaseOrderID}
-                                        className="cursor-pointer"
-                                        onClick={() => urlRedirectToSingleSale(item)}
-                                    >
-                                        <TableCell align="left">{storeName}</TableCell>
-                                        <TableCell align="left">
-                                            <DateCell date={item.createdAt} />
-                                        </TableCell>
-                                        <TableCell align="left" className="max-w-96">
-                                            {itemsOrdered} unidades
-                                        </TableCell>
-                                        <TableCell
-                                            className={`font-medium ${
-                                                item.status === "Pagado"
-                                                    ? "text-green-600"
-                                                    : item.status === "Pendiente"
-                                                      ? "text-yellow-500"
-                                                      : "text-rose-700"
-                                            }`}
-                                        >
-                                            {item.status}
-                                        </TableCell>
-                                        <TableCell align="center">Orden de compra</TableCell>
-                                        <TableCell align="center">
-                                            {(item as IPurchaseOrder).isThirdParty ? "Tercero" : "Interna"}
-                                        </TableCell>
-                                        <TableCell align="left">
-                                            {item.total ? `$${toPrice(Number(item.total))}` : "Sin dato"}
-                                        </TableCell>
-                                    </TableRow>
-                                )
-                            }
-                        })
-                    )}
-                </TableBody>
-            </Table>
+                                            })
+
+                                            const statusText =
+                                                item.status === "Anulado" && totalNulledUnits > 0
+                                                    ? `Anulado (${totalNulledUnits})`
+                                                    : item.status
+                                            const amount =
+                                                typeof item.total === "number"
+                                                    ? `$${toPrice(item.total - totalNulledAmount)}`
+                                                    : "Sin dato"
+
+                                            return (
+                                                <TableRow
+                                                    key={item.saleID}
+                                                    className="cursor-pointer border-slate-100 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/60"
+                                                    onClick={() => urlRedirectToSingleSale(item)}
+                                                >
+                                                    <TableCell className="align-top">
+                                                        <p className="inline-flex bg-white text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600 dark:bg-slate-900 dark:text-slate-300">
+                                                            {formatDayLabel(date)}
+                                                        </p>
+                                                        <p className="mt-4 text-xs text-slate-500">
+                                                            {timeFormatter.format(date)}
+                                                        </p>
+                                                    </TableCell>
+                                                    <TableCell className="align-middle">
+                                                        <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold uppercase text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                                                            {getStoreName(item)}
+                                                        </span>
+                                                    </TableCell>
+                                                    <TableCell className="max-w-[520px] align-middle text-sm">
+                                                        <div className="space-y-1">
+                                                            {products}
+                                                            {products.every((product) => product === null) && (
+                                                                <p className="italic text-rose-600">
+                                                                    Venta anulada por completo
+                                                                </p>
+                                                            )}
+                                                            {item.saleType && (
+                                                                <p className="text-xs text-slate-500">
+                                                                    {saleTypeLabels[item.saleType] ?? item.saleType}
+                                                                    {item.dte?.FOLIO ? ` · Folio ${item.dte.FOLIO}` : ""}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="align-middle">
+                                                        <span
+                                                            className={`rounded-full px-3 py-1 text-xs font-semibold ${paymentClassName(
+                                                                item.paymentType,
+                                                            )}`}
+                                                        >
+                                                            {item.paymentType ?? "Sin dato"}
+                                                        </span>
+                                                    </TableCell>
+                                                    <TableCell className="align-middle font-bold">{amount}</TableCell>
+                                                    <TableCell className="align-middle">
+                                                        <span
+                                                            className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClassName(
+                                                                item.status,
+                                                            )}`}
+                                                        >
+                                                            {statusText}
+                                                        </span>
+                                                    </TableCell>
+                                                    <TableCell className="align-middle">
+                                                        <button
+                                                            type="button"
+                                                            title="Ver detalle"
+                                                            onClick={(event) => {
+                                                                event.stopPropagation()
+                                                                urlRedirectToSingleSale(item)
+                                                            }}
+                                                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:hover:text-white"
+                                                        >
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )
+                                        }
+
+                                        const itemsOrdered =
+                                            item.PurchaseOrderItems?.reduce((acc, poi) => acc + poi.quantity, 0) ?? 0
+                                        const amount = item.total ? `$${toPrice(Number(item.total))}` : "Sin dato"
+
+                                        return (
+                                            <TableRow
+                                                key={item.purchaseOrderID}
+                                                className="cursor-pointer border-slate-100 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/60"
+                                                onClick={() => urlRedirectToSingleSale(item)}
+                                            >
+                                                <TableCell className="align-top">
+                                                    <p className="inline-flex bg-white text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600 dark:bg-slate-900 dark:text-slate-300">
+                                                        {formatDayLabel(date)}
+                                                    </p>
+                                                    <p className="mt-4 text-xs text-slate-500">
+                                                        {timeFormatter.format(date)}
+                                                    </p>
+                                                </TableCell>
+                                                <TableCell className="align-middle">
+                                                    <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold uppercase text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                                                        {getStoreName(item)}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell className="align-middle text-sm">
+                                                    {itemsOrdered} unidades
+                                                </TableCell>
+                                                <TableCell className="align-middle">
+                                                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                                                        {item.isThirdParty ? "Tercero" : "Interna"}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell className="align-middle font-bold">{amount}</TableCell>
+                                                <TableCell className="align-middle">
+                                                    <span
+                                                        className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClassName(
+                                                            item.status,
+                                                        )}`}
+                                                    >
+                                                        {item.status}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell className="align-middle">
+                                                    <button
+                                                        type="button"
+                                                        title="Ver detalle"
+                                                        onClick={(event) => {
+                                                            event.stopPropagation()
+                                                            urlRedirectToSingleSale(item)
+                                                        }}
+                                                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:hover:text-white"
+                                                    >
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </button>
+                                                </TableCell>
+                                            </TableRow>
+                                        )
+                                    })}
+                                </React.Fragment>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
         </div>
     )
 }

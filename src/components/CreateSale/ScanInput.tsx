@@ -10,6 +10,7 @@ import { IProduct } from "@/interfaces/products/IProduct"
 import { IProductVariation, IStoreProduct } from "@/interfaces/products/IProductVariation"
 import { useSaleStore } from "@/stores/sale.store"
 import { useTienda } from "@/stores/tienda.store"
+import { Search } from "lucide-react"
 
 interface Props {
     initialProducts: IProduct[]
@@ -178,20 +179,23 @@ export const ScanInput = ({ initialProducts }: Props) => {
     return (
         <>
             <form
-                className="flex items-center gap-2 mb-6"
+                className="mb-3 flex items-center gap-2"
                 onSubmit={(e) => {
                     e.preventDefault()
                 }}
             >
-                <Input
-                    type="text"
-                    value={productInput}
-                    onChange={handleSetInputValue}
-                    onKeyDown={handleEnterPressed}
-                    placeholder="Codigo de producto"
-                    className="flex-1"
-                    autoFocus
-                />
+                <div className="relative w-full">
+                    <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-500" />
+                    <Input
+                        type="text"
+                        value={productInput}
+                        onChange={handleSetInputValue}
+                        onKeyDown={handleEnterPressed}
+                        placeholder="Código de barras o nombre del producto..."
+                        className="h-12 rounded-lg border-slate-200 bg-white pl-11 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-950"
+                        autoFocus
+                    />
+                </div>
             </form>
             {shouldShowResults && (
                 <div className="relative">
