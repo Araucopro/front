@@ -91,6 +91,7 @@ export interface ISaleProduct {
     saleID: string
     variationID: string
     storeProductID?: string
+    productName?: string
     variation: IVariationInSale
     unitPrice: number | string
     subtotal: number | string

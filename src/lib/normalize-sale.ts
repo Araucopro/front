@@ -22,6 +22,13 @@ export type RawSaleVariation = {
     sizeNumber?: string
     createdAt?: string
     updatedAt?: string
+    product?: RawSaleProductSummary | null
+    Product?: RawSaleProductSummary | null
+}
+
+export type RawSaleProductSummary = {
+    productID?: string
+    name?: string
 }
 
 export type RawSaleProduct = {
@@ -29,6 +36,10 @@ export type RawSaleProduct = {
     saleID?: string
     variationID?: string
     storeProductID?: string
+    productName?: string
+    name?: string
+    product?: RawSaleProductSummary | null
+    Product?: RawSaleProductSummary | null
     variation?: RawSaleVariation | null
     unitPrice?: number | string
     subtotal?: number | string
@@ -122,6 +133,13 @@ const normalizeSaleProduct = (raw: RawSaleProduct): ISaleProduct => ({
     saleID: raw.saleID ?? "",
     variationID: raw.variationID ?? raw.variation?.variationID ?? "",
     storeProductID: raw.storeProductID,
+    productName:
+        raw.productName ??
+        raw.name ??
+        raw.product?.name ??
+        raw.Product?.name ??
+        raw.variation?.product?.name ??
+        raw.variation?.Product?.name,
     variation: normalizeVariation(raw.variation),
     unitPrice: raw.unitPrice ?? 0,
     subtotal: raw.subtotal ?? 0,
