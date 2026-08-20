@@ -16,11 +16,27 @@ import { toast } from "sonner"
 import { DiscountModal, DiscountStoreProductOption } from "@/components/Discounts/DiscountModal"
 import { getPriceCheck } from "@/actions/pricing/getPriceCheck"
 import { getChileYYYYMMDD } from "@/utils/chile-date"
+import { UserPlus, X } from "lucide-react"
 
+const DEFAULT_RECEIVER_EMAIL = "soporte@araucopro.com"
+const EMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
 const isSpecialStoreFilter = (value: string | null) => value === "all" || value === "propias" || value === "consignadas"
 const saleTypes = new Set<SaleType>(["BOLETA", "FACTURA", "NOTA_VENTA"])
 const getSaleTypeFromParam = (value: string | null): SaleType =>
-    value && saleTypes.has(value as SaleType) ? (value as SaleType) : "NOTA_VENTA"
+    value && saleTypes.has(value as SaleType) ? (value as SaleType) : "BOLETA"
+const isValidEmail = (value: string) => {
+    const email = value.trim()
+    const [localPart, domain] = email.split("@")
+
+    return Boolean(
+        EMAIL_PATTERN.test(email) &&
+            localPart &&
+            domain &&
+            !email.includes("..") &&
+            !domain.startsWith("-") &&
+            !domain.endsWith("-"),
+    )
+}
 
 export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) => {
     const router = useRouter()
@@ -31,6 +47,7 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
     const [loading, setLoading] = useState(false)
     const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false)
     const [saleType, setSaleType] = useState<SaleType>(() => getSaleTypeFromParam(searchParams.get("saleType")))
+    const [showReceiverFields, setShowReceiverFields] = useState(() => saleType === "FACTURA")
     const [receiver, setReceiver] = useState<ISaleReceiver>({
         rut: "",
         name: "",
@@ -85,6 +102,17 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
 
     const handleSubmit = async () => {
         try {
+            const receiverEmail = receiver.email?.trim() ?? ""
+            const hasReceiverData = Boolean(
+                receiver.rut.trim() ||
+                    receiver.name.trim() ||
+                    receiverEmail ||
+                    receiver.address.trim() ||
+                    receiver.city.trim() ||
+                    receiver.giro.trim(),
+            )
+            const shouldValidateReceiverEmail =
+                saleType === "FACTURA" || (saleType === "NOTA_VENTA" && showReceiverFields && hasReceiverData)
             const hasEmptyProducts = cartItems.filter((item) => item.quantity === 0)
             if (hasEmptyProducts.length > 0) {
                 return toast.error("Por favor elimina los productos sin stock")
@@ -92,6 +120,12 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
             if (!effectiveStoreID) return toast.error("No hay una tienda elegida")
             if (saleType === "FACTURA" && (!receiver.rut.trim() || !receiver.name.trim())) {
                 return toast.error("Para emitir una factura indica al menos el RUT y la razón social")
+            }
+            if (shouldValidateReceiverEmail && !receiverEmail) {
+                return toast.error("Ingresa un correo del receptor o usa el correo por defecto.")
+            }
+            if (shouldValidateReceiverEmail && !isValidEmail(receiverEmail)) {
+                return toast.error("Ingresa un correo válido para el receptor.")
             }
 
             const storeIDsInCart = new Set(cartItems.map((item) => item.storeID).filter(Boolean))
@@ -106,7 +140,9 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
             const currentIssueDate = getChileYYYYMMDD(new Date())
             const shouldSendReceiver =
                 saleType === "FACTURA" ||
-                (saleType === "NOTA_VENTA" && Boolean(receiver.rut.trim() && receiver.name.trim()))
+                (saleType === "NOTA_VENTA" &&
+                    showReceiverFields &&
+                    Boolean(receiver.rut.trim() && receiver.name.trim() && receiverEmail))
             const toSubmitSale: ISaleRequest = {
                 saleType,
                 paymentType: paymentMethod,
@@ -116,7 +152,7 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
                           receiver: {
                               rut: receiver.rut.trim(),
                               name: receiver.name.trim(),
-                              email: receiver.email?.trim() || undefined,
+                              email: receiverEmail,
                               address: receiver.address.trim(),
                               city: receiver.city.trim(),
                               giro: receiver.giro.trim(),
@@ -159,6 +195,15 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
         setSaleType(getSaleTypeFromParam(searchParams.get("saleType")))
     }, [searchParams])
 
+    useEffect(() => {
+        if (saleType === "FACTURA") {
+            setShowReceiverFields(true)
+            return
+        }
+
+        setShowReceiverFields(false)
+    }, [saleType])
+
     return (
         <>
             <div className="p-4">
@@ -174,8 +219,8 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="NOTA_VENTA">Nota de venta</SelectItem>
                                 <SelectItem value="BOLETA">Boleta electrónica</SelectItem>
+                                <SelectItem value="NOTA_VENTA">Nota de venta</SelectItem>
                                 <SelectItem value="FACTURA">Factura electrónica</SelectItem>
                             </SelectContent>
                         </Select>
@@ -195,14 +240,52 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
                     </div>
                 </div>
 
-                {saleType !== "BOLETA" && (
-                    <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-900 dark:bg-emerald-950/20">
-                        <div className="mb-3">
-                            <h3 className="font-semibold text-gray-800 dark:text-slate-100">Datos del receptor</h3>
-                            {saleType === "NOTA_VENTA" && (
+                {saleType === "NOTA_VENTA" && !showReceiverFields && (
+                    <div className="rounded-lg border border-dashed border-emerald-300 bg-emerald-50/40 p-4 dark:border-emerald-900 dark:bg-emerald-950/10">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h3 className="font-semibold text-gray-800 dark:text-slate-100">
+                                    Datos del receptor ocultos
+                                </h3>
                                 <p className="text-xs text-gray-600 dark:text-slate-400">
-                                    Opcional. Complétalos si esta nota podría convertirse después en factura.
+                                    Puedes agregarlos si esta nota podría convertirse después en factura.
                                 </p>
+                            </div>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setShowReceiverFields(true)}
+                                className="h-auto min-h-10 whitespace-normal border-emerald-300 py-2 text-left text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950 sm:text-center"
+                            >
+                                <UserPlus />
+                                Agregar datos para futura factura
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {saleType !== "BOLETA" && showReceiverFields && (
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-900 dark:bg-emerald-950/20">
+                        <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <h3 className="font-semibold text-gray-800 dark:text-slate-100">Datos del receptor</h3>
+                                {saleType === "NOTA_VENTA" && (
+                                    <p className="text-xs text-gray-600 dark:text-slate-400">
+                                        Opcional para notas. Si los guardas, el correo es obligatorio.
+                                    </p>
+                                )}
+                            </div>
+                            {saleType === "NOTA_VENTA" && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setShowReceiverFields(false)}
+                                    className="justify-start border-slate-300 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-950 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 sm:justify-center"
+                                >
+                                    <X />
+                                    Ocultar datos
+                                </Button>
                             )}
                         </div>
                         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -216,12 +299,28 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
                                 onChange={(event) => setReceiver((current) => ({ ...current, name: event.target.value }))}
                                 placeholder="Razón social"
                             />
-                            <Input
-                                type="email"
-                                value={receiver.email}
-                                onChange={(event) => setReceiver((current) => ({ ...current, email: event.target.value }))}
-                                placeholder="Correo (opcional)"
-                            />
+                            <div className="space-y-2">
+                                <Input
+                                    type="email"
+                                    value={receiver.email}
+                                    onChange={(event) =>
+                                        setReceiver((current) => ({ ...current, email: event.target.value }))
+                                    }
+                                    placeholder="Correo del receptor"
+                                    required
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                        setReceiver((current) => ({ ...current, email: DEFAULT_RECEIVER_EMAIL }))
+                                    }
+                                    className="h-auto whitespace-normal border-blue-300 bg-blue-50 px-3 py-1.5 text-left text-xs font-medium text-blue-700 hover:bg-blue-100 hover:text-blue-800 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950"
+                                >
+                                    Cliente sin correo: usar {DEFAULT_RECEIVER_EMAIL}
+                                </Button>
+                            </div>
                             <Input
                                 value={receiver.giro}
                                 onChange={(event) => setReceiver((current) => ({ ...current, giro: event.target.value }))}
