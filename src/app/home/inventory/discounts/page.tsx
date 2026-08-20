@@ -29,8 +29,8 @@ const InventoryDiscountsPage = async ({ searchParams }: InventoryDiscountsPagePr
     const [products, offers] = await Promise.all([getDiscountProducts(storeID), getOffers()])
 
     return (
-        <main className="min-h-screen bg-slate-50 dark:bg-slate-900 py-6">
-            <div className="mx-auto max-w-6xl px-4">
+        <main className="min-h-screen bg-slate-50 py-6 dark:bg-slate-900">
+            <div className="mx-auto max-w-[1580px] px-4">
                 <DiscountManagementPanel products={products} offers={offers} />
             </div>
         </main>
