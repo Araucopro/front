@@ -1,3 +1,8 @@
+import type { IStore } from "@/interfaces/stores/IStore"
+import type { IUser } from "@/interfaces/users/IUser"
+import type { StoreTypeValue } from "@/lib/storeTypes"
+import type { UserRole } from "@/lib/userRoles"
+
 export const TENANT_STATUSES = ["PROVISIONING", "ACTIVE", "SUSPENDED", "ARCHIVED"] as const
 export const TENANT_PLAN_TYPES = ["BASIC", "STANDARD", "ENTERPRISE", "CUSTOM"] as const
 
@@ -18,6 +23,8 @@ export interface ITenant {
     locale: string
     createdAt: string
     updatedAt: string
+    users?: IUser[]
+    stores?: IStore[]
 }
 
 export interface ICreateTenant {
@@ -95,6 +102,42 @@ export interface IUpdateTenantSubscription {
     subscriptionExpiresAt?: string
     autoRenew: boolean
 }
+
+export interface ICreateTenantUser {
+    email: string
+    name: string
+    role: UserRole
+    status?: IUser["status"]
+    userImg?: string
+    password: string
+}
+
+export interface IUpdateTenantUser {
+    name?: string
+    role?: UserRole
+    status?: IUser["status"]
+    userImg?: string
+    password?: string
+}
+
+export interface ICreateTenantStore {
+    location: string
+    rut: string
+    address: string
+    phone: string
+    city: string
+    email: string
+    name: string
+    type: StoreTypeValue
+    isCentralStore?: boolean
+    storeImg?: string | null
+    giro?: string
+    acteco?: string
+    cdgSIISucur?: string
+    businessName?: string
+}
+
+export type IUpdateTenantStore = Partial<ICreateTenantStore>
 
 export interface ITenantExportResponse {
     exportedAt: string

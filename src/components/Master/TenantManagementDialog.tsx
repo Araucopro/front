@@ -1,12 +1,29 @@
 "use client"
 
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react"
-import { AlertTriangle, Boxes, Building2, Download, Loader2, RefreshCw, Users } from "lucide-react"
 import {
+    AlertTriangle,
+    Boxes,
+    Building2,
+    Download,
+    Loader2,
+    Pencil,
+    Plus,
+    RefreshCw,
+    Store,
+    Users,
+    X,
+} from "lucide-react"
+import {
+    createTenantStore,
+    createTenantUser,
     exportTenantData,
+    getTenant,
     getTenantMetrics,
     updateTenantStatus,
+    updateTenantStore,
     updateTenantSubscription,
+    updateTenantUser,
 } from "@/actions/master/tenantActions"
 import {
     Dialog,
@@ -21,11 +38,19 @@ import { Progress } from "@/components/ui/progress"
 import { Switch } from "@/components/ui/switch"
 import {
     TENANT_PLAN_TYPES,
+    type ICreateTenantStore,
+    type ICreateTenantUser,
     type ITenant,
     type ITenantMetrics,
+    type IUpdateTenantStore,
+    type IUpdateTenantUser,
     type TenantPlanType,
     type TenantStatus,
 } from "@/interfaces/master/ITenant"
+import type { IStore } from "@/interfaces/stores/IStore"
+import type { IUser } from "@/interfaces/users/IUser"
+import { STORE_TYPE_OPTIONS, type StoreTypeValue } from "@/lib/storeTypes"
+import type { UserRole } from "@/lib/userRoles"
 import { toast } from "sonner"
 
 interface TenantManagementDialogProps {
@@ -39,6 +64,43 @@ const STATUS_LABELS: Record<Exclude<TenantStatus, "PROVISIONING">, string> = {
     ACTIVE: "Activo",
     SUSPENDED: "Suspendido",
     ARCHIVED: "Archivado",
+}
+
+const USER_ROLE_OPTIONS: Array<{ value: UserRole; label: string }> = [
+    { value: "admin", label: "Admin" },
+    { value: "store_manager", label: "Vendedor" },
+    { value: "consignado", label: "Consignado" },
+    { value: "tercero", label: "Tercero" },
+]
+
+type DirectoryForm = "user" | "store" | null
+type UserFormState = ICreateTenantUser
+type StoreFormState = ICreateTenantStore
+
+const EMPTY_USER_FORM: UserFormState = {
+    email: "",
+    name: "",
+    role: "store_manager",
+    status: "ACTIVE",
+    userImg: "",
+    password: "",
+}
+
+const EMPTY_STORE_FORM: StoreFormState = {
+    location: "",
+    rut: "",
+    address: "",
+    phone: "",
+    city: "",
+    email: "",
+    name: "",
+    type: "third_party",
+    isCentralStore: false,
+    storeImg: "",
+    giro: "",
+    acteco: "",
+    cdgSIISucur: "",
+    businessName: "",
 }
 
 function toDateTimeLocal(value: string | null) {
@@ -110,6 +172,17 @@ export default function TenantManagementDialog({
     const [expiration, setExpiration] = useState("")
     const [autoRenew, setAutoRenew] = useState(true)
     const [nextStatus, setNextStatus] = useState<Exclude<TenantStatus, "PROVISIONING">>("ACTIVE")
+    const [tenantDetail, setTenantDetail] = useState<ITenant | null>(tenant)
+    const [activeForm, setActiveForm] = useState<DirectoryForm>(null)
+    const [editingUserID, setEditingUserID] = useState("")
+    const [editingStoreID, setEditingStoreID] = useState("")
+    const [userForm, setUserForm] = useState<UserFormState>(EMPTY_USER_FORM)
+    const [storeForm, setStoreForm] = useState<StoreFormState>(EMPTY_STORE_FORM)
+    const [isSavingDirectory, setIsSavingDirectory] = useState(false)
+
+    const currentTenant = tenantDetail ?? tenant
+    const tenantUsers = currentTenant?.users ?? []
+    const tenantStores = currentTenant?.stores ?? []
 
     const loadMetrics = useCallback(async () => {
         if (!tenant) return
@@ -130,16 +203,192 @@ export default function TenantManagementDialog({
         }
     }, [tenant])
 
+    const loadTenantDetail = useCallback(async () => {
+        if (!tenant) return
+
+        const response = await getTenant(tenant.tenantID)
+        setTenantDetail(response)
+    }, [tenant])
+
     useEffect(() => {
         if (!open) return
         setMetrics(null)
+        setTenantDetail(tenant)
         setError("")
+        setActiveForm(null)
+        setEditingUserID("")
+        setEditingStoreID("")
+        setUserForm(EMPTY_USER_FORM)
+        setStoreForm(EMPTY_STORE_FORM)
         setPlanType(tenant?.planType ?? "STANDARD")
         setExpiration(toDateTimeLocal(tenant?.subscriptionExpiresAt ?? null))
         setAutoRenew(tenant?.autoRenew ?? true)
         if (tenant?.status && tenant.status !== "PROVISIONING") setNextStatus(tenant.status)
         void loadMetrics()
-    }, [open, tenant, loadMetrics])
+        void loadTenantDetail().catch(() => null)
+    }, [open, tenant, loadMetrics, loadTenantDetail])
+
+    const refreshTenantData = async () => {
+        await Promise.all([loadTenantDetail(), loadMetrics(), onTenantChanged()])
+    }
+
+    const openCreateUserForm = () => {
+        setEditingUserID("")
+        setUserForm(EMPTY_USER_FORM)
+        setActiveForm("user")
+    }
+
+    const openEditUserForm = (user: IUser) => {
+        setEditingUserID(user.userID)
+        setUserForm({
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            status: user.status ?? "ACTIVE",
+            userImg: user.userImg ?? "",
+            password: "",
+        })
+        setActiveForm("user")
+    }
+
+    const openCreateStoreForm = () => {
+        setEditingStoreID("")
+        setStoreForm(EMPTY_STORE_FORM)
+        setActiveForm("store")
+    }
+
+    const openEditStoreForm = (store: IStore) => {
+        setEditingStoreID(store.storeID)
+        setStoreForm({
+            location: store.location,
+            rut: store.rut,
+            address: store.address,
+            phone: store.phone,
+            city: store.city,
+            email: store.email,
+            name: store.name,
+            type: (store.type || "third_party") as StoreTypeValue,
+            isCentralStore: Boolean(store.isCentralStore),
+            storeImg: store.storeImg ?? "",
+            giro: store.giro ?? "",
+            acteco: store.acteco ?? "",
+            cdgSIISucur: store.cdgSIISucur ?? "",
+            businessName: store.businessName ?? "",
+        })
+        setActiveForm("store")
+    }
+
+    const handleSaveUser = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault()
+        if (!currentTenant) return
+
+        const name = userForm.name.trim()
+        const email = userForm.email.trim()
+        const userImg = userForm.userImg?.trim()
+
+        if (!name || !email) {
+            toast.error("Completa nombre y correo del usuario")
+            return
+        }
+        if (!editingUserID && userForm.password.length < 8) {
+            toast.error("La contraseÃ±a debe tener al menos 8 caracteres")
+            return
+        }
+        if (editingUserID && userForm.password && userForm.password.length < 6) {
+            toast.error("La nueva contraseÃ±a debe tener al menos 6 caracteres")
+            return
+        }
+
+        try {
+            setIsSavingDirectory(true)
+            if (editingUserID) {
+                const payload: IUpdateTenantUser = {
+                    name,
+                    role: userForm.role,
+                    status: userForm.status,
+                    ...(userImg ? { userImg } : {}),
+                    ...(userForm.password ? { password: userForm.password } : {}),
+                }
+                await updateTenantUser(currentTenant.tenantID, editingUserID, payload)
+                toast.success("Usuario actualizado correctamente")
+            } else {
+                const payload: ICreateTenantUser = {
+                    email,
+                    name,
+                    role: userForm.role,
+                    status: userForm.status,
+                    ...(userImg ? { userImg } : {}),
+                    password: userForm.password,
+                }
+                await createTenantUser(currentTenant.tenantID, payload)
+                toast.success("Usuario creado correctamente")
+            }
+
+            setActiveForm(null)
+            await refreshTenantData()
+        } catch (saveError) {
+            toast.error(saveError instanceof Error ? saveError.message : "No se pudo guardar el usuario")
+        } finally {
+            setIsSavingDirectory(false)
+        }
+    }
+
+    const handleSaveStore = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault()
+        if (!currentTenant) return
+
+        const requiredFields = {
+            location: storeForm.location.trim(),
+            rut: storeForm.rut.trim(),
+            address: storeForm.address.trim(),
+            phone: storeForm.phone.trim(),
+            city: storeForm.city.trim(),
+            email: storeForm.email.trim(),
+            name: storeForm.name.trim(),
+        }
+
+        if (Object.values(requiredFields).some((value) => !value)) {
+            toast.error("Completa los datos obligatorios de la tienda")
+            return
+        }
+
+        const optionalFields = {
+            storeImg: storeForm.storeImg?.trim(),
+            giro: storeForm.giro?.trim(),
+            acteco: storeForm.acteco?.trim(),
+            cdgSIISucur: storeForm.cdgSIISucur?.trim(),
+            businessName: storeForm.businessName?.trim(),
+        }
+
+        const payload: ICreateTenantStore = {
+            ...requiredFields,
+            type: storeForm.type,
+            isCentralStore: storeForm.isCentralStore,
+            ...(optionalFields.storeImg ? { storeImg: optionalFields.storeImg } : {}),
+            ...(optionalFields.giro ? { giro: optionalFields.giro } : {}),
+            ...(optionalFields.acteco ? { acteco: optionalFields.acteco } : {}),
+            ...(optionalFields.cdgSIISucur ? { cdgSIISucur: optionalFields.cdgSIISucur } : {}),
+            ...(optionalFields.businessName ? { businessName: optionalFields.businessName } : {}),
+        }
+
+        try {
+            setIsSavingDirectory(true)
+            if (editingStoreID) {
+                await updateTenantStore(currentTenant.tenantID, editingStoreID, payload as IUpdateTenantStore)
+                toast.success("Tienda actualizada correctamente")
+            } else {
+                await createTenantStore(currentTenant.tenantID, payload)
+                toast.success("Tienda creada correctamente")
+            }
+
+            setActiveForm(null)
+            await refreshTenantData()
+        } catch (saveError) {
+            toast.error(saveError instanceof Error ? saveError.message : "No se pudo guardar la tienda")
+        } finally {
+            setIsSavingDirectory(false)
+        }
+    }
 
     const handleUpdateSubscription = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault()
@@ -225,7 +474,7 @@ export default function TenantManagementDialog({
         }
     }
 
-    const isBusy = isSavingSubscription || isSavingStatus || isExporting
+    const isBusy = isSavingSubscription || isSavingStatus || isExporting || isSavingDirectory
     const currentStatus = metrics?.status ?? tenant?.status
 
     return (
@@ -305,6 +554,473 @@ export default function TenantManagementDialog({
                                         <p className="mt-3 text-[10px] text-[#758296]">productos registrados</p>
                                     </article>
                                 </div>
+                            </section>
+
+                            <section className="grid gap-4 lg:grid-cols-2">
+                                <article className="rounded-lg border border-[#dfe2e7] bg-white p-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div>
+                                            <h3 className="flex items-center gap-2 text-xs font-extrabold text-[#122238]">
+                                                <Users className="h-4 w-4 text-[#0e5c3b]" />
+                                                Usuarios
+                                            </h3>
+                                            <p className="mt-1 text-[10px] text-[#758296]">
+                                                {tenantUsers.length} de {metrics?.usage.maxUsers ?? currentTenant?.maxUsers ?? 0}
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={openCreateUserForm}
+                                            disabled={isSavingDirectory}
+                                            className="inline-flex items-center gap-1.5 rounded-md border border-[#cbd5df] px-3 py-1.5 text-[10px] font-bold text-[#294157] hover:bg-[#f5f7f8] disabled:opacity-50"
+                                        >
+                                            <Plus className="h-3.5 w-3.5" />
+                                            Nuevo
+                                        </button>
+                                    </div>
+
+                                    {activeForm === "user" && (
+                                        <form
+                                            onSubmit={handleSaveUser}
+                                            className="mt-4 grid gap-3 rounded-md border border-[#e1e6eb] bg-[#f8f9fb] p-3"
+                                        >
+                                            <div className="grid gap-3 sm:grid-cols-2">
+                                                <div className="space-y-1">
+                                                    <Label htmlFor="tenant-user-name">Nombre</Label>
+                                                    <Input
+                                                        id="tenant-user-name"
+                                                        value={userForm.name}
+                                                        onChange={(event) =>
+                                                            setUserForm((current) => ({
+                                                                ...current,
+                                                                name: event.target.value,
+                                                            }))
+                                                        }
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Label htmlFor="tenant-user-email">Correo</Label>
+                                                    <Input
+                                                        id="tenant-user-email"
+                                                        type="email"
+                                                        value={userForm.email}
+                                                        onChange={(event) =>
+                                                            setUserForm((current) => ({
+                                                                ...current,
+                                                                email: event.target.value,
+                                                            }))
+                                                        }
+                                                        disabled={Boolean(editingUserID)}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Label htmlFor="tenant-user-role">Rol</Label>
+                                                    <select
+                                                        id="tenant-user-role"
+                                                        value={userForm.role}
+                                                        onChange={(event) =>
+                                                            setUserForm((current) => ({
+                                                                ...current,
+                                                                role: event.target.value as UserRole,
+                                                            }))
+                                                        }
+                                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none"
+                                                    >
+                                                        {USER_ROLE_OPTIONS.map((role) => (
+                                                            <option key={role.value} value={role.value}>
+                                                                {role.label}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Label htmlFor="tenant-user-status">Estado</Label>
+                                                    <select
+                                                        id="tenant-user-status"
+                                                        value={userForm.status ?? "ACTIVE"}
+                                                        onChange={(event) =>
+                                                            setUserForm((current) => ({
+                                                                ...current,
+                                                                status: event.target.value as IUser["status"],
+                                                            }))
+                                                        }
+                                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none"
+                                                    >
+                                                        <option value="ACTIVE">Activo</option>
+                                                        <option value="INACTIVE">Inactivo</option>
+                                                    </select>
+                                                </div>
+                                                <div className="space-y-1 sm:col-span-2">
+                                                    <Label htmlFor="tenant-user-img">Imagen</Label>
+                                                    <Input
+                                                        id="tenant-user-img"
+                                                        value={userForm.userImg ?? ""}
+                                                        onChange={(event) =>
+                                                            setUserForm((current) => ({
+                                                                ...current,
+                                                                userImg: event.target.value,
+                                                            }))
+                                                        }
+                                                        placeholder="https://..."
+                                                    />
+                                                </div>
+                                                <div className="space-y-1 sm:col-span-2">
+                                                    <Label htmlFor="tenant-user-password">
+                                                        {editingUserID ? "Nueva contraseÃ±a" : "ContraseÃ±a"}
+                                                    </Label>
+                                                    <Input
+                                                        id="tenant-user-password"
+                                                        type="password"
+                                                        minLength={editingUserID ? 6 : 8}
+                                                        value={userForm.password}
+                                                        onChange={(event) =>
+                                                            setUserForm((current) => ({
+                                                                ...current,
+                                                                password: event.target.value,
+                                                            }))
+                                                        }
+                                                        placeholder={editingUserID ? "Opcional" : "MÃ­nimo 8 caracteres"}
+                                                        required={!editingUserID}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-end gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setActiveForm(null)}
+                                                    disabled={isSavingDirectory}
+                                                    className="inline-flex items-center gap-1.5 rounded-md border border-[#dfe2e7] px-3 py-2 text-xs font-semibold text-[#536174] disabled:opacity-50"
+                                                >
+                                                    <X className="h-3.5 w-3.5" />
+                                                    Cancelar
+                                                </button>
+                                                <button
+                                                    type="submit"
+                                                    disabled={isSavingDirectory}
+                                                    className="inline-flex items-center gap-1.5 rounded-md bg-[#0e5c3b] px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
+                                                >
+                                                    {isSavingDirectory && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                                                    Guardar
+                                                </button>
+                                            </div>
+                                        </form>
+                                    )}
+
+                                    <div className="mt-4 space-y-2">
+                                        {tenantUsers.length === 0 ? (
+                                            <p className="rounded-md border border-dashed border-[#dfe2e7] px-3 py-5 text-center text-xs text-[#758296]">
+                                                Sin usuarios registrados.
+                                            </p>
+                                        ) : (
+                                            tenantUsers.map((user) => (
+                                                <div
+                                                    key={user.userID}
+                                                    className="flex items-center justify-between gap-3 rounded-md border border-[#edf0f2] px-3 py-2"
+                                                >
+                                                    <div className="min-w-0">
+                                                        <p className="truncate text-xs font-bold text-[#122238]">{user.name}</p>
+                                                        <p className="truncate text-[10px] text-[#758296]">
+                                                            {user.email} Â· {user.role}
+                                                        </p>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openEditUserForm(user)}
+                                                        disabled={isSavingDirectory}
+                                                        aria-label={`Editar usuario ${user.name}`}
+                                                        className="shrink-0 rounded-md border border-[#dfe2e7] p-2 text-[#536174] hover:bg-[#f5f6f8] disabled:opacity-50"
+                                                    >
+                                                        <Pencil className="h-3.5 w-3.5" />
+                                                    </button>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </article>
+
+                                <article className="rounded-lg border border-[#dfe2e7] bg-white p-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div>
+                                            <h3 className="flex items-center gap-2 text-xs font-extrabold text-[#122238]">
+                                                <Store className="h-4 w-4 text-[#0e5c3b]" />
+                                                Tiendas
+                                            </h3>
+                                            <p className="mt-1 text-[10px] text-[#758296]">
+                                                {tenantStores.length} de {metrics?.usage.maxStores ?? currentTenant?.maxStores ?? 0}
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={openCreateStoreForm}
+                                            disabled={isSavingDirectory}
+                                            className="inline-flex items-center gap-1.5 rounded-md border border-[#cbd5df] px-3 py-1.5 text-[10px] font-bold text-[#294157] hover:bg-[#f5f7f8] disabled:opacity-50"
+                                        >
+                                            <Plus className="h-3.5 w-3.5" />
+                                            Nueva
+                                        </button>
+                                    </div>
+
+                                    {activeForm === "store" && (
+                                        <form
+                                            onSubmit={handleSaveStore}
+                                            className="mt-4 grid gap-3 rounded-md border border-[#e1e6eb] bg-[#f8f9fb] p-3"
+                                        >
+                                            <div className="grid gap-3 sm:grid-cols-2">
+                                                <div className="space-y-1">
+                                                    <Label htmlFor="tenant-store-name">Nombre</Label>
+                                                    <Input
+                                                        id="tenant-store-name"
+                                                        value={storeForm.name}
+                                                        onChange={(event) =>
+                                                            setStoreForm((current) => ({
+                                                                ...current,
+                                                                name: event.target.value,
+                                                            }))
+                                                        }
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Label htmlFor="tenant-store-email">Correo</Label>
+                                                    <Input
+                                                        id="tenant-store-email"
+                                                        type="email"
+                                                        value={storeForm.email}
+                                                        onChange={(event) =>
+                                                            setStoreForm((current) => ({
+                                                                ...current,
+                                                                email: event.target.value,
+                                                            }))
+                                                        }
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Label htmlFor="tenant-store-rut">RUT</Label>
+                                                    <Input
+                                                        id="tenant-store-rut"
+                                                        value={storeForm.rut}
+                                                        onChange={(event) =>
+                                                            setStoreForm((current) => ({
+                                                                ...current,
+                                                                rut: event.target.value,
+                                                            }))
+                                                        }
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Label htmlFor="tenant-store-phone">TelÃ©fono</Label>
+                                                    <Input
+                                                        id="tenant-store-phone"
+                                                        value={storeForm.phone}
+                                                        onChange={(event) =>
+                                                            setStoreForm((current) => ({
+                                                                ...current,
+                                                                phone: event.target.value,
+                                                            }))
+                                                        }
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Label htmlFor="tenant-store-location">Comuna o sector</Label>
+                                                    <Input
+                                                        id="tenant-store-location"
+                                                        value={storeForm.location}
+                                                        onChange={(event) =>
+                                                            setStoreForm((current) => ({
+                                                                ...current,
+                                                                location: event.target.value,
+                                                            }))
+                                                        }
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Label htmlFor="tenant-store-city">Ciudad</Label>
+                                                    <Input
+                                                        id="tenant-store-city"
+                                                        value={storeForm.city}
+                                                        onChange={(event) =>
+                                                            setStoreForm((current) => ({
+                                                                ...current,
+                                                                city: event.target.value,
+                                                            }))
+                                                        }
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="space-y-1 sm:col-span-2">
+                                                    <Label htmlFor="tenant-store-address">DirecciÃ³n</Label>
+                                                    <Input
+                                                        id="tenant-store-address"
+                                                        value={storeForm.address}
+                                                        onChange={(event) =>
+                                                            setStoreForm((current) => ({
+                                                                ...current,
+                                                                address: event.target.value,
+                                                            }))
+                                                        }
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Label htmlFor="tenant-store-type">Tipo</Label>
+                                                    <select
+                                                        id="tenant-store-type"
+                                                        value={storeForm.type}
+                                                        onChange={(event) =>
+                                                            setStoreForm((current) => ({
+                                                                ...current,
+                                                                type: event.target.value as StoreTypeValue,
+                                                            }))
+                                                        }
+                                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none"
+                                                    >
+                                                        {STORE_TYPE_OPTIONS.map((type) => (
+                                                            <option key={type.value} value={type.value}>
+                                                                {type.label}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <label className="flex items-center gap-2 rounded-md border border-[#dfe2e7] px-3 py-2 text-xs font-semibold text-[#39485b]">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={Boolean(storeForm.isCentralStore)}
+                                                        onChange={(event) =>
+                                                            setStoreForm((current) => ({
+                                                                ...current,
+                                                                isCentralStore: event.target.checked,
+                                                            }))
+                                                        }
+                                                        className="h-4 w-4"
+                                                    />
+                                                    Tienda central
+                                                </label>
+                                                <div className="space-y-1 sm:col-span-2">
+                                                    <Label htmlFor="tenant-store-img">Imagen</Label>
+                                                    <Input
+                                                        id="tenant-store-img"
+                                                        value={storeForm.storeImg ?? ""}
+                                                        onChange={(event) =>
+                                                            setStoreForm((current) => ({
+                                                                ...current,
+                                                                storeImg: event.target.value,
+                                                            }))
+                                                        }
+                                                        placeholder="https://..."
+                                                    />
+                                                </div>
+                                                <div className="space-y-1 sm:col-span-2">
+                                                    <Label htmlFor="tenant-store-business-name">RazÃ³n social</Label>
+                                                    <Input
+                                                        id="tenant-store-business-name"
+                                                        value={storeForm.businessName ?? ""}
+                                                        onChange={(event) =>
+                                                            setStoreForm((current) => ({
+                                                                ...current,
+                                                                businessName: event.target.value,
+                                                            }))
+                                                        }
+                                                    />
+                                                </div>
+                                                <div className="space-y-1 sm:col-span-2">
+                                                    <Label htmlFor="tenant-store-giro">Giro</Label>
+                                                    <Input
+                                                        id="tenant-store-giro"
+                                                        value={storeForm.giro ?? ""}
+                                                        onChange={(event) =>
+                                                            setStoreForm((current) => ({
+                                                                ...current,
+                                                                giro: event.target.value,
+                                                            }))
+                                                        }
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Label htmlFor="tenant-store-acteco">ACTECO</Label>
+                                                    <Input
+                                                        id="tenant-store-acteco"
+                                                        value={storeForm.acteco ?? ""}
+                                                        onChange={(event) =>
+                                                            setStoreForm((current) => ({
+                                                                ...current,
+                                                                acteco: event.target.value,
+                                                            }))
+                                                        }
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Label htmlFor="tenant-store-sii-code">CÃ³digo SII</Label>
+                                                    <Input
+                                                        id="tenant-store-sii-code"
+                                                        value={storeForm.cdgSIISucur ?? ""}
+                                                        onChange={(event) =>
+                                                            setStoreForm((current) => ({
+                                                                ...current,
+                                                                cdgSIISucur: event.target.value,
+                                                            }))
+                                                        }
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-end gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setActiveForm(null)}
+                                                    disabled={isSavingDirectory}
+                                                    className="inline-flex items-center gap-1.5 rounded-md border border-[#dfe2e7] px-3 py-2 text-xs font-semibold text-[#536174] disabled:opacity-50"
+                                                >
+                                                    <X className="h-3.5 w-3.5" />
+                                                    Cancelar
+                                                </button>
+                                                <button
+                                                    type="submit"
+                                                    disabled={isSavingDirectory}
+                                                    className="inline-flex items-center gap-1.5 rounded-md bg-[#0e5c3b] px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
+                                                >
+                                                    {isSavingDirectory && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                                                    Guardar
+                                                </button>
+                                            </div>
+                                        </form>
+                                    )}
+
+                                    <div className="mt-4 space-y-2">
+                                        {tenantStores.length === 0 ? (
+                                            <p className="rounded-md border border-dashed border-[#dfe2e7] px-3 py-5 text-center text-xs text-[#758296]">
+                                                Sin tiendas registradas.
+                                            </p>
+                                        ) : (
+                                            tenantStores.map((store) => (
+                                                <div
+                                                    key={store.storeID}
+                                                    className="flex items-center justify-between gap-3 rounded-md border border-[#edf0f2] px-3 py-2"
+                                                >
+                                                    <div className="min-w-0">
+                                                        <p className="truncate text-xs font-bold text-[#122238]">{store.name}</p>
+                                                        <p className="truncate text-[10px] text-[#758296]">
+                                                            {store.email} Â· {store.type ?? "sin tipo"}
+                                                        </p>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openEditStoreForm(store)}
+                                                        disabled={isSavingDirectory}
+                                                        aria-label={`Editar tienda ${store.name}`}
+                                                        className="shrink-0 rounded-md border border-[#dfe2e7] p-2 text-[#536174] hover:bg-[#f5f6f8] disabled:opacity-50"
+                                                    >
+                                                        <Pencil className="h-3.5 w-3.5" />
+                                                    </button>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </article>
                             </section>
 
                             <form
