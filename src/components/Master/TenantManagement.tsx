@@ -176,8 +176,12 @@ export default function TenantManagement({
                                         <td className="px-5 py-3.5 text-[10px] font-semibold text-[#39485b]">
                                             {tenant.planType}
                                         </td>
-                                        <td className="px-5 py-3.5 text-center text-[11px] font-bold">{tenant.maxStores}</td>
-                                        <td className="px-5 py-3.5 text-center text-[11px] font-bold">{tenant.maxUsers}</td>
+                                        <td className="px-5 py-3.5 text-center text-[11px] font-bold">
+                                            {tenant.stores?.length ?? 0}/{tenant.maxStores}
+                                        </td>
+                                        <td className="px-5 py-3.5 text-center text-[11px] font-bold">
+                                            {tenant.users?.length ?? 0}/{tenant.maxUsers}
+                                        </td>
                                         <td className="px-5 py-3.5">
                                             <p className="text-[10px] text-[#39485b]">{tenant.timeZone}</p>
                                             <p className="mt-1 text-[9px] text-[#8994a3]">{tenant.locale}</p>

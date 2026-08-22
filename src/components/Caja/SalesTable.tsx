@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from "react"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
-import { ISaleResponse } from "@/interfaces/sales/ISale"
+import { ISaleProduct, ISaleResponse } from "@/interfaces/sales/ISale"
 import { IPurchaseOrder } from "@/interfaces/orders/IPurchaseOrder"
 import { useRouter } from "next/navigation"
 import { toPrice } from "@/utils/priceFormat"
@@ -59,7 +59,12 @@ const formatDayLabel = (date: Date) => dateFormatter.format(date).replace(".", "
 
 const formatMonthLabel = (date: Date) => monthFormatter.format(date).toUpperCase()
 
-const getStoreName = (item: TableItem) => item.Store?.name || "Sucursal"
+const getStoreName = (item: TableItem) => {
+    const storeName = ("store" in item ? item.store?.name : undefined) || item.Store?.name
+    if (!storeName || normalizeText(storeName) === "haulmer") return "Caja Arauco"
+
+    return storeName
+}
 
 const getSaleTotals = (item: ISaleResponse) => {
     const nulledProducts = getAnulatedProducts(item)
@@ -73,20 +78,51 @@ const getSaleTotals = (item: ISaleResponse) => {
     }
 }
 
+const getSaleProductLabel = (saleProduct: ISaleProduct) => {
+    const variationLabel = [
+        saleProduct.variation?.color,
+        saleProduct.variation?.size,
+    ]
+        .filter(Boolean)
+        .join(" ")
+        .trim()
+
+    return saleProduct.productName?.trim() || saleProduct.variation?.sku?.trim() || variationLabel || "Producto"
+}
+
+const getSaleProductSearchText = (saleProduct: ISaleProduct) => {
+    return [
+        getSaleProductLabel(saleProduct),
+        saleProduct.variation?.sku,
+        saleProduct.variation?.color,
+        saleProduct.variation?.size,
+    ]
+        .filter(Boolean)
+        .join(" ")
+}
+
+const getActiveSaleProducts = (item: ISaleResponse, nulledProducts: ISaleProduct[]) => {
+    return (item.SaleProducts ?? []).flatMap((sp, index) => {
+        const nulled = nulledProducts.find((np) => np.saleProductID === sp.saleProductID)
+        const actualQuantity = sp.quantitySold - (nulled?.quantitySold || 0)
+        if (actualQuantity <= 0) return []
+
+        return [
+            {
+                key: sp.saleProductID || sp.variationID || `${item.saleID}-${index}`,
+                quantity: actualQuantity,
+                label: getSaleProductLabel(sp),
+                searchText: getSaleProductSearchText(sp),
+            },
+        ]
+    })
+}
+
 const getProductsSearchText = (item: TableItem) => {
     if ("saleID" in item) {
         const { nulledProducts } = getSaleTotals(item)
-        return (item.SaleProducts ?? [])
-            .map((sp) => {
-                const nulled = nulledProducts.find((np) => np.saleProductID === sp.saleProductID)
-                const actualQuantity = sp.quantitySold - (nulled?.quantitySold || 0)
-                if (actualQuantity <= 0) return ""
-
-                const label =
-                    (sp?.variation?.sku ?? `${sp?.variation?.color ?? ""} ${sp?.variation?.size ?? ""}`.trim()) ||
-                    "Producto"
-                return `${actualQuantity} x ${label}`
-            })
+        return getActiveSaleProducts(item, nulledProducts)
+            .map((product) => `${product.quantity} x ${product.searchText}`)
             .join(" ")
     }
 
@@ -242,24 +278,9 @@ const SalesTable: React.FC<Props> = ({ items }) => {
                                         if ("saleID" in item) {
                                             const { nulledProducts, totalNulledAmount, totalNulledUnits } =
                                                 getSaleTotals(item)
-                                            const products = (item.SaleProducts ?? []).map((sp) => {
-                                                const nulled = nulledProducts.find(
-                                                    (np) => np.saleProductID === sp.saleProductID,
-                                                )
-                                                const actualQuantity = sp.quantitySold - (nulled?.quantitySold || 0)
-                                                if (actualQuantity <= 0) return null
-
-                                                const label =
-                                                    (sp?.variation?.sku ??
-                                                        `${sp?.variation?.color ?? ""} ${sp?.variation?.size ?? ""}`.trim()) ||
-                                                    "Producto"
-
-                                                return (
-                                                    <p key={sp.saleProductID}>
-                                                        {actualQuantity} x {label}
-                                                    </p>
-                                                )
-                                            })
+                                            const products = getActiveSaleProducts(item, nulledProducts)
+                                            const visibleProducts = products.slice(0, 2)
+                                            const extraProductsCount = Math.max(products.length - visibleProducts.length, 0)
 
                                             const statusText =
                                                 item.status === "Anulado" && totalNulledUnits > 0
@@ -291,8 +312,17 @@ const SalesTable: React.FC<Props> = ({ items }) => {
                                                     </TableCell>
                                                     <TableCell className="max-w-[520px] align-middle text-sm">
                                                         <div className="space-y-1">
-                                                            {products}
-                                                            {products.every((product) => product === null) && (
+                                                            {visibleProducts.map((product) => (
+                                                                <p key={product.key}>
+                                                                    {product.quantity} x {product.label}
+                                                                </p>
+                                                            ))}
+                                                            {extraProductsCount > 0 && (
+                                                                <p className="text-xs font-semibold text-slate-500">
+                                                                    +{extraProductsCount} más
+                                                                </p>
+                                                            )}
+                                                            {products.length === 0 && (
                                                                 <p className="italic text-rose-600">
                                                                     Venta anulada por completo
                                                                 </p>

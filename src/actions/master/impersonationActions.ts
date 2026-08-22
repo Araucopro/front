@@ -38,7 +38,7 @@ const activeCookieOptions = {
 }
 
 export async function startTenantImpersonation(
-    tenantID: string,
+    tenantId: string,
     tenantName: string,
     reason: string,
 ): Promise<MasterImpersonationBootstrap> {
@@ -58,7 +58,7 @@ export async function startTenantImpersonation(
     }
 
     const impersonationToken = await fetcher<string>(
-        `${API_URL}/master/tenants/${encodeURIComponent(tenantID)}/impersonate`,
+        `${API_URL}/master/tenants/${encodeURIComponent(tenantId)}/impersonate`,
         {
             method: "POST",
             headers: {
@@ -88,7 +88,7 @@ export async function startTenantImpersonation(
     }
 
     const info: MasterImpersonationInfo = {
-        tenantID,
+        tenantID: tenantId,
         tenantName,
         reason: trimmedReason,
     }

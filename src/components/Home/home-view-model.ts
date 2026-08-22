@@ -8,6 +8,7 @@ import { IStore } from "@/interfaces/stores/IStore"
 import { IPurchaseOrder } from "@/interfaces/orders/IPurchaseOrder"
 import { IResume } from "@/interfaces/sales/ISalesResume"
 import { ISaleResponse } from "@/interfaces/sales/ISale"
+import { IProduct } from "@/interfaces/products/IProduct"
 import { getChileDateMeta, getChileYYYYMMDD, isYYYYMMDD, toChileMiddayUTC } from "@/utils/chile-date"
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -83,6 +84,62 @@ const sortByCreatedAtDesc = (items: HomeTableItem[]): HomeTableItem[] => {
     return [...items].sort((a, b) => getCreatedAtTime(b) - getCreatedAtTime(a))
 }
 
+type ProductLookup = {
+    byVariationID: Map<string, { productName?: string; sku?: string; size?: string }>
+    byStoreProductID: Map<string, { productName?: string; sku?: string; size?: string }>
+}
+
+const buildProductLookup = (products: IProduct[]): ProductLookup => {
+    const byVariationID = new Map<string, { productName?: string; sku?: string; size?: string }>()
+    const byStoreProductID = new Map<string, { productName?: string; sku?: string; size?: string }>()
+
+    for (const product of products) {
+        for (const variation of product.ProductVariations ?? []) {
+            const details = {
+                productName: product.name,
+                sku: variation.sku,
+                size: variation.sizeNumber,
+            }
+
+            if (variation.variationID) {
+                byVariationID.set(variation.variationID, details)
+            }
+
+            for (const storeProduct of variation.StoreProducts ?? []) {
+                if (storeProduct.storeProductID) {
+                    byStoreProductID.set(storeProduct.storeProductID, details)
+                }
+            }
+        }
+    }
+
+    return { byVariationID, byStoreProductID }
+}
+
+const enrichSalesProductNames = (sales: ISaleResponse[], products: IProduct[]): ISaleResponse[] => {
+    const productLookup = buildProductLookup(products)
+
+    return sales.map((sale) => ({
+        ...sale,
+        SaleProducts: sale.SaleProducts.map((saleProduct) => {
+            const productDetails =
+                productLookup.byStoreProductID.get(saleProduct.storeProductID ?? "") ??
+                productLookup.byVariationID.get(saleProduct.variationID) ??
+                productLookup.byVariationID.get(saleProduct.variation?.variationID)
+
+            return {
+                ...saleProduct,
+                productName: saleProduct.productName ?? productDetails?.productName,
+                variation: {
+                    ...saleProduct.variation,
+                    sku: saleProduct.variation?.sku || productDetails?.sku || "",
+                    size: saleProduct.variation?.size || productDetails?.size || "",
+                },
+            }
+        }),
+    }))
+}
+
 export type HomeViewModel = {
     stores: IStore[]
     storeID: string
@@ -110,6 +167,7 @@ export const buildHomeViewModel = async (rawStoreID: string, rawDate: string): P
     const storesPromise = getAllStores()
     const allOrdersPromise = getAllPurchaseOrders()
     const allProductsPromise = getProductsForSale(storeID)
+    const productCatalogPromise = specialFilter ? allProductsPromise : getAllProducts()
 
     const stores = await storesPromise
     if (stores.length === 0) {
@@ -121,16 +179,18 @@ export const buildHomeViewModel = async (rawStoreID: string, rawDate: string): P
     const salesStores = stores.filter((store) => matchesStoreScope(storeID, store))
     const salesPromise = Promise.all(salesStores.map((store) => getSales(store.storeID))).then((pages) => pages.flat())
 
-    const [salesSource, resume, allOrders, allProducts] = await Promise.all([
+    const [salesSource, resume, allOrders, allProducts, productCatalog] = await Promise.all([
         salesPromise,
         getResume(chartStoreID || "", date),
         allOrdersPromise,
         allProductsPromise,
+        productCatalogPromise,
     ])
 
-    const salesWithStores = salesSource.map((sale) => ({
+    const salesWithProductNames = enrichSalesProductNames(salesSource, [...productCatalog, ...allProducts])
+    const salesWithStores = salesWithProductNames.map((sale) => ({
         ...sale,
-        Store: sale.Store?.storeID ? sale.Store : (storeIndex.get(sale.storeID) ?? sale.Store),
+        Store: storeIndex.get(sale.storeID) ?? sale.Store,
     }))
     const tableSales = filterSalesByScope(salesWithStores, storeID, storeIndex)
     const scopedResumeSales = filterSalesForResume(tableSales, date)

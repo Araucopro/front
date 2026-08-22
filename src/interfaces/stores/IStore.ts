@@ -4,6 +4,7 @@ import type { IUserStoreRelation } from "@/interfaces/common/IUserStoreRelation"
 
 export interface IStore {
     storeID: string
+    tenantID?: string
     name: string
     storeImg: string | null
     location: string
@@ -14,6 +15,10 @@ export interface IStore {
     email: string
     type?: string
     isCentralStore?: boolean
+    giro?: string
+    acteco?: string
+    cdgSIISucur?: string
+    businessName?: string
     /** @deprecated use isCentralStore */
     isAdminStore?: boolean
     markup?: string
