@@ -21,7 +21,11 @@
                 "example": 12000
             }
         },
-        "required": ["variationID", "stock", "priceCost"]
+        "required": [
+            "variationID",
+            "stock",
+            "priceCost"
+        ]
     },
     "TransferStockDto": {
         "type": "object",
@@ -47,7 +51,10 @@
                 }
             }
         },
-        "required": ["targetStoreID", "items"]
+        "required": [
+            "targetStoreID",
+            "items"
+        ]
     },
     "CreateInventoryMovementDto": {
         "type": "object",
@@ -75,7 +82,13 @@
                 "example": 100
             },
             "reason": {
-                "enum": ["SALE", "PURCHASE", "ADJUSTMENT", "TRANSFER_IN", "TRANSFER_OUT"],
+                "enum": [
+                    "SALE",
+                    "PURCHASE",
+                    "ADJUSTMENT",
+                    "TRANSFER_IN",
+                    "TRANSFER_OUT"
+                ],
                 "type": "string",
                 "description": "Motivo del movimiento",
                 "example": "ADJUSTMENT"
@@ -86,45 +99,11 @@
                 "example": "REF-12345"
             }
         },
-        "required": ["storeID", "variationID", "reason"]
-    },
-    "InventoryMovement": {
-        "type": "object",
-        "properties": {
-            "movementID": {
-                "type": "string",
-                "description": "ID único del movimiento",
-                "example": "550e8400-e29b-41d4-a716-446655440000"
-            },
-            "delta": {
-                "type": "number",
-                "description": "Cambio neto en el stock (positivo para entradas, negativo para salidas)",
-                "example": -5
-            },
-            "reason": {
-                "enum": ["SALE", "PURCHASE", "ADJUSTMENT", "TRANSFER_IN", "TRANSFER_OUT"],
-                "type": "string",
-                "description": "Motivo del movimiento de inventario",
-                "example": "SALE"
-            },
-            "referenceID": {
-                "type": "string",
-                "description": "ID de referencia externa (ID de venta, ID de transferencia, etc.)",
-                "example": "SALE-99123"
-            },
-            "createdAt": {
-                "format": "date-time",
-                "type": "string",
-                "description": "Fecha y hora del movimiento"
-            },
-            "store": {
-                "$ref": "#/components/schemas/Store"
-            },
-            "variation": {
-                "$ref": "#/components/schemas/ProductVariation"
-            }
-        },
-        "required": ["movementID", "delta", "reason", "createdAt", "store", "variation"]
+        "required": [
+            "storeID",
+            "variationID",
+            "reason"
+        ]
     },
     "CreateStoreTransferDto": {
         "type": "object",
@@ -142,76 +121,10 @@
                 "example": "660f9501-f30c-52e5-b827-557766551111"
             }
         },
-        "required": ["originStoreID", "destinationStoreID"]
-    },
-    "StoreTransfer": {
-        "type": "object",
-        "properties": {
-            "transferID": {
-                "type": "string",
-                "description": "ID de la transferencia",
-                "example": "550e8400-e29b-41d4-a716-446655440000"
-            },
-            "status": {
-                "enum": ["PENDING", "COMPLETED", "CANCELLED"],
-                "type": "string",
-                "description": "Estado actual de la transferencia",
-                "example": "PENDING"
-            },
-            "items": {
-                "description": "Lista de productos incluidos en la transferencia",
-                "type": "array",
-                "items": {
-                    "$ref": "#/components/schemas/StoreTransferItem"
-                }
-            },
-            "createdAt": {
-                "format": "date-time",
-                "type": "string",
-                "description": "Fecha de creación del registro"
-            },
-            "updatedAt": {
-                "format": "date-time",
-                "type": "string",
-                "description": "Fecha de última modificación"
-            },
-            "completedAt": {
-                "format": "date-time",
-                "type": "string",
-                "description": "Fecha y hora en que se completó la transferencia",
-                "nullable": true
-            },
-            "originStore": {
-                "$ref": "#/components/schemas/Store"
-            },
-            "destinationStore": {
-                "$ref": "#/components/schemas/Store"
-            }
-        },
-        "required": ["transferID", "status", "items", "createdAt", "updatedAt", "originStore", "destinationStore"]
-    },
-    "StoreTransferItem": {
-        "type": "object",
-        "properties": {
-            "transferItemID": {
-                "type": "string",
-                "description": "ID del item en la transferencia",
-                "example": "550e8400-e29b-41d4-a716-446655440000"
-            },
-            "quantity": {
-                "type": "number",
-                "description": "Cantidad de unidades transferidas",
-                "example": 10,
-                "minimum": 1
-            },
-            "transfer": {
-                "$ref": "#/components/schemas/StoreTransfer"
-            },
-            "variation": {
-                "$ref": "#/components/schemas/ProductVariation"
-            }
-        },
-        "required": ["transferItemID", "quantity", "transfer", "variation"]
+        "required": [
+            "originStoreID",
+            "destinationStoreID"
+        ]
     },
     "AddTransferItemDto": {
         "type": "object",
@@ -229,6 +142,9 @@
                 "example": 10
             }
         },
-        "required": ["variationID", "quantity"]
+        "required": [
+            "variationID",
+            "quantity"
+        ]
     }
 }

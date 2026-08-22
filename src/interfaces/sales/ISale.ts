@@ -3,18 +3,66 @@ import { IUser } from "../users/IUser"
 
 // Para enviar una nueva venta desde el frontend
 export type PaymentType = "Efectivo" | "Debito" | "Credito"
-export type PaymentStatus = "Pagado" | "Pendiente" | "Anulado"
+export type SaleType = "BOLETA" | "FACTURA" | "NOTA_VENTA"
+export type ElectronicDocumentType = Exclude<SaleType, "NOTA_VENTA">
+export type PaymentStatus = "Pagado" | "Pendiente" | "Anulado" | "EMITIDA" | "CONVERTIDA"
 
 export interface ISaleItemRequest {
-    variationID: string
+    storeProductID: string
     quantity: number
-    unitPrice: number
+}
+
+export interface ISaleReceiver {
+    rut: string
+    name: string
+    email?: string
+    address: string
+    city: string
+    giro: string
 }
 
 export interface ISaleRequest {
-    storeID: string
+    saleType: SaleType
     paymentType: PaymentType
+    issueDate?: string
+    receiver?: ISaleReceiver
     items: ISaleItemRequest[]
+}
+
+export interface ISaleDte {
+    dteDocumentID: string
+    TOKEN: string
+    FOLIO: number | null
+    STATUS: string
+    PDF?: string
+    XML?: string
+    WARNING: unknown[]
+    saleID: string | null
+}
+
+export interface ISaleOperationResponse {
+    sale: ISaleResponse
+    dte: ISaleDte | null
+}
+
+export interface ISaleListFilters {
+    saleType?: SaleType
+    status?: "EMITIDA" | "CONVERTIDA"
+    from?: string
+    to?: string
+    page?: number
+    limit?: number
+}
+
+export interface ISaleListMeta {
+    page: number
+    limit: number
+    total: number
+}
+
+export interface ISaleListResponse {
+    sales: ISaleResponse[]
+    meta: ISaleListMeta
 }
 
 export interface IUpdateSaleStatus {
@@ -42,6 +90,8 @@ export interface ISaleProduct {
     saleProductID: string
     saleID: string
     variationID: string
+    storeProductID?: string
+    productName?: string
     variation: IVariationInSale
     unitPrice: number | string
     subtotal: number | string
@@ -58,6 +108,11 @@ export interface ISaleResponse {
     status: PaymentStatus
     createdAt: string
     paymentType?: string
+    saleType?: SaleType
+    issueDate?: string
+    manualDiscount?: number
+    receiver?: ISaleReceiver | null
+    dte?: ISaleDte | null
     Store: IStore
     SaleProducts: ISaleProduct[]
     Return: ISaleReturn | null

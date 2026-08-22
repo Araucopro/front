@@ -1,23 +1,41 @@
 "use client"
-import React, { useEffect, useState } from "react"
-import { useRouter, usePathname } from "next/navigation"
-import Image from "next/image"
-import { useTienda } from "@/stores/tienda.store"
-import { Collapsible } from "@/components/Animations/Collapsible"
-import { SidebarTransition } from "@/components/Animations/SidebarTransition"
-import { Switch } from "../ui/switch"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { navItems } from "@/utils/navItems"
-import { FaBars, FaMoon, FaSun, FaTimes } from "react-icons/fa"
-import { motion } from "framer-motion"
-import { MotionItem } from "../Animations/motionItem"
-import { useAuth } from "@/stores/user.store"
-import { Role } from "@/lib/userRoles"
-import { LoaderCircle } from "lucide-react"
 
-import useMobileScreen from "@/hooks/useMobileScreen"
+import React, { useEffect, useMemo, useState } from "react"
+import Image from "next/image"
+import { usePathname, useRouter } from "next/navigation"
+import { motion } from "framer-motion"
+import { FaBars, FaMoon, FaSun, FaTimes } from "react-icons/fa"
+import { ChevronDown, LoaderCircle } from "lucide-react"
+import { Collapsible } from "@/components/Animations/Collapsible"
+import { MotionItem } from "@/components/Animations/motionItem"
+import { SidebarTransition } from "@/components/Animations/SidebarTransition"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Switch } from "@/components/ui/switch"
 import useDarkMode from "@/hooks/useDarkMode"
+import useMobileScreen from "@/hooks/useMobileScreen"
 import useQueryParams from "@/hooks/useQueryParams"
+import { Role } from "@/lib/userRoles"
+import { useTienda } from "@/stores/tienda.store"
+import { useAuth } from "@/stores/user.store"
+import { navItems } from "@/utils/navItems"
+
+type SidebarSubItem = {
+    label: string
+    route?: string
+    icon?: React.ComponentType<{ className?: string }>
+}
+
+type SidebarItem = {
+    label: string
+    route?: string
+    icon: React.ComponentType<{ className?: string }>
+    subItems?: SidebarSubItem[]
+}
+
+const splitRoute = (route: string) => {
+    const [path, query = ""] = route.split("?")
+    return { path, query }
+}
 
 export default function Sidebar() {
     const router = useRouter()
@@ -27,7 +45,6 @@ export default function Sidebar() {
 
     const { user } = useAuth()
     const { storeSelected } = useTienda()
-
     const { isMobile, isMobileOpen, setIsMobileOpen } = useMobileScreen()
     const { isDarkMode, setIsDarkMode } = useDarkMode()
 
@@ -41,10 +58,88 @@ export default function Sidebar() {
 
     useEffect(() => {
         const storeID = searchParams.get("storeID")
-        if (!storeID) {
-            if (storeSelected) router.push(`${pathname}?${createQueryParam("storeID", storeSelected.storeID)}`)
+        if (!storeID && storeSelected) {
+            router.push(`${pathname}?${createQueryParam("storeID", storeSelected.storeID)}`)
         }
-    }, [pathname, storeSelected])
+    }, [createQueryParam, pathname, router, searchParams, storeSelected])
+
+    const filteredNavItems = useMemo<SidebarItem[]>(() => {
+        if (!user) return []
+
+        const items = navItems as SidebarItem[]
+
+        if (user.role === Role.Vendedor) {
+            return items.filter(
+                (item) =>
+                    item.label !== "UTI" && item.label !== "Estado de Resultados" && item.label !== "Control de Mando",
+            )
+        }
+
+        if (user.role === Role.Consignado) {
+            return items.filter(
+                (item) =>
+                    item.label !== "Caja" &&
+                    item.label !== "Inventario" &&
+                    item.label !== "UTI" &&
+                    item.label !== "Control de Mando" &&
+                    item.label !== "Estado de Resultados",
+            )
+        }
+
+        if (user.role === Role.Tercero) {
+            const renamedItems = items.map((item) => {
+                if (item.label !== "Comercial" || !item.subItems) return item
+
+                return {
+                    ...item,
+                    subItems: item.subItems.map((sub) => (sub.label === "Crear OC" ? { ...sub, label: "Comprar" } : sub)),
+                }
+            })
+
+            return renamedItems.filter((item) => item.label === "Inventario" || item.label === "Comercial")
+        }
+
+        return items
+    }, [user])
+
+    const shouldShowCollapsed = !isMobile && isCollapsed
+
+    const isRouteActive = (route?: string) => {
+        if (!route || route === "#") return false
+
+        const { path, query } = splitRoute(route)
+        if (pathname !== path) return false
+
+        const routeParams = new URLSearchParams(query)
+        for (const [key, value] of routeParams.entries()) {
+            if (key !== "storeID" && searchParams.get(key) !== value) return false
+        }
+
+        return true
+    }
+
+    const buildTargetRoute = (route: string) => {
+        const { path, query } = splitRoute(route)
+        const params = new URLSearchParams(query)
+
+        if (storeSelected?.storeID) {
+            params.set("storeID", storeSelected.storeID)
+        }
+
+        const targetQuery = params.toString()
+        return targetQuery ? `${path}?${targetQuery}` : path
+    }
+
+    const handleNavClick = (route?: string) => {
+        if (!route || route === "#") return
+
+        setPendingRoute(route)
+        router.push(buildTargetRoute(route))
+
+        if (isMobile) {
+            setIsMobileOpen(false)
+        }
+    }
 
     const toggleSection = (sectionId: string) => {
         setOpenSections((prev) => ({
@@ -53,96 +148,65 @@ export default function Sidebar() {
         }))
     }
 
-    const handleNavClick = async (route: string) => {
-        const targetRoute = storeSelected ? `${route}?${createQueryParam("storeID", storeSelected.storeID)}` : route
-
-        if (route !== "#" && route !== pathname) {
-            setPendingRoute(route)
-        }
-
-        router.push(targetRoute)
-        // Close mobile menu after navigation
-        if (isMobile) {
-            setIsMobileOpen(false)
-        }
-    }
-
-    const filteredNavItems = React.useMemo(() => {
-        if (!user) return []
-        if (user.role === Role.Vendedor) {
-            return navItems.filter(
-                (item) =>
-                    item.label !== "UTI" && item.label !== "Estado de Resultados" && item.label !== "Control de Mando",
-            )
-        } else if (user.role === Role.Consignado) {
-            return navItems.filter(
-                (item) =>
-                    item.label !== "Caja" &&
-                    item.label !== "Inventario" &&
-                    item.label !== "UTI" &&
-                    item.label !== "Control de Mando" &&
-                    item.label !== "Estado de Resultados",
-            )
-        } else if (user.role === Role.Tercero) {
-            const mutatedNavItems = navItems.map((item) => {
-                if (item.label === "Facturación" && item.subItems) {
-                    return {
-                        ...item,
-                        subItems: item.subItems.map((sub) =>
-                            sub.label === "Crear OC" ? { ...sub, label: "Comprar" } : sub,
-                        ),
-                    }
-                }
-                return item
-            })
-            return mutatedNavItems.filter((item) => item.label === "Inventario" || item.label === "Facturación")
-        }
-        return navItems
-    }, [user])
-    // Check if a section has active items
-    const hasActiveSubItem = (subItems: any[]) => {
-        return subItems?.some((sub) => pathname === sub.route)
-    }
-
-    // Determine if sidebar should show collapsed content
-    // On mobile: never collapsed when open, always show full content
-    // On desktop: use isCollapsed state
-    const shouldShowCollapsed = !isMobile && isCollapsed
-
     const PendingOverlay = () => (
         <motion.span
             aria-hidden="true"
             initial={{ x: "-100%" }}
             animate={{ x: "100%" }}
-            transition={{
-                duration: 1.1,
-                repeat: Infinity,
-                ease: "easeInOut",
-            }}
-            className="absolute inset-y-0 left-0 w-full bg-white/15"
+            transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute inset-y-0 left-0 w-full bg-white/40 dark:bg-white/10"
         />
     )
 
-    // Mobile overlay
     const MobileOverlay = () => (
         <div
-            className={`fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden transition-opacity duration-300 ${
-                isMobileOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+            className={`fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 lg:hidden ${
+                isMobileOpen ? "opacity-100" : "pointer-events-none opacity-0"
             }`}
             onClick={() => setIsMobileOpen(false)}
         />
     )
 
-    // Mobile menu button
     const MobileMenuButton = () => (
         <button
-            title="btn"
+            title="Abrir menu"
             onClick={() => setIsMobileOpen(true)}
-            className="fixed top-4 left-4 z-50 lg:hidden p-2 rounded-lg bg-white dark:bg-gray-800 shadow-lg border"
+            className="fixed left-4 top-4 z-50 rounded-lg border border-slate-200 bg-white p-2 shadow-lg lg:hidden dark:border-slate-800 dark:bg-slate-900"
         >
-            <FaBars size={20} className="text-gray-600 dark:text-gray-300" />
+            <FaBars size={20} className="text-slate-700 dark:text-slate-200" />
         </button>
     )
+
+    const renderSubItem = (sub: SidebarSubItem) => {
+        const Icon = sub.icon
+        const isSubActive = isRouteActive(sub.route)
+        const isSubPending = pendingRoute === sub.route
+
+        return (
+            <button
+                key={sub.label}
+                onClick={() => handleNavClick(sub.route)}
+                disabled={isSubPending}
+                className={`relative flex h-10 w-full items-center gap-3 overflow-hidden px-6 pl-12 text-left text-[13px] transition-colors ${
+                    isSubPending
+                        ? "cursor-progress bg-[#dcecfb] text-[#12395a] dark:bg-slate-800 dark:text-white"
+                        : isSubActive
+                          ? "bg-[#e8f2fc] font-semibold text-[#0f2a43] dark:bg-slate-800 dark:text-white"
+                          : "text-[#344154] hover:bg-[#f1f5f9] dark:text-slate-300 dark:hover:bg-slate-800"
+                }`}
+            >
+                {isSubPending && <PendingOverlay />}
+                <span className="relative z-10 flex h-4 w-4 items-center justify-center text-[#64748b]">
+                    {isSubPending ? (
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                    ) : Icon ? (
+                        <Icon className="h-3.5 w-3.5" />
+                    ) : null}
+                </span>
+                <span className="relative z-10 truncate">{isSubPending ? "Cargando..." : sub.label}</span>
+            </button>
+        )
+    }
 
     return (
         <>
@@ -150,251 +214,153 @@ export default function Sidebar() {
             <MobileOverlay />
             <TooltipProvider>
                 <div
-                    className={`
-                    fixed lg:relative inset-y-0 left-0 z-50 lg:z-auto
-                    transform transition-transform duration-300 ease-in-out lg:transform-none
-                    ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-                `}
+                    className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out lg:relative lg:z-auto lg:translate-x-0 ${
+                        isMobileOpen ? "translate-x-0" : "-translate-x-full"
+                    }`}
                 >
                     <SidebarTransition isCollapsed={shouldShowCollapsed}>
-                        <div className="flex flex-col h-screen bg-slate-200 shadow-lg shadow-black dark:bg-gray-900 text-gray-600 dark:text-gray-300 overflow-visible">
-                            {/* Header */}
-                            <div className="flex justify-between items-center p-3 lg:p-4">
-                                {!shouldShowCollapsed && (
-                                    <div className="relative h-[106px] w-[160px] lg:h-[126px] lg:w-[190px]">
-                                        <Image
-                                            src="/brand/betty.claro.transparent.png"
-                                            alt="BETTY Software Retail"
-                                            fill
-                                            priority
-                                            sizes="(max-width: 1024px) 160px, 190px"
-                                            className="block object-cover dark:hidden"
-                                        />
-                                        <Image
-                                            src="/brand/betty.dark.transparent2.png"
-                                            alt="BETTY Software Retail"
-                                            fill
-                                            priority
-                                            sizes="(max-width: 1024px) 160px, 190px"
-                                            className="hidden object-cover dark:block"
-                                        />
-                                    </div>
-                                )}
+                        <div className="flex h-screen flex-col overflow-hidden border-r border-[#dde3ea] bg-[#fbfbfd] text-[#263447] shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
+                            <header className="border-b border-[#e2e8f0] px-5 pb-3 pt-4 dark:border-slate-800">
+                                <div className="flex items-start justify-between gap-2">
+                                    {!shouldShowCollapsed && (
+                                        <div className="flex min-w-0 items-center gap-3">
+                                            <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-[10px] bg-[#0f2f22]">
+                                                <Image
+                                                    src="/brand/araucoPro.png"
+                                                    alt="AraucoPro"
+                                                    fill
+                                                    priority
+                                                    sizes="40px"
+                                                    className="object-contain p-1"
+                                                />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="truncate text-lg font-extrabold leading-5 text-[#061328] dark:text-white">
+                                                    Arauco<span className="text-[#007949]">Pro</span>
+                                                </p>
+                                                <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.14em] text-[#64748b]">
+                                                    ERP - CRM - POS - Shopify - SII
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
 
-                                <div className="flex items-center gap-2">
-                                    {/* Mobile close button */}
                                     <button
-                                        title="btn"
-                                        onClick={() => setIsMobileOpen(false)}
-                                        className="lg:hidden p-2 rounded-lg dark:hover:bg-gray-800 hover:bg-sky-800 hover:text-white transition-colors"
+                                        title={shouldShowCollapsed ? "Expandir menu" : "Contraer menu"}
+                                        onClick={() => (isMobile ? setIsMobileOpen(false) : setIsCollapsed(!isCollapsed))}
+                                        className="rounded-md p-2 text-[#64748b] transition-colors hover:bg-[#edf2f7] hover:text-[#0f2a43] dark:hover:bg-slate-800 dark:hover:text-white"
                                     >
-                                        <FaTimes size={18} />
-                                    </button>
-
-                                    {/* Desktop collapse button */}
-                                    <button
-                                        onClick={() => setIsCollapsed(!isCollapsed)}
-                                        className="hidden lg:block p-2 rounded-lg dark:hover:bg-gray-800 hover:bg-sky-800 hover:text-white transition-colors"
-                                    >
-                                        {isCollapsed ? <FaBars size={20} /> : <FaTimes size={20} />}
+                                        {isMobile ? <FaTimes size={18} /> : shouldShowCollapsed ? <FaBars size={18} /> : <FaTimes size={18} />}
                                     </button>
                                 </div>
-                            </div>
 
-                            {/* Navigation */}
-                            <nav className="flex-1 px-0 py-2 lg:py-4 space-y-1 overflow-y-auto overflow-x-hidden">
+                                {!shouldShowCollapsed && (
+                                    <button className="mt-5 flex h-8 w-full items-center justify-between rounded-lg border border-[#d4dbe4] bg-[#edf1f5] px-3 text-[11px] font-bold uppercase tracking-[0.08em] text-[#64748b] shadow-inner dark:border-slate-700 dark:bg-slate-900">
+                                        <span>Mis accesos</span>
+                                        <ChevronDown className="h-3.5 w-3.5" />
+                                    </button>
+                                )}
+                            </header>
+
+                            <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3">
                                 {filteredNavItems.map((item, index) => {
+                                    const Icon = item.icon
                                     const sectionId = item.label.toLowerCase().replace(/\s+/g, "")
-                                    const isActive = pathname === item.route
-                                    const hasActiveChild = item.subItems && hasActiveSubItem(item.subItems)
+                                    const hasSubItems = Boolean(item.subItems?.length)
+                                    const hasActiveChild = Boolean(item.subItems?.some((sub) => isRouteActive(sub.route)))
+                                    const isActive = isRouteActive(item.route)
+                                    const isPending = pendingRoute === item.route
+                                    const isOpen = openSections[sectionId] ?? hasActiveChild
 
                                     return (
-                                        <div key={item.label} className="space-y-1">
-                                            {item.subItems ? (
-                                                <>
-                                                    <MotionItem delay={index}>
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <button
-                                                                    onClick={() => toggleSection(sectionId)}
-                                                                    className={`flex items-center w-full p-2 lg:p-3 transition-all duration-200 group relative
-                                                                        ${
-                                                                            shouldShowCollapsed
-                                                                                ? "justify-center min-h-[40px]"
-                                                                                : ""
-                                                                        }
-                                                                        ${
-                                                                            hasActiveChild
-                                                                                ? shouldShowCollapsed
-                                                                                    ? "bg-sky-700 text-white shadow-lg"
-                                                                                    : "bg-sky-700 text-white shadow-lg border-r-4 border-sky-300"
-                                                                                : "dark:hover:bg-gray-800 hover:bg-sky-800 hover:text-white"
-                                                                        }
-                                                                    `}
-                                                                >
-                                                                    <span className="text-lg flex-shrink-0">
-                                                                        {<item.icon />}
-                                                                    </span>
-                                                                    {!shouldShowCollapsed && (
-                                                                        <>
-                                                                            <span className="ml-3 flex-1 text-left text-sm lg:text-base truncate font-medium">
-                                                                                {item.label}
-                                                                            </span>
-                                                                            <motion.span
-                                                                                animate={{
-                                                                                    rotate: openSections[sectionId]
-                                                                                        ? 180
-                                                                                        : 0,
-                                                                                }}
-                                                                                transition={{ duration: 0.2 }}
-                                                                                className="flex-shrink-0"
-                                                                            >
-                                                                                ▼
-                                                                            </motion.span>
-                                                                        </>
-                                                                    )}
-                                                                </button>
-                                                            </TooltipTrigger>
-                                                            {shouldShowCollapsed && (
-                                                                <TooltipContent side="right" className="ml-20 z-[9999]">
-                                                                    {item.label}
-                                                                </TooltipContent>
-                                                            )}
-                                                        </Tooltip>
-                                                    </MotionItem>
-                                                    <Collapsible
-                                                        isOpen={openSections[sectionId] && !shouldShowCollapsed}
+                                        <MotionItem key={item.label} delay={index}>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <button
+                                                        onClick={() => (hasSubItems ? toggleSection(sectionId) : handleNavClick(item.route))}
+                                                        disabled={isPending}
+                                                        className={`relative flex h-11 w-full items-center gap-3 overflow-hidden border-l-[3px] px-5 text-left text-sm transition-colors ${
+                                                            shouldShowCollapsed ? "justify-center px-0" : ""
+                                                        } ${
+                                                            isPending
+                                                                ? "cursor-progress border-[#2d7fb8] bg-[#dcecfb] text-[#0f2a43] dark:bg-slate-800 dark:text-white"
+                                                                : isActive || hasActiveChild
+                                                                  ? "border-[#2d7fb8] bg-[#e8f2fc] font-semibold text-[#0f2a43] dark:bg-slate-800 dark:text-white"
+                                                                  : "border-transparent text-[#1f2937] hover:bg-[#f1f5f9] dark:text-slate-300 dark:hover:bg-slate-800"
+                                                        }`}
                                                     >
-                                                        <div className="pl-4 lg:pl-6 space-y-1 overflow-hidden">
-                                                            {item.subItems?.map((sub) => {
-                                                                const isSubActive = pathname === sub.route
-                                                                const isSubPending = pendingRoute === sub.route
-                                                                return (
-                                                                    <button
-                                                                        key={sub.label}
-                                                                        onClick={() => handleNavClick(sub.route || "#")}
-                                                                        disabled={isSubPending}
-                                                                        className={`flex items-center p-2 w-full text-left text-sm transition-all duration-200 rounded-lg mx-2 relative
-                                                                        ${
-                                                                            isSubPending
-                                                                                ? "bg-sky-800 text-white shadow-md cursor-progress overflow-hidden"
-                                                                                : isSubActive
-                                                                                ? "bg-sky-700 text-white shadow-md transform scale-105 border-l-4 border-sky-300"
-                                                                                : "dark:hover:bg-gray-800 hover:bg-sky-700 hover:text-white hover:shadow-sm hover:transform hover:scale-105"
-                                                                        }
-                                                                    `}
-                                                                    >
-                                                                        {isSubPending && <PendingOverlay />}
-                                                                        <span className="relative z-10 flex min-w-0 flex-1 items-center gap-2 truncate font-medium">
-                                                                            {isSubPending && (
-                                                                                <LoaderCircle className="h-4 w-4 flex-shrink-0 animate-spin" />
-                                                                            )}
-                                                                            <span className="truncate">
-                                                                                {isSubPending ? "Cargando..." : sub.label}
-                                                                            </span>
-                                                                        </span>
-                                                                    </button>
-                                                                )
-                                                            })}
-                                                        </div>
-                                                    </Collapsible>
-                                                </>
-                                            ) : (
-                                                <MotionItem delay={index}>
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            {(() => {
-                                                                const isItemPending = pendingRoute === item.route
-                                                                return (
-                                                            <button
-                                                                onClick={() => handleNavClick(item.route || "#")}
-                                                                disabled={isItemPending}
-                                                                className={`flex items-center w-full cursor-pointer p-2 lg:p-3 transition-all duration-200 group relative
-                                                                ${
-                                                                    isItemPending
-                                                                        ? shouldShowCollapsed
-                                                                            ? "bg-sky-800 text-white shadow-lg justify-center cursor-progress overflow-hidden"
-                                                                            : "bg-sky-800 text-white shadow-lg border-r-4 border-sky-300 cursor-progress overflow-hidden"
-                                                                        : isActive
-                                                                        ? shouldShowCollapsed
-                                                                            ? "bg-sky-700 text-white shadow-lg justify-center"
-                                                                            : "bg-sky-700 text-white shadow-lg border-r-4 border-sky-300 transform scale-105"
-                                                                        : shouldShowCollapsed
-                                                                          ? "justify-center dark:hover:bg-gray-800 hover:bg-sky-700 hover:text-white hover:shadow-md"
-                                                                          : "dark:hover:bg-gray-800 hover:bg-sky-700 hover:text-white hover:shadow-md hover:transform hover:scale-105"
-                                                                }
-                                                            `}
-                                                            >
-                                                                {isItemPending && <PendingOverlay />}
-                                                                <span className="relative z-10 text-lg flex-shrink-0">
-                                                                    {isItemPending ? (
-                                                                        <LoaderCircle className="h-4 w-4 animate-spin" />
-                                                                    ) : (
-                                                                        <item.icon />
-                                                                    )}
+                                                        {isPending && <PendingOverlay />}
+                                                        <span className="relative z-10 flex h-5 w-5 flex-shrink-0 items-center justify-center text-[#64748b]">
+                                                            {isPending ? (
+                                                                <LoaderCircle className="h-4 w-4 animate-spin" />
+                                                            ) : (
+                                                                <Icon className="h-4 w-4" />
+                                                            )}
+                                                        </span>
+                                                        {!shouldShowCollapsed && (
+                                                            <>
+                                                                <span className="relative z-10 min-w-0 flex-1 truncate">
+                                                                    {isPending ? "Cargando..." : item.label}
                                                                 </span>
-                                                                {!shouldShowCollapsed && (
-                                                                    <span className="relative z-10 ml-3 flex flex-1 truncate text-left text-sm font-medium lg:text-base">
-                                                                        <span className="truncate">
-                                                                            {isItemPending
-                                                                                ? "Cargando..."
-                                                                                : item.label}
-                                                                        </span>
-                                                                    </span>
-                                                                )}
-                                                                {isActive && !isItemPending && !shouldShowCollapsed && (
-                                                                    <motion.div
-                                                                        initial={{ scale: 0 }}
-                                                                        animate={{ scale: 1 }}
-                                                                        className="absolute right-0 w-2 h-full bg-sky-300"
+                                                                {hasSubItems && (
+                                                                    <ChevronDown
+                                                                        className={`relative z-10 h-3.5 w-3.5 text-[#94a3b8] transition-transform ${
+                                                                            isOpen ? "rotate-180" : ""
+                                                                        }`}
                                                                     />
                                                                 )}
-                                                            </button>
-                                                                )
-                                                            })()}
-                                                        </TooltipTrigger>
-                                                        {shouldShowCollapsed && (
-                                                            <TooltipContent side="right" className="ml-2 z-[9999]">
-                                                                {item.label}
-                                                            </TooltipContent>
+                                                            </>
                                                         )}
-                                                    </Tooltip>
-                                                </MotionItem>
+                                                    </button>
+                                                </TooltipTrigger>
+                                                {shouldShowCollapsed && (
+                                                    <TooltipContent side="right" className="z-[9999] ml-2">
+                                                        {item.label}
+                                                    </TooltipContent>
+                                                )}
+                                            </Tooltip>
+
+                                            {hasSubItems && (
+                                                <Collapsible isOpen={isOpen && !shouldShowCollapsed}>
+                                                    <div className="border-l border-[#dbe3ec] bg-[#f8fafc] dark:border-slate-800 dark:bg-slate-950">
+                                                        {item.subItems?.map(renderSubItem)}
+                                                    </div>
+                                                </Collapsible>
                                             )}
-                                        </div>
+                                        </MotionItem>
                                     )
                                 })}
                             </nav>
 
-                            {/* Theme Toggle */}
-                            <div className="flex items-center justify-between p-3 lg:p-4 border-t dark:border-gray-800 border-gray-400 overflow-hidden">
+                            <footer className="flex h-14 items-center justify-between border-t border-[#e2e8f0] px-5 text-sm dark:border-slate-800">
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <div className="flex items-center">
-                                            <span className="flex-shrink-0">
-                                                {!!isDarkMode ? <FaMoon size={16} /> : <FaSun size={16} />}
+                                        <div className="flex min-w-0 items-center gap-3">
+                                            <span className="flex h-5 w-5 items-center justify-center text-[#64748b]">
+                                                {isDarkMode ? <FaMoon size={15} /> : <FaSun size={15} />}
                                             </span>
                                             {!shouldShowCollapsed && (
-                                                <span className="ml-3 text-sm lg:text-base">
-                                                    {!!isDarkMode ? "Modo Oscuro" : "Modo Claro"}
+                                                <span className="truncate text-[#475569] dark:text-slate-300">
+                                                    {isDarkMode ? "Modo Oscuro" : "Modo Claro"}
                                                 </span>
                                             )}
                                         </div>
                                     </TooltipTrigger>
                                     {shouldShowCollapsed && (
-                                        <TooltipContent side="right" className="ml-2 z-[9999]">
-                                            Theme
+                                        <TooltipContent side="right" className="z-[9999] ml-2">
+                                            Tema
                                         </TooltipContent>
                                     )}
                                 </Tooltip>
+
                                 {!shouldShowCollapsed && (
                                     <Switch
-                                        checked={!!isDarkMode}
+                                        checked={Boolean(isDarkMode)}
                                         onCheckedChange={setIsDarkMode}
-                                        className="bg-gray-300 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-900 flex-shrink-0"
+                                        className="data-[state=checked]:bg-[#466682] data-[state=unchecked]:bg-[#466682]"
                                     />
                                 )}
-                            </div>
+                            </footer>
                         </div>
                     </SidebarTransition>
                 </div>

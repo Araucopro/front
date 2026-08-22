@@ -23,20 +23,12 @@
                             }
                         }
                     }
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "Product"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Crear un nuevo producto con sus variantes",
-            "tags": ["Productos"]
+            "tags": [
+                "Productos"
+            ]
         },
         "get": {
             "operationId": "ProductsController_findAll",
@@ -79,23 +71,12 @@
                             }
                         }
                     }
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "Product"
-                                }
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Obtener todos los productos",
-            "tags": ["Productos"]
+            "tags": [
+                "Productos"
+            ]
         }
     },
     "/products/{id}": {
@@ -125,20 +106,12 @@
                 },
                 "404": {
                     "description": "Producto no encontrado."
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "Product"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Buscar un producto por su ID",
-            "tags": ["Productos"]
+            "tags": [
+                "Productos"
+            ]
         },
         "patch": {
             "operationId": "ProductsController_update",
@@ -173,20 +146,12 @@
                             }
                         }
                     }
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "Product"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Actualizar un producto por su ID",
-            "tags": ["Productos"]
+            "tags": [
+                "Productos"
+            ]
         },
         "delete": {
             "operationId": "ProductsController_remove",
@@ -204,13 +169,12 @@
             "responses": {
                 "204": {
                     "description": "Producto eliminado exitosamente."
-                },
-                "default": {
-                    "description": ""
                 }
             },
             "summary": "Eliminar un producto por su ID",
-            "tags": ["Productos"]
+            "tags": [
+                "Productos"
+            ]
         }
     }
 }

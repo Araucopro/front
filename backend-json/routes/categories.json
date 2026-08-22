@@ -24,20 +24,12 @@
                             }
                         }
                     }
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "Category"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Crear una nueva categoría",
-            "tags": ["Categorías"]
+            "tags": [
+                "Categorías"
+            ]
         },
         "get": {
             "description": "Retorna solo las categorías principales (sin padre) con sus subcategorías anidadas en la propiedad children.",
@@ -56,23 +48,12 @@
                             }
                         }
                     }
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "Category"
-                                }
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Obtener todas las categorías raíz",
-            "tags": ["Categorías"]
+            "tags": [
+                "Categorías"
+            ]
         }
     },
     "/categories/{id}": {
@@ -103,20 +84,12 @@
                 },
                 "404": {
                     "description": "Categoría no encontrada."
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Obtener una categoría por ID",
-            "tags": ["Categorías"]
+            "tags": [
+                "Categorías"
+            ]
         },
         "patch": {
             "description": "Modifica el nombre o la categoría padre de una categoría existente.",
@@ -155,13 +128,12 @@
                 },
                 "404": {
                     "description": "Categoría no encontrada."
-                },
-                "default": {
-                    "description": ""
                 }
             },
             "summary": "Actualizar una categoría",
-            "tags": ["Categorías"]
+            "tags": [
+                "Categorías"
+            ]
         },
         "delete": {
             "description": "Elimina una categoría del sistema. Si tiene subcategorías, estas también serán eliminadas.",
@@ -183,13 +155,12 @@
                 },
                 "404": {
                     "description": "Categoría no encontrada."
-                },
-                "default": {
-                    "description": ""
                 }
             },
             "summary": "Eliminar una categoría",
-            "tags": ["Categorías"]
+            "tags": [
+                "Categorías"
+            ]
         }
     }
 }

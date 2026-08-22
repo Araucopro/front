@@ -38,20 +38,20 @@ export default function FriendlyLoadingScreen({
 
             <div className="relative w-full max-w-md rounded-3xl border border-white/80 bg-white/90 p-8 text-center shadow-[0_24px_70px_rgba(15,35,60,0.18)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/90">
                 <Image
-                    src="/brand/betty.claro.transparent.png"
-                    alt="BETTY Software Retail"
+                    src="/brand/araucoPro.png"
+                    alt="AraucoPro Software Retail"
                     width={180}
                     height={120}
                     priority
-                    className="mx-auto h-24 w-44 object-cover dark:hidden"
+                    className="mx-auto h-24 w-44 object-contain dark:hidden"
                 />
                 <Image
-                    src="/brand/betty.dark.transparent2.png"
-                    alt="BETTY Software Retail"
+                    src="/brand/araucoProDark.png"
+                    alt="AraucoPro Software Retail"
                     width={180}
                     height={120}
                     priority
-                    className="mx-auto hidden h-24 w-44 object-cover dark:block"
+                    className="mx-auto hidden h-24 w-44 object-contain dark:block"
                 />
 
                 <div className="relative mx-auto mt-3 flex h-16 w-16 items-center justify-center">

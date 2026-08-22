@@ -24,7 +24,11 @@
                 "example": 250.75
             },
             "type": {
-                "enum": ["financial", "operational", "administrative"],
+                "enum": [
+                    "financial",
+                    "operational",
+                    "administrative"
+                ],
                 "type": "string",
                 "description": "Categoría del gasto",
                 "example": "administrative"
@@ -39,10 +43,23 @@
                 "type": "string",
                 "description": "Fecha de la última actualización"
             },
+            "tenantID": {
+                "type": "string"
+            },
             "store": {
                 "$ref": "#/components/schemas/Store"
             }
         },
-        "required": ["id", "name", "deductibleDate", "amount", "type", "createdAt", "updatedAt", "store"]
+        "required": [
+            "id",
+            "name",
+            "deductibleDate",
+            "amount",
+            "type",
+            "createdAt",
+            "updatedAt",
+            "tenantID",
+            "store"
+        ]
     }
 }

@@ -1,0 +1,45 @@
+{
+    "/v2/dte/document": {
+        "post": {
+            "description": "Recibe el payload del facturador, lo normaliza al modelo interno y persiste el documento local junto con la OC asociada cuando corresponde.",
+            "operationId": "DteController_create",
+            "parameters": [
+                {
+                    "name": "Idempotency-Key",
+                    "in": "header",
+                    "description": "Clave idempotente para evitar duplicados",
+                    "required": false,
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "CreateDteDocumentDto"
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "201": {
+                    "description": "",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "DteDocumentResponseDto"
+                            }
+                        }
+                    }
+                }
+            },
+            "summary": "Crear documento DTE compatible con v2_dte_document",
+            "tags": [
+                "DTE"
+            ]
+        }
+    }
+}

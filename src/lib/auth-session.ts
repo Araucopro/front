@@ -1,6 +1,17 @@
 export const AUTH_COOKIE_NAME = "auth_token"
+export const AUTH_SESSION_COOKIE_NAME = "auth_session_type"
+export const MASTER_AUTH_COOKIE_NAME = "master_auth_token"
+export const MASTER_IMPERSONATION_COOKIE_NAME = "master_impersonation"
+export const MASTER_PENDING_IMPERSONATION_COOKIE_NAME = "master_pending_impersonation_token"
 
 export const AUTH_COOKIE_MAX_AGE = 60 * 60 * 24
+
+export const AUTH_SESSION_TYPES = {
+    MASTER: "master",
+    TENANT: "tenant",
+} as const
+
+export type AuthSessionType = (typeof AUTH_SESSION_TYPES)[keyof typeof AUTH_SESSION_TYPES]
 
 export const getClientAuthToken = (): string | null => {
     if (typeof document === "undefined") return null

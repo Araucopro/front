@@ -1,0 +1,418 @@
+{
+    "DteIdDocDto": {
+        "type": "object",
+        "properties": {
+            "TipoDTE": {
+                "type": "number",
+                "description": "Tipo de DTE",
+                "example": 33
+            },
+            "Folio": {
+                "type": "number",
+                "description": "Folio del documento",
+                "example": 26005
+            },
+            "FchEmis": {
+                "type": "string",
+                "description": "Fecha de emisión",
+                "example": "2025-03-23"
+            },
+            "TpoTranCompra": {
+                "type": "string",
+                "description": "Tipo de transacción compra",
+                "example": "1"
+            },
+            "TpoTranVenta": {
+                "type": "string",
+                "description": "Tipo de transacción venta",
+                "example": "1"
+            },
+            "FmaPago": {
+                "type": "string",
+                "description": "Forma de pago",
+                "example": "2"
+            }
+        },
+        "required": [
+            "FchEmis"
+        ]
+    },
+    "DteEmisorDto": {
+        "type": "object",
+        "properties": {
+            "RUTEmisor": {
+                "type": "string",
+                "description": "RUT del emisor",
+                "example": "76795561-8"
+            },
+            "RznSoc": {
+                "type": "string",
+                "description": "Razón social",
+                "example": "HAULMER SPA"
+            },
+            "GiroEmis": {
+                "type": "string",
+                "description": "Giro comercial del emisor",
+                "example": "VENTA AL POR MENOR POR CORREO, POR INTERNET Y VIA TELEFONICA"
+            },
+            "Acteco": {
+                "description": "Códigos de actividad",
+                "example": [
+                    "479100"
+                ],
+                "type": "array",
+                "items": {
+                    "type": "string"
+                }
+            },
+            "DirOrigen": {
+                "type": "string",
+                "description": "Dirección origen",
+                "example": "ARTURO PRAT 527 CURICO"
+            },
+            "CmnaOrigen": {
+                "type": "string",
+                "description": "Comuna de origen",
+                "example": "Curicó"
+            },
+            "Telefono": {
+                "type": "string",
+                "description": "Teléfono",
+                "example": "0 0"
+            },
+            "CdgSIISucur": {
+                "type": "string",
+                "description": "Código sucursal SII",
+                "example": "81303347"
+            }
+        },
+        "required": [
+            "RUTEmisor",
+            "RznSoc"
+        ]
+    },
+    "DteReceptorDto": {
+        "type": "object",
+        "properties": {
+            "RUTRecep": {
+                "type": "string",
+                "description": "RUT del receptor",
+                "example": "76430498-5"
+            },
+            "RznSocRecep": {
+                "type": "string",
+                "description": "Razón social receptor",
+                "example": "HOSTY SPA"
+            },
+            "GiroRecep": {
+                "type": "string",
+                "description": "Giro receptor",
+                "example": "ACTIVIDADES DE CONSULTORIA DE INFORMATICA"
+            },
+            "DirRecep": {
+                "type": "string",
+                "description": "Dirección receptor",
+                "example": "ARTURO PRAT 527 3 piso OF 1"
+            },
+            "CmnaRecep": {
+                "type": "string",
+                "description": "Comuna receptor",
+                "example": "Curicó"
+            }
+        },
+        "required": [
+            "RUTRecep",
+            "RznSocRecep"
+        ]
+    },
+    "DteTotalesDto": {
+        "type": "object",
+        "properties": {
+            "MntNeto": {
+                "type": "number",
+                "description": "Monto neto",
+                "example": 10600
+            },
+            "TasaIVA": {
+                "type": "string",
+                "description": "Tasa IVA",
+                "example": "19"
+            },
+            "IVA": {
+                "type": "number",
+                "description": "IVA",
+                "example": 2014
+            },
+            "MntTotal": {
+                "type": "number",
+                "description": "Monto total",
+                "example": 12614
+            },
+            "MontoPeriodo": {
+                "type": "number",
+                "description": "Monto del período",
+                "example": 12614
+            },
+            "VlrPagar": {
+                "type": "number",
+                "description": "Valor a pagar",
+                "example": 12614
+            }
+        }
+    },
+    "DteEncabezadoDto": {
+        "type": "object",
+        "properties": {
+            "IdDoc": {
+                "$ref": "#/components/schemas/DteIdDocDto"
+            },
+            "Emisor": {
+                "$ref": "#/components/schemas/DteEmisorDto"
+            },
+            "Receptor": {
+                "$ref": "#/components/schemas/DteReceptorDto"
+            },
+            "Totales": {
+                "$ref": "#/components/schemas/DteTotalesDto"
+            }
+        },
+        "required": [
+            "IdDoc",
+            "Emisor",
+            "Receptor"
+        ]
+    },
+    "DteCodigoItemDto": {
+        "type": "object",
+        "properties": {
+            "TpoCodigo": {
+                "type": "string",
+                "description": "Tipo de código",
+                "example": "INT1"
+            },
+            "VlrCodigo": {
+                "type": "string",
+                "description": "Valor del código",
+                "example": "101122146100"
+            }
+        }
+    },
+    "DteDetalleItemDto": {
+        "type": "object",
+        "properties": {
+            "NroLinDet": {
+                "type": "number",
+                "description": "Línea de detalle",
+                "example": 1
+            },
+            "NmbItem": {
+                "type": "string",
+                "description": "Nombre del ítem",
+                "example": "Cama para Perros William"
+            },
+            "QtyItem": {
+                "type": "number",
+                "description": "Cantidad",
+                "example": 1
+            },
+            "PrcItem": {
+                "type": "number",
+                "description": "Precio unitario",
+                "example": 39990
+            },
+            "MontoItem": {
+                "type": "number",
+                "description": "Monto del ítem",
+                "example": 39990
+            },
+            "IndExe": {
+                "type": "string",
+                "description": "Indica exento",
+                "example": "1"
+            },
+            "CdgItem": {
+                "$ref": "#/components/schemas/DteCodigoItemDto"
+            }
+        },
+        "required": [
+            "NroLinDet",
+            "NmbItem",
+            "QtyItem"
+        ]
+    },
+    "DteDto": {
+        "type": "object",
+        "properties": {
+            "Encabezado": {
+                "$ref": "#/components/schemas/DteEncabezadoDto"
+            },
+            "Detalle": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/DteDetalleItemDto"
+                }
+            }
+        },
+        "required": [
+            "Encabezado",
+            "Detalle"
+        ]
+    },
+    "DteCustomerDto": {
+        "type": "object",
+        "properties": {
+            "fullName": {
+                "type": "string",
+                "description": "Nombre completo",
+                "example": "Cliente Ejemplo"
+            },
+            "email": {
+                "type": "string",
+                "description": "Correo electrónico",
+                "example": "cliente@correo.com"
+            }
+        }
+    },
+    "DteExternalReferenceDto": {
+        "type": "object",
+        "properties": {
+            "hyperlinkText": {
+                "type": "string",
+                "description": "Texto del enlace",
+                "example": "Orden de Compra #7788489532"
+            },
+            "hyperlinkURL": {
+                "type": "string",
+                "description": "URL del enlace",
+                "example": "https://www.miurl.com/orden-de-compra/334"
+            }
+        }
+    },
+    "DteCustomizePageDto": {
+        "type": "object",
+        "properties": {
+            "externalReference": {
+                "$ref": "#/components/schemas/DteExternalReferenceDto"
+            },
+            "urlLogo": {
+                "type": "string",
+                "description": "URL del logo personalizado",
+                "example": "https://www.miurl.com/logo.jpg"
+            }
+        }
+    },
+    "DteDocumentReferenceDto": {
+        "type": "object",
+        "properties": {
+            "type": {
+                "type": "string",
+                "description": "Tipo de documento referenciado",
+                "example": "801"
+            },
+            "id": {
+                "type": "string",
+                "description": "ID del documento referenciado",
+                "example": "334"
+            },
+            "date": {
+                "type": "string",
+                "description": "Fecha del documento referenciado",
+                "example": "2025-01-31"
+            }
+        }
+    },
+    "DteSelfServiceDto": {
+        "type": "object",
+        "properties": {
+            "issueBoleta": {
+                "type": "boolean",
+                "description": "Emite boleta automáticamente",
+                "example": true
+            },
+            "allowFactura": {
+                "type": "boolean",
+                "description": "Permite convertir a factura",
+                "example": true
+            },
+            "documentReference": {
+                "$ref": "#/components/schemas/DteDocumentReferenceDto"
+            }
+        },
+        "required": [
+            "issueBoleta",
+            "allowFactura"
+        ]
+    },
+    "CreateDteDocumentDto": {
+        "type": "object",
+        "properties": {
+            "purchaseOrderID": {
+                "type": "string",
+                "format": "uuid",
+                "description": "ID de la orden de compra aceptada que origina el DTE",
+                "example": "123e4567-e89b-12d3-a456-426614174000"
+            },
+            "response": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "enum": [
+                        "TOKEN",
+                        "FOLIO",
+                        "STATUS",
+                        "PDF",
+                        "XML",
+                        "SELF_SERVICE"
+                    ]
+                },
+                "description": "Campos de salida que solicita el cliente",
+                "example": [
+                    "FOLIO",
+                    "SELF_SERVICE"
+                ]
+            },
+            "dte": {
+                "$ref": "#/components/schemas/DteDto"
+            },
+            "customer": {
+                "$ref": "#/components/schemas/DteCustomerDto"
+            },
+            "customizePage": {
+                "$ref": "#/components/schemas/DteCustomizePageDto"
+            },
+            "selfService": {
+                "$ref": "#/components/schemas/DteSelfServiceDto"
+            }
+        },
+        "required": [
+            "response",
+            "dte",
+            "selfService"
+        ]
+    },
+    "DteDocumentResponseDto": {
+        "type": "object",
+        "properties": {
+            "TOKEN": {
+                "type": "string",
+                "description": "Token del documento generado",
+                "example": "b822a58da11856bb09423a0a6fba59f5e089bd738e01d3ea670c45d4686f66d6"
+            },
+            "FOLIO": {
+                "type": "number",
+                "description": "Folio del documento",
+                "example": 3130
+            },
+            "status": {
+                "type": "string",
+                "description": "Estado de emisión del documento",
+                "example": "EMITIDO"
+            }
+        },
+        "required": [
+            "TOKEN",
+            "FOLIO",
+            "status"
+        ]
+    }
+}

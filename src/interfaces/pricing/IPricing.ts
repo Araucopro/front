@@ -1,6 +1,7 @@
 export type PriceType = "list" | "cost"
-export type DiscountType = "PERCENTAGE" | "FIXED_AMOUNT" | "FIXED_PRICE"
+export type DiscountType = "PERCENTAGE" | "FIXED_AMOUNT" | "FIXED_PRICE" | "BUY_X_GET_Y" | "BUNDLE"
 export type DiscountScope = "UNIT" | "TOTAL"
+export type DiscountTargetScope = "VARIATION" | "STORE" | "PRODUCT" | "CATEGORY" | "BRAND" | "MODEL"
 
 // ─── Actualización de precio ──────────────────────────────────────────────────
 
@@ -50,8 +51,25 @@ export interface IPriceHistoryItem {
 
 // ─── Ofertas especiales ───────────────────────────────────────────────────────
 
+export interface ICreateOfferBundleItemPayload {
+    storeProductID?: string
+    productID?: string
+    requiredQuantity: number
+}
+
 export interface ICreateOfferPayload {
-    storeProductID: string
+    storeProductID?: string
+    targetScope?: DiscountTargetScope
+    storeID?: string
+    productIDs?: string[]
+    categoryID?: string
+    includeSubcategories?: boolean
+    brand?: string
+    model?: string
+    buyQuantity?: number
+    payQuantity?: number
+    priority?: number
+    bundleItems?: ICreateOfferBundleItemPayload[]
     discountType: DiscountType
     value: number
     startDate: string
@@ -60,13 +78,26 @@ export interface ICreateOfferPayload {
     isActive: boolean
     scope?: DiscountScope
     exclusive?: boolean
+    allowBelowMargin?: boolean
 }
 
 export type IUpdateOfferPayload = Partial<ICreateOfferPayload>
 
 export interface IOffer {
     offerID: string
-    storeProductID: string
+    storeProductID?: string | null
+    targetScope?: DiscountTargetScope
+    storeID?: string | null
+    productID?: string | null
+    productIDs?: string[]
+    categoryID?: string | null
+    includeSubcategories?: boolean
+    brand?: string | null
+    model?: string | null
+    buyQuantity?: number | null
+    payQuantity?: number | null
+    priority?: number
+    bundleItems?: ICreateOfferBundleItemPayload[]
     description?: string
     discountType: DiscountType
     value: number
@@ -75,12 +106,14 @@ export interface IOffer {
     isActive: boolean
     scope?: DiscountScope
     exclusive?: boolean
+    allowBelowMargin?: boolean
     createdAt: string
     updatedAt: string
 }
 
 export interface ISpecialOfferStoreProductVariation {
     variationID: string
+    sku?: string
     size?: string
     sizeNumber?: string
     color?: string
@@ -110,6 +143,12 @@ export interface ISpecialOfferStoreProduct {
 export interface ISpecialOffer extends Omit<IOffer, "storeProductID"> {
     storeProductID?: string
     storeProduct?: ISpecialOfferStoreProduct | null
+    store?: ISpecialOfferStoreProductStore | null
+    product?: ISpecialOfferStoreProductVariation["product"] | null
+    category?: {
+        categoryID: string
+        name: string
+    } | null
 }
 
 // ─── Price Check (precio final con oferta) ────────────────────────────────────

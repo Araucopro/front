@@ -1,88 +1,181 @@
 {
-    "GroupedItemDto": {
+    "IncomeStatementExpenseDetailDto": {
         "type": "object",
         "properties": {
-            "key": {
+            "type": {
+                "enum": [
+                    "financial",
+                    "operational",
+                    "administrative"
+                ],
                 "type": "string",
-                "description": "Clave del grupo, p.ej. tipo de pago o estado"
-            },
-            "count": {
-                "type": "number",
-                "description": "Cantidad de ventas en el grupo"
+                "description": "Tipo de gasto",
+                "example": "administrative"
             },
             "total": {
                 "type": "number",
-                "description": "Total acumulado en el grupo"
+                "description": "Total acumulado para este tipo de gasto en el mes",
+                "example": 15000
             }
         },
-        "required": ["key", "count"]
+        "required": [
+            "type",
+            "total"
+        ]
     },
-    "PeriodSummaryItem": {
+    "IncomeStatementMonthDto": {
         "type": "object",
         "properties": {
-            "count": {
+            "month": {
                 "type": "number",
-                "description": "Cantidad de ventas en el periodo"
+                "description": "Número de mes del 1 al 12",
+                "example": 1
             },
-            "total": {
+            "label": {
+                "type": "string",
+                "description": "Nombre del mes",
+                "example": "Enero"
+            },
+            "year": {
                 "type": "number",
-                "description": "Total de ventas en el periodo"
+                "description": "Año del bucket mensual",
+                "example": 2026
+            },
+            "salesIncome": {
+                "type": "number",
+                "description": "Ingresos por ventas pagadas",
+                "example": 125000
+            },
+            "purchaseOrdersIncome": {
+                "type": "number",
+                "description": "Ingresos por purchase orders pagadas",
+                "example": 42000
+            },
+            "expenses": {
+                "type": "number",
+                "description": "Egresos por gastos",
+                "example": 35000
+            },
+            "expenseDetail": {
+                "description": "Detalle de gastos del mes por tipo de gasto",
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/IncomeStatementExpenseDetailDto"
+                }
+            },
+            "net": {
+                "type": "number",
+                "description": "Resultado neto del mes",
+                "example": 132000
             }
         },
-        "required": ["count", "total"]
+        "required": [
+            "month",
+            "label",
+            "year",
+            "salesIncome",
+            "purchaseOrdersIncome",
+            "expenses",
+            "expenseDetail",
+            "net"
+        ]
     },
-    "SalesReportDto": {
+    "IncomeStatementTotalsDto": {
         "type": "object",
         "properties": {
-            "groupedByPaymentType": {
-                "description": "Agrupado por tipo de pago",
-                "type": "array",
-                "items": {
-                    "$ref": "#/components/schemas/GroupedItemDto"
-                }
+            "salesIncome": {
+                "type": "number",
+                "description": "Total acumulado de ventas pagadas",
+                "example": 800000
             },
-            "groupedByStatus": {
-                "description": "Agrupado por estado",
-                "type": "array",
-                "items": {
-                    "$ref": "#/components/schemas/GroupedItemDto"
-                }
+            "purchaseOrdersIncome": {
+                "type": "number",
+                "description": "Total acumulado de purchase orders pagadas",
+                "example": 200000
             },
-            "periodSummary": {
-                "type": "object",
-                "properties": {
-                    "today": {
-                        "$ref": "#/components/schemas/PeriodSummaryItem"
-                    },
-                    "yesterday": {
-                        "$ref": "#/components/schemas/PeriodSummaryItem"
-                    },
-                    "month": {
-                        "$ref": "#/components/schemas/PeriodSummaryItem"
-                    }
-                },
-                "required": ["today", "yesterday", "month"]
+            "expenses": {
+                "type": "number",
+                "description": "Total acumulado de egresos",
+                "example": 150000
             },
-            "sales": {
-                "type": "array",
-                "description": "Listado de ventas dentro del rango (detalle)"
-            },
-            "meta": {
-                "type": "object",
-                "properties": {
-                    "page": {
-                        "type": "number"
-                    },
-                    "limit": {
-                        "type": "number"
-                    },
-                    "total": {
-                        "type": "number"
-                    }
-                },
-                "required": ["page", "limit", "total"]
+            "net": {
+                "type": "number",
+                "description": "Total neto acumulado",
+                "example": 850000
             }
         },
-        "required": ["groupedByPaymentType", "groupedByStatus", "periodSummary", "sales", "meta"]
+        "required": [
+            "salesIncome",
+            "purchaseOrdersIncome",
+            "expenses",
+            "net"
+        ]
+    },
+    "IncomeStatementDto": {
+        "type": "object",
+        "properties": {
+            "year": {
+                "type": "number",
+                "description": "Año consultado",
+                "example": 2026
+            },
+            "storeId": {
+                "type": "string",
+                "description": "ID de la tienda filtrada, si aplica",
+                "example": "store-uuid"
+            },
+            "months": {
+                "description": "Serie mensual con ceros para meses sin movimientos",
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/IncomeStatementMonthDto"
+                }
+            },
+            "totals": {
+                "description": "Totales acumulados del período",
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/IncomeStatementTotalsDto"
+                    }
+                ]
+            }
+        },
+        "required": [
+            "year",
+            "months",
+            "totals"
+        ]
+    },
+    "ReportsSaleFilterDto": {
+        "type": "object",
+        "properties": {
+            "storeId": {
+                "type": "string",
+                "description": "ID de la tienda para filtrar el reporte",
+                "example": "store-uuid"
+            },
+            "from": {
+                "type": "string",
+                "description": "Fecha desde (inclusive) en formato ISO 8601. Ej: 2026-04-01T00:00:00Z"
+            },
+            "to": {
+                "type": "string",
+                "description": "Fecha hasta (exclusive) en formato ISO 8601. Ej: 2026-04-17T00:00:00Z"
+            },
+            "page": {
+                "type": "number",
+                "default": 1,
+                "minimum": 1,
+                "description": "Página (paginación)",
+                "example": 1
+            },
+            "limit": {
+                "type": "number",
+                "default": 50,
+                "minimum": 1,
+                "description": "Tamaño de página",
+                "example": 50
+            }
+        }
     }
 }

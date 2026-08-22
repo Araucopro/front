@@ -2,22 +2,47 @@
 import { useTienda } from "@/stores/tienda.store"
 import { logout as logoutSession } from "@/actions/auth/authActions"
 import { useAuth } from "@/stores/user.store"
+import { useMasterAuth } from "@/stores/master.store"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { FaChevronDown, FaSignOutAlt, FaUser } from "react-icons/fa"
+import { Maximize2, Minimize2 } from "lucide-react"
 
 export default function Navbar() {
     const router = useRouter()
     const { user, logout } = useAuth()
+    const clearMasterUser = useMasterAuth((state) => state.clearMasterUser)
     const { storeSelected } = useTienda()
     const [isMenuOpen, setIsMenuOpen] = useState(false)
+    const [isFullscreen, setIsFullscreen] = useState(false)
+
+    useEffect(() => {
+        const handleFullscreenChange = () => setIsFullscreen(Boolean(document.fullscreenElement))
+        document.addEventListener("fullscreenchange", handleFullscreenChange)
+        handleFullscreenChange()
+
+        return () => document.removeEventListener("fullscreenchange", handleFullscreenChange)
+    }, [])
 
     const handleLogout = async () => {
         await logoutSession()
         logout()
+        clearMasterUser()
         router.replace("/login")
         setIsMenuOpen(false)
+    }
+
+    const handleToggleFullscreen = async () => {
+        try {
+            if (document.fullscreenElement) {
+                await document.exitFullscreen()
+            } else {
+                await document.documentElement.requestFullscreen()
+            }
+        } catch (error) {
+            console.error("Navbar: no se pudo cambiar pantalla completa", error)
+        }
     }
 
     return (
@@ -35,6 +60,15 @@ export default function Navbar() {
                 <div className="flex items-center gap-2 lg:gap-6 ml-auto">
                     {/* Desktop Layout */}
                     <div className="hidden lg:flex items-center gap-6">
+                        <button
+                            type="button"
+                            title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+                            onClick={handleToggleFullscreen}
+                            className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                        >
+                            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                        </button>
+
                         {/* Logout Button */}
                         <button
                             onClick={handleLogout}

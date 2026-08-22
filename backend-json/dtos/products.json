@@ -1,84 +1,4 @@
 {
-    "ProductVariation": {
-        "type": "object",
-        "properties": {
-            "variationID": {
-                "type": "string"
-            },
-            "product": {
-                "$ref": "#/components/schemas/Product"
-            },
-            "storeProducts": {
-                "type": "array",
-                "items": {
-                    "$ref": "#/components/schemas/StoreProduct"
-                }
-            },
-            "sku": {
-                "type": "string"
-            },
-            "color": {
-                "type": "string"
-            },
-            "size": {
-                "type": "string"
-            },
-            "createdAt": {
-                "format": "date-time",
-                "type": "string"
-            },
-            "updatedAt": {
-                "format": "date-time",
-                "type": "string"
-            }
-        },
-        "required": ["variationID", "product", "storeProducts", "sku", "createdAt", "updatedAt"]
-    },
-    "Product": {
-        "type": "object",
-        "properties": {
-            "productID": {
-                "type": "string"
-            },
-            "image": {
-                "type": "string"
-            },
-            "categoryID": {
-                "type": "string"
-            },
-            "category": {
-                "$ref": "#/components/schemas/Category"
-            },
-            "name": {
-                "type": "string"
-            },
-            "brand": {
-                "type": "string"
-            },
-            "genre": {
-                "enum": ["Hombre", "Mujer", "Unisex"],
-                "type": "string"
-            },
-            "description": {
-                "type": "string"
-            },
-            "variations": {
-                "type": "array",
-                "items": {
-                    "$ref": "#/components/schemas/ProductVariation"
-                }
-            },
-            "createdAt": {
-                "format": "date-time",
-                "type": "string"
-            },
-            "updatedAt": {
-                "format": "date-time",
-                "type": "string"
-            }
-        },
-        "required": ["productID", "category", "name", "variations", "createdAt", "updatedAt"]
-    },
     "CreateProductVariationDto": {
         "type": "object",
         "properties": {
@@ -114,9 +34,19 @@
                 "type": "string",
                 "description": "Talla de la variante",
                 "example": "L"
+            },
+            "supplierSku": {
+                "type": "string",
+                "description": "SKU asignado por el proveedor para órdenes de compra y recepciones",
+                "example": "PROV-SKU-9988"
             }
         },
-        "required": ["sku", "priceCost", "priceList", "stock"]
+        "required": [
+            "sku",
+            "priceCost",
+            "priceList",
+            "stock"
+        ]
     },
     "CreateProductDto": {
         "type": "object",
@@ -143,7 +73,11 @@
                 "example": "Marca Famosa"
             },
             "genre": {
-                "enum": ["Hombre", "Mujer", "Unisex"],
+                "enum": [
+                    "Hombre",
+                    "Mujer",
+                    "Unisex"
+                ],
                 "type": "string",
                 "description": "Género al que se dirige el producto",
                 "example": "Unisex"
@@ -162,7 +96,120 @@
                 }
             }
         },
-        "required": ["name", "variations"]
+        "required": [
+            "name",
+            "variations"
+        ]
+    },
+    "ProductVariation": {
+        "type": "object",
+        "properties": {
+            "variationID": {
+                "type": "string"
+            },
+            "tenantID": {
+                "type": "string"
+            },
+            "product": {
+                "$ref": "#/components/schemas/Product"
+            },
+            "storeProducts": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/StoreProduct"
+                }
+            },
+            "sku": {
+                "type": "string"
+            },
+            "color": {
+                "type": "string"
+            },
+            "size": {
+                "type": "string"
+            },
+            "supplierSku": {
+                "type": "string",
+                "nullable": true
+            },
+            "createdAt": {
+                "format": "date-time",
+                "type": "string"
+            },
+            "updatedAt": {
+                "format": "date-time",
+                "type": "string"
+            }
+        },
+        "required": [
+            "variationID",
+            "tenantID",
+            "product",
+            "storeProducts",
+            "sku",
+            "createdAt",
+            "updatedAt"
+        ]
+    },
+    "Product": {
+        "type": "object",
+        "properties": {
+            "productID": {
+                "type": "string"
+            },
+            "tenantID": {
+                "type": "string"
+            },
+            "image": {
+                "type": "string"
+            },
+            "categoryID": {
+                "type": "string"
+            },
+            "category": {
+                "$ref": "#/components/schemas/Category"
+            },
+            "name": {
+                "type": "string"
+            },
+            "brand": {
+                "type": "string"
+            },
+            "genre": {
+                "enum": [
+                    "Hombre",
+                    "Mujer",
+                    "Unisex"
+                ],
+                "type": "string"
+            },
+            "description": {
+                "type": "string"
+            },
+            "variations": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/ProductVariation"
+                }
+            },
+            "createdAt": {
+                "format": "date-time",
+                "type": "string"
+            },
+            "updatedAt": {
+                "format": "date-time",
+                "type": "string"
+            }
+        },
+        "required": [
+            "productID",
+            "tenantID",
+            "category",
+            "name",
+            "variations",
+            "createdAt",
+            "updatedAt"
+        ]
     },
     "UpdateProductDto": {
         "type": "object",
@@ -189,7 +236,11 @@
                 "example": "Marca Famosa"
             },
             "genre": {
-                "enum": ["Hombre", "Mujer", "Unisex"],
+                "enum": [
+                    "Hombre",
+                    "Mujer",
+                    "Unisex"
+                ],
                 "type": "string",
                 "description": "Género al que se dirige el producto",
                 "example": "Unisex"

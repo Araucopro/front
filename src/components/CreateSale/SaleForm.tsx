@@ -3,20 +3,40 @@ import { useEffect, useMemo, useState } from "react"
 import { ScanInput } from "@/components/CreateSale/ScanInput"
 import { CartTable } from "@/components/CreateSale/CartTable"
 import { useSaleStore } from "@/stores/sale.store"
-import { ISaleRequest, PaymentType } from "@/interfaces/sales/ISale"
+import { ISaleReceiver, ISaleRequest, PaymentType, SaleType } from "@/interfaces/sales/ISale"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { IProduct } from "@/interfaces/products/IProduct"
 import { toPrice } from "@/utils/priceFormat"
 import { Button } from "../ui/button"
+import { Input } from "../ui/input"
 import { useTienda } from "@/stores/tienda.store"
 import { createNewSale } from "@/actions/sales/postSale"
-import { updateSaleStatus } from "@/actions/sales/updateSaleStatus"
 import { toast } from "sonner"
 import { DiscountModal, DiscountStoreProductOption } from "@/components/Discounts/DiscountModal"
 import { getPriceCheck } from "@/actions/pricing/getPriceCheck"
+import { getChileYYYYMMDD } from "@/utils/chile-date"
+import { UserPlus, X } from "lucide-react"
 
+const DEFAULT_RECEIVER_EMAIL = "soporte@araucopro.com"
+const EMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
 const isSpecialStoreFilter = (value: string | null) => value === "all" || value === "propias" || value === "consignadas"
+const saleTypes = new Set<SaleType>(["BOLETA", "FACTURA", "NOTA_VENTA"])
+const getSaleTypeFromParam = (value: string | null): SaleType =>
+    value && saleTypes.has(value as SaleType) ? (value as SaleType) : "BOLETA"
+const isValidEmail = (value: string) => {
+    const email = value.trim()
+    const [localPart, domain] = email.split("@")
+
+    return Boolean(
+        EMAIL_PATTERN.test(email) &&
+            localPart &&
+            domain &&
+            !email.includes("..") &&
+            !domain.startsWith("-") &&
+            !domain.endsWith("-"),
+    )
+}
 
 export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) => {
     const router = useRouter()
@@ -26,6 +46,16 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
     const { storeSelected } = useTienda()
     const [loading, setLoading] = useState(false)
     const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false)
+    const [saleType, setSaleType] = useState<SaleType>(() => getSaleTypeFromParam(searchParams.get("saleType")))
+    const [showReceiverFields, setShowReceiverFields] = useState(() => saleType === "FACTURA")
+    const [receiver, setReceiver] = useState<ISaleReceiver>({
+        rut: "",
+        name: "",
+        email: "",
+        address: "",
+        city: "",
+        giro: "",
+    })
 
     const urlStoreID = searchParams.get("storeID")
     const effectiveStoreID =
@@ -72,11 +102,31 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
 
     const handleSubmit = async () => {
         try {
+            const receiverEmail = receiver.email?.trim() ?? ""
+            const hasReceiverData = Boolean(
+                receiver.rut.trim() ||
+                    receiver.name.trim() ||
+                    receiverEmail ||
+                    receiver.address.trim() ||
+                    receiver.city.trim() ||
+                    receiver.giro.trim(),
+            )
+            const shouldValidateReceiverEmail =
+                saleType === "FACTURA" || (saleType === "NOTA_VENTA" && showReceiverFields && hasReceiverData)
             const hasEmptyProducts = cartItems.filter((item) => item.quantity === 0)
             if (hasEmptyProducts.length > 0) {
                 return toast.error("Por favor elimina los productos sin stock")
             }
             if (!effectiveStoreID) return toast.error("No hay una tienda elegida")
+            if (saleType === "FACTURA" && (!receiver.rut.trim() || !receiver.name.trim())) {
+                return toast.error("Para emitir una factura indica al menos el RUT y la razón social")
+            }
+            if (shouldValidateReceiverEmail && !receiverEmail) {
+                return toast.error("Ingresa un correo del receptor o usa el correo por defecto.")
+            }
+            if (shouldValidateReceiverEmail && !isValidEmail(receiverEmail)) {
+                return toast.error("Ingresa un correo válido para el receptor.")
+            }
 
             const storeIDsInCart = new Set(cartItems.map((item) => item.storeID).filter(Boolean))
             if (storeIDsInCart.size > 1) {
@@ -87,27 +137,43 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
             }
 
             setLoading(true)
+            const currentIssueDate = getChileYYYYMMDD(new Date())
+            const shouldSendReceiver =
+                saleType === "FACTURA" ||
+                (saleType === "NOTA_VENTA" &&
+                    showReceiverFields &&
+                    Boolean(receiver.rut.trim() && receiver.name.trim() && receiverEmail))
             const toSubmitSale: ISaleRequest = {
+                saleType,
                 paymentType: paymentMethod,
-                storeID: effectiveStoreID,
+                issueDate: currentIssueDate,
+                ...(shouldSendReceiver
+                    ? {
+                          receiver: {
+                              rut: receiver.rut.trim(),
+                              name: receiver.name.trim(),
+                              email: receiverEmail,
+                              address: receiver.address.trim(),
+                              city: receiver.city.trim(),
+                              giro: receiver.giro.trim(),
+                          },
+                      }
+                    : {}),
                 items: cartItems.map((item) => ({
-                    variationID: item.variationID,
+                    storeProductID: item.storeProductID,
                     quantity: item.quantity,
-                    unitPrice: item.finalPrice ?? item.priceList,
                 })),
             }
 
-            const res = await createNewSale(toSubmitSale)
+            const res = await createNewSale(effectiveStoreID, toSubmitSale)
             if (res) {
-                if (res.saleID) {
-                    await updateSaleStatus(res.saleID, { status: "Pagado" })
-                }
-                toast.success("Venta generada exitosamente! Redirigiendo...")
+                const createdSaleID = res.sale.saleID || res.dte?.saleID || ""
+                toast.success(res.dte ? "Documento emitido exitosamente" : "Nota de venta creada exitosamente")
                 actions.clearCart()
                 router.refresh()
                 router.push(
-                    res.saleID
-                        ? `/home/${res.saleID}?storeID=${effectiveStoreID}`
+                    createdSaleID
+                        ? `/home/${createdSaleID}?storeID=${effectiveStoreID}`
                         : `/home?storeID=${effectiveStoreID}`,
                 )
             }
@@ -125,23 +191,44 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
         }
     }, [clearCart])
 
+    useEffect(() => {
+        setSaleType(getSaleTypeFromParam(searchParams.get("saleType")))
+    }, [searchParams])
+
+    useEffect(() => {
+        if (saleType === "FACTURA") {
+            setShowReceiverFields(true)
+            return
+        }
+
+        setShowReceiverFields(false)
+    }, [saleType])
+
     return (
         <>
-            <ScanInput initialProducts={initialProducts} />
+            <div className="p-4">
+                <ScanInput initialProducts={initialProducts} />
 
-            <CartTable />
-            <div className="flex flex-col gap-6 mt-4">
-                <div className="flex flex-col md:flex-row items-center justify-between md:justify-end gap-4 md:gap-8">
-                    <p className="text-xl font-semibold dark:text-white text-gray-800">Total: ${toPrice(total)}</p>
-                    <div className="flex md:flex-row flex-col items-center gap-2">
-                        <label
-                            htmlFor="pago"
-                            className="dark:text-slate-300 text-gray-700 font-medium whitespace-nowrap flex-shrink-0"
-                        >
-                            Tipo de pago:
-                        </label>
+                <CartTable />
+                <div className="mt-4 flex flex-col gap-6">
+                <div className="grid gap-4 rounded-lg border border-gray-200 p-4 dark:border-gray-700 sm:grid-cols-2">
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Documento</label>
+                        <Select value={saleType} onValueChange={(value: SaleType) => setSaleType(value)}>
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="BOLETA">Boleta electrónica</SelectItem>
+                                <SelectItem value="NOTA_VENTA">Nota de venta</SelectItem>
+                                <SelectItem value="FACTURA">Factura electrónica</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Tipo de pago</label>
                         <Select value={paymentMethod} onValueChange={(value: PaymentType) => setPaymentMethod(value)}>
-                            <SelectTrigger className="p-2 border bg-transparent border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <SelectTrigger>
                                 <SelectValue placeholder="Seleccionar tipo de pago" />
                             </SelectTrigger>
                             <SelectContent>
@@ -151,12 +238,120 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
                             </SelectContent>
                         </Select>
                     </div>
+                </div>
+
+                {saleType === "NOTA_VENTA" && !showReceiverFields && (
+                    <div className="rounded-lg border border-dashed border-emerald-300 bg-emerald-50/40 p-4 dark:border-emerald-900 dark:bg-emerald-950/10">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h3 className="font-semibold text-gray-800 dark:text-slate-100">
+                                    Datos del receptor ocultos
+                                </h3>
+                                <p className="text-xs text-gray-600 dark:text-slate-400">
+                                    Puedes agregarlos si esta nota podría convertirse después en factura.
+                                </p>
+                            </div>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setShowReceiverFields(true)}
+                                className="h-auto min-h-10 whitespace-normal border-emerald-300 py-2 text-left text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950 sm:text-center"
+                            >
+                                <UserPlus />
+                                Agregar datos para futura factura
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {saleType !== "BOLETA" && showReceiverFields && (
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-900 dark:bg-emerald-950/20">
+                        <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <h3 className="font-semibold text-gray-800 dark:text-slate-100">Datos del receptor</h3>
+                                {saleType === "NOTA_VENTA" && (
+                                    <p className="text-xs text-gray-600 dark:text-slate-400">
+                                        Opcional para notas. Si los guardas, el correo es obligatorio.
+                                    </p>
+                                )}
+                            </div>
+                            {saleType === "NOTA_VENTA" && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setShowReceiverFields(false)}
+                                    className="justify-start border-slate-300 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-950 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 sm:justify-center"
+                                >
+                                    <X />
+                                    Ocultar datos
+                                </Button>
+                            )}
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            <Input
+                                value={receiver.rut}
+                                onChange={(event) => setReceiver((current) => ({ ...current, rut: event.target.value }))}
+                                placeholder="RUT"
+                            />
+                            <Input
+                                value={receiver.name}
+                                onChange={(event) => setReceiver((current) => ({ ...current, name: event.target.value }))}
+                                placeholder="Razón social"
+                            />
+                            <div className="space-y-2">
+                                <Input
+                                    type="email"
+                                    value={receiver.email}
+                                    onChange={(event) =>
+                                        setReceiver((current) => ({ ...current, email: event.target.value }))
+                                    }
+                                    placeholder="Correo del receptor"
+                                    required
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                        setReceiver((current) => ({ ...current, email: DEFAULT_RECEIVER_EMAIL }))
+                                    }
+                                    className="h-auto whitespace-normal border-blue-300 bg-blue-50 px-3 py-1.5 text-left text-xs font-medium text-blue-700 hover:bg-blue-100 hover:text-blue-800 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950"
+                                >
+                                    Cliente sin correo: usar {DEFAULT_RECEIVER_EMAIL}
+                                </Button>
+                            </div>
+                            <Input
+                                value={receiver.giro}
+                                onChange={(event) => setReceiver((current) => ({ ...current, giro: event.target.value }))}
+                                placeholder="Giro"
+                            />
+                            <Input
+                                value={receiver.address}
+                                onChange={(event) => setReceiver((current) => ({ ...current, address: event.target.value }))}
+                                placeholder="Dirección"
+                            />
+                            <Input
+                                value={receiver.city}
+                                onChange={(event) => setReceiver((current) => ({ ...current, city: event.target.value }))}
+                                placeholder="Comuna o ciudad"
+                            />
+                        </div>
+                    </div>
+                )}
+
+                <div className="flex flex-col items-end justify-between gap-4 md:flex-row md:items-center">
+                    <div>
+                        <p className="text-xl font-semibold text-gray-800 dark:text-white">
+                            Total estimado: ${toPrice(total)}
+                        </p>
+                    </div>
                     <Button
                         disabled={loading || cartItems.length === 0}
                         onClick={handleSubmit}
                         className="px-6 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition"
                     >
-                        {loading ? "Procesando..." : "Vender"}
+                        {loading ? "Procesando..." : saleType === "NOTA_VENTA" ? "Crear nota" : "Emitir documento"}
                     </Button>
                 </div>
                 <div className="mt-4 flex flex-col gap-2">
@@ -175,6 +370,7 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
                             </p>
                         )}
                     </div>
+                </div>
                 </div>
             </div>
             <DiscountModal

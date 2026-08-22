@@ -27,20 +27,12 @@
                 },
                 "400": {
                     "description": "Datos de entrada inválidos."
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "Expense"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Registrar un nuevo gasto",
-            "tags": ["Gestión de Gastos"]
+            "tags": [
+                "Gestión de Gastos"
+            ]
         },
         "get": {
             "description": "Obtiene una lista completa de todos los gastos registrados en el sistema.",
@@ -59,23 +51,47 @@
                             }
                         }
                     }
-                },
-                "default": {
-                    "description": "",
+                }
+            },
+            "summary": "Consultar todos los gastos",
+            "tags": [
+                "Gestión de Gastos"
+            ]
+        }
+    },
+    "/expenses/summary": {
+        "get": {
+            "description": "Devuelve el total general de gastos y el desglose acumulado por tipo de gasto.",
+            "operationId": "ExpensesController_summary",
+            "parameters": [
+                {
+                    "name": "storeId",
+                    "required": false,
+                    "in": "query",
+                    "description": "ID de la tienda para filtrar el resumen",
+                    "schema": {
+                        "format": "uuid",
+                        "example": "123e4567-e89b-12d3-a456-426614174000",
+                        "type": "string"
+                    }
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "Resumen de gastos recuperado con éxito.",
                     "content": {
                         "application/json": {
                             "schema": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "Expense"
-                                }
+                                "$ref": "ExpenseSummaryDto"
                             }
                         }
                     }
                 }
             },
-            "summary": "Consultar todos los gastos",
-            "tags": ["Gestión de Gastos"]
+            "summary": "Resumen de gastos",
+            "tags": [
+                "Gestión de Gastos"
+            ]
         }
     },
     "/expenses/{id}": {
@@ -106,20 +122,12 @@
                 },
                 "404": {
                     "description": "Gasto no encontrado en el sistema."
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "Expense"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Consultar un gasto por su ID",
-            "tags": ["Gestión de Gastos"]
+            "tags": [
+                "Gestión de Gastos"
+            ]
         },
         "patch": {
             "description": "Modifica los datos de un gasto existente identificado por su ID.",
@@ -158,20 +166,12 @@
                 },
                 "404": {
                     "description": "Gasto no encontrado para actualizar."
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Actualizar la información de un gasto",
-            "tags": ["Gestión de Gastos"]
+            "tags": [
+                "Gestión de Gastos"
+            ]
         },
         "delete": {
             "description": "Remueve permanentemente un gasto del sistema mediante su identificador.",
@@ -193,20 +193,12 @@
                 },
                 "404": {
                     "description": "Gasto no encontrado para eliminar."
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "Expense"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Eliminar un registro de gasto",
-            "tags": ["Gestión de Gastos"]
+            "tags": [
+                "Gestión de Gastos"
+            ]
         }
     }
 }

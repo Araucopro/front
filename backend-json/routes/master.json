@@ -1,0 +1,364 @@
+{
+    "/master/login": {
+        "post": {
+            "operationId": "MasterController_login",
+            "parameters": [],
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "LoginMasterDto"
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "200": {
+                    "description": "Token de acceso de plataforma de tipo master"
+                }
+            },
+            "summary": "Iniciar sesión como usuario MASTER de plataforma",
+            "tags": [
+                "Master Platform Administration"
+            ]
+        }
+    },
+    "/master/tenants": {
+        "get": {
+            "operationId": "MasterController_findAll",
+            "parameters": [
+                {
+                    "name": "limit",
+                    "required": false,
+                    "in": "query",
+                    "description": "Cantidad máxima de elementos a retornar por página",
+                    "schema": {
+                        "minimum": 1,
+                        "default": 10,
+                        "example": 10,
+                        "type": "number"
+                    }
+                },
+                {
+                    "name": "offset",
+                    "required": false,
+                    "in": "query",
+                    "description": "Número de elementos a omitir desde el inicio (para paginación)",
+                    "schema": {
+                        "minimum": 0,
+                        "default": 0,
+                        "example": 0,
+                        "type": "number"
+                    }
+                },
+                {
+                    "name": "status",
+                    "required": false,
+                    "in": "query",
+                    "description": "Filtrar por estado del tenant",
+                    "schema": {
+                        "type": "string",
+                        "enum": [
+                            "PROVISIONING",
+                            "ACTIVE",
+                            "SUSPENDED",
+                            "ARCHIVED"
+                        ]
+                    }
+                },
+                {
+                    "name": "search",
+                    "required": false,
+                    "in": "query",
+                    "description": "Término de búsqueda por nombre o slug del tenant",
+                    "schema": {
+                        "example": "tienda",
+                        "type": "string"
+                    }
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "Lista paginada de tenants"
+                }
+            },
+            "summary": "Obtener lista paginada de tenants con filtros",
+            "tags": [
+                "Master Platform Administration"
+            ]
+        },
+        "post": {
+            "operationId": "MasterController_create",
+            "parameters": [],
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "CreateTenantDto"
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "201": {
+                    "description": "Tenant creado exitosamente"
+                }
+            },
+            "summary": "Crear un nuevo tenant en la plataforma",
+            "tags": [
+                "Master Platform Administration"
+            ]
+        }
+    },
+    "/master/tenants/{id}": {
+        "get": {
+            "operationId": "MasterController_findOne",
+            "parameters": [
+                {
+                    "name": "id",
+                    "required": true,
+                    "in": "path",
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "Detalles del tenant"
+                }
+            },
+            "summary": "Obtener detalle de un tenant por su ID",
+            "tags": [
+                "Master Platform Administration"
+            ]
+        },
+        "patch": {
+            "operationId": "MasterController_update",
+            "parameters": [
+                {
+                    "name": "id",
+                    "required": true,
+                    "in": "path",
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "UpdateTenantDto"
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "200": {
+                    "description": "Tenant actualizado exitosamente"
+                }
+            },
+            "summary": "Actualizar propiedades de un tenant (maxStores, maxUsers, status, etc.)",
+            "tags": [
+                "Master Platform Administration"
+            ]
+        }
+    },
+    "/master/tenants/{id}/provision": {
+        "post": {
+            "operationId": "MasterController_provision",
+            "parameters": [
+                {
+                    "name": "id",
+                    "required": true,
+                    "in": "path",
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "ProvisionTenantDto"
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "201": {
+                    "description": "Tenant provisionado exitosamente"
+                }
+            },
+            "summary": "Provisionar tienda central, usuario admin y datos base para un tenant",
+            "tags": [
+                "Master Platform Administration"
+            ]
+        }
+    },
+    "/master/tenants/{id}/metrics": {
+        "get": {
+            "operationId": "MasterController_metrics",
+            "parameters": [
+                {
+                    "name": "id",
+                    "required": true,
+                    "in": "path",
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "responses": {
+                "default": {
+                    "description": ""
+                }
+            },
+            "summary": "Obtener métricas de uso y telemetría de un tenant",
+            "tags": [
+                "Master Platform Administration"
+            ]
+        }
+    },
+    "/master/tenants/{id}/subscription": {
+        "patch": {
+            "operationId": "MasterController_subscription",
+            "parameters": [
+                {
+                    "name": "id",
+                    "required": true,
+                    "in": "path",
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "UpdateSubscriptionDto"
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "default": {
+                    "description": "",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "Tenant"
+                            }
+                        }
+                    }
+                }
+            },
+            "summary": "Actualizar tipo de plan y vencimiento de suscripción",
+            "tags": [
+                "Master Platform Administration"
+            ]
+        }
+    },
+    "/master/tenants/{id}/export": {
+        "get": {
+            "operationId": "MasterController_exportData",
+            "parameters": [
+                {
+                    "name": "id",
+                    "required": true,
+                    "in": "path",
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "responses": {
+                "default": {
+                    "description": ""
+                }
+            },
+            "summary": "Exportar respaldo completo de datos de un tenant",
+            "tags": [
+                "Master Platform Administration"
+            ]
+        }
+    },
+    "/master/tenants/{id}/status": {
+        "patch": {
+            "operationId": "MasterController_status",
+            "parameters": [
+                {
+                    "name": "id",
+                    "required": true,
+                    "in": "path",
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "responses": {
+                "default": {
+                    "description": "",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "Tenant"
+                            }
+                        }
+                    }
+                }
+            },
+            "tags": [
+                "Master Platform Administration"
+            ]
+        }
+    },
+    "/master/tenants/{id}/impersonate": {
+        "post": {
+            "operationId": "MasterController_impersonate",
+            "parameters": [
+                {
+                    "name": "id",
+                    "required": true,
+                    "in": "path",
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "ImpersonateTenantDto"
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "default": {
+                    "description": "",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "tags": [
+                "Master Platform Administration"
+            ]
+        }
+    }
+}

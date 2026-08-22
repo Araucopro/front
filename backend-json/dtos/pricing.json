@@ -5,6 +5,9 @@
             "offerID": {
                 "type": "string"
             },
+            "tenantID": {
+                "type": "string"
+            },
             "storeProduct": {
                 "$ref": "#/components/schemas/StoreProduct"
             },
@@ -12,14 +15,21 @@
                 "type": "string"
             },
             "discountType": {
-                "enum": ["PERCENTAGE", "FIXED_AMOUNT", "FIXED_PRICE"],
+                "enum": [
+                    "PERCENTAGE",
+                    "FIXED_AMOUNT",
+                    "FIXED_PRICE"
+                ],
                 "type": "string"
             },
             "value": {
                 "type": "number"
             },
             "scope": {
-                "enum": ["UNIT", "TOTAL"],
+                "enum": [
+                    "UNIT",
+                    "TOTAL"
+                ],
                 "type": "string"
             },
             "exclusive": {
@@ -47,6 +57,7 @@
         },
         "required": [
             "offerID",
+            "tenantID",
             "storeProduct",
             "discountType",
             "value",
@@ -72,7 +83,10 @@
                 "description": "ID de la variación del producto"
             },
             "priceType": {
-                "enum": ["cost", "list"],
+                "enum": [
+                    "cost",
+                    "list"
+                ],
                 "type": "string",
                 "description": "Tipo de precio: COST (Costo) o LIST (Venta)"
             },
@@ -89,7 +103,12 @@
                 "description": "Nombre o ID del usuario que realizó el cambio"
             }
         },
-        "required": ["storeID", "variationID", "priceType", "newPrice"]
+        "required": [
+            "storeID",
+            "variationID",
+            "priceType",
+            "newPrice"
+        ]
     },
     "PriceHistory": {
         "type": "object",
@@ -97,11 +116,17 @@
             "historyID": {
                 "type": "string"
             },
+            "tenantID": {
+                "type": "string"
+            },
             "storeProduct": {
                 "$ref": "#/components/schemas/StoreProduct"
             },
             "priceType": {
-                "enum": ["cost", "list"],
+                "enum": [
+                    "cost",
+                    "list"
+                ],
                 "type": "string"
             },
             "oldPrice": {
@@ -121,7 +146,15 @@
                 "type": "string"
             }
         },
-        "required": ["historyID", "storeProduct", "priceType", "oldPrice", "newPrice", "effectiveDate"]
+        "required": [
+            "historyID",
+            "tenantID",
+            "storeProduct",
+            "priceType",
+            "oldPrice",
+            "newPrice",
+            "effectiveDate"
+        ]
     },
     "CreateSpecialOfferDto": {
         "type": "object",
@@ -136,7 +169,11 @@
                 "description": "Descripción o motivo de la oferta"
             },
             "discountType": {
-                "enum": ["PERCENTAGE", "FIXED_AMOUNT", "FIXED_PRICE"],
+                "enum": [
+                    "PERCENTAGE",
+                    "FIXED_AMOUNT",
+                    "FIXED_PRICE"
+                ],
                 "type": "string",
                 "description": "Tipo de descuento: PERCENTAGE, FIXED_AMOUNT, FIXED_PRICE"
             },
@@ -145,7 +182,10 @@
                 "description": "Valor numérico del descuento o precio final"
             },
             "scope": {
-                "enum": ["UNIT", "TOTAL"],
+                "enum": [
+                    "UNIT",
+                    "TOTAL"
+                ],
                 "type": "string",
                 "description": "Ámbito del descuento: UNIT (por unidad) o TOTAL (sobre el total)"
             },
@@ -168,7 +208,12 @@
                 "default": true
             }
         },
-        "required": ["storeProductID", "discountType", "value", "startDate"]
+        "required": [
+            "storeProductID",
+            "discountType",
+            "value",
+            "startDate"
+        ]
     },
     "UpdateSpecialOfferDto": {
         "type": "object",
@@ -183,7 +228,11 @@
                 "description": "Descripción o motivo de la oferta"
             },
             "discountType": {
-                "enum": ["PERCENTAGE", "FIXED_AMOUNT", "FIXED_PRICE"],
+                "enum": [
+                    "PERCENTAGE",
+                    "FIXED_AMOUNT",
+                    "FIXED_PRICE"
+                ],
                 "type": "string",
                 "description": "Tipo de descuento: PERCENTAGE, FIXED_AMOUNT, FIXED_PRICE"
             },
@@ -192,7 +241,10 @@
                 "description": "Valor numérico del descuento o precio final"
             },
             "scope": {
-                "enum": ["UNIT", "TOTAL"],
+                "enum": [
+                    "UNIT",
+                    "TOTAL"
+                ],
                 "type": "string",
                 "description": "Ámbito del descuento: UNIT (por unidad) o TOTAL (sobre el total)"
             },
@@ -257,6 +309,8 @@
                 "example": "2026-04-15T12:00:00Z"
             }
         },
-        "required": ["storeProductID"]
+        "required": [
+            "storeProductID"
+        ]
     }
 }

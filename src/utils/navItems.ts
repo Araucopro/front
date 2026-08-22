@@ -1,13 +1,15 @@
 import {
-    FaHome,
     FaBox,
-    FaFileInvoice,
-    FaCalculator,
-    FaPlusCircle,
-    FaUsers,
-    FaChartLine,
+    FaCashRegister,
     FaChartBar,
+    FaChartLine,
+    FaExchangeAlt,
+    FaFileInvoice,
+    FaHome,
+    FaReceipt,
+    FaShoppingCart,
     FaTags,
+    FaUsers,
 } from "react-icons/fa"
 
 export const navItems = [
@@ -20,18 +22,21 @@ export const navItems = [
         label: "Inventario",
         icon: FaBox,
         subItems: [
-            { label: "Mi Inventario", route: "/home/inventory" },
+            { label: "Mi Inventario", route: "/home/inventory", icon: FaBox },
             { label: "Descuentos", route: "/home/inventory/discounts", icon: FaTags },
-            { label: "Transferencias", route: "/home/transfers" },
+            { label: "Transferencias", route: "/home/transfers", icon: FaExchangeAlt },
         ],
     },
     {
-        label: "Facturación",
+        label: "Comercial",
         icon: FaFileInvoice,
         subItems: [
-            { label: "Cotizar", route: "/home/quotes" },
-            { label: "Crear OC", route: "/home/purchaseOrder" },
-            { label: "Ordenes de Compra", route: "/home/invoices" },
+            { label: "Venta", route: "/home/createsale?saleType=NOTA_VENTA", icon: FaCashRegister },
+            { label: "Crear factura electronica", route: "/home/createsale?saleType=FACTURA", icon: FaFileInvoice },
+            { label: "Crear boleta electronica", route: "/home/createsale?saleType=BOLETA", icon: FaReceipt },
+            { label: "Cotizar", route: "/home/quotes", icon: FaFileInvoice },
+            { label: "Crear OC", route: "/home/purchaseOrder", icon: FaShoppingCart },
+            { label: "Ordenes de Compra", route: "/home/invoices", icon: FaFileInvoice },
         ],
     },
     {

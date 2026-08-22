@@ -23,20 +23,12 @@
                             }
                         }
                     }
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "PurchaseOrder"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Crear una orden de compra",
-            "tags": ["Ordenes de Compra"]
+            "tags": [
+                "Ordenes de Compra"
+            ]
         },
         "get": {
             "operationId": "PurchaseOrdersController_findAll",
@@ -54,23 +46,12 @@
                             }
                         }
                     }
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "PurchaseOrder"
-                                }
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Listar órdenes de compra",
-            "tags": ["Ordenes de Compra"]
+            "tags": [
+                "Ordenes de Compra"
+            ]
         }
     },
     "/purchase-orders/{id}": {
@@ -97,20 +78,12 @@
                             }
                         }
                     }
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "PurchaseOrder"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Obtener detalle de una orden de compra",
-            "tags": ["Ordenes de Compra"]
+            "tags": [
+                "Ordenes de Compra"
+            ]
         },
         "patch": {
             "operationId": "PurchaseOrdersController_update",
@@ -145,20 +118,12 @@
                             }
                         }
                     }
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "PurchaseOrder"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Actualizar datos generales de la orden de compra",
-            "tags": ["Ordenes de Compra"]
+            "tags": [
+                "Ordenes de Compra"
+            ]
         }
     },
     "/purchase-orders/{id}/status": {
@@ -187,17 +152,7 @@
             },
             "responses": {
                 "200": {
-                    "description": "Estado de orden de compra actualizado.",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "PurchaseOrder"
-                            }
-                        }
-                    }
-                },
-                "default": {
-                    "description": "",
+                    "description": "Estado comercial de la orden de compra actualizado.",
                     "content": {
                         "application/json": {
                             "schema": {
@@ -207,8 +162,10 @@
                     }
                 }
             },
-            "summary": "Actualizar el estado/pago de la orden de compra",
-            "tags": ["Ordenes de Compra"]
+            "summary": "Actualizar el estado comercial de la orden de compra",
+            "tags": [
+                "Ordenes de Compra"
+            ]
         }
     },
     "/purchase-orders/{id}/verify": {
@@ -238,13 +195,12 @@
             "responses": {
                 "200": {
                     "description": "Verificación procesada exitosamente."
-                },
-                "default": {
-                    "description": ""
                 }
             },
             "summary": "Verificar productos recibidos para la orden de compra",
-            "tags": ["Ordenes de Compra"]
+            "tags": [
+                "Ordenes de Compra"
+            ]
         }
     }
 }

@@ -27,20 +27,12 @@
                 },
                 "400": {
                     "description": "Datos inválidos o email/nombre duplicado."
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "Store"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Crear una nueva tienda",
-            "tags": ["Tiendas"]
+            "tags": [
+                "Tiendas"
+            ]
         },
         "get": {
             "description": "Retorna el listado completo de tiendas registradas en el sistema.",
@@ -59,23 +51,12 @@
                             }
                         }
                     }
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "Store"
-                                }
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Obtener todas las tiendas",
-            "tags": ["Tiendas"]
+            "tags": [
+                "Tiendas"
+            ]
         }
     },
     "/stores/{id}/users": {
@@ -108,20 +89,12 @@
                 },
                 "404": {
                     "description": "Tienda no encontrada."
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Obtener todos los usuarios de una tienda",
-            "tags": ["Tiendas"]
+            "tags": [
+                "Tiendas"
+            ]
         }
     },
     "/stores/{id}": {
@@ -152,20 +125,12 @@
                 },
                 "404": {
                     "description": "Tienda no encontrada."
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "Store"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Obtener una tienda por ID",
-            "tags": ["Tiendas"]
+            "tags": [
+                "Tiendas"
+            ]
         },
         "patch": {
             "description": "Modifica los datos de una tienda existente (nombre, dirección, teléfono, etc.).",
@@ -204,20 +169,12 @@
                 },
                 "404": {
                     "description": "Tienda no encontrada."
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "Store"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Actualizar información de una tienda",
-            "tags": ["Tiendas"]
+            "tags": [
+                "Tiendas"
+            ]
         },
         "delete": {
             "description": "Elimina permanentemente una tienda del sistema.",
@@ -239,13 +196,12 @@
                 },
                 "404": {
                     "description": "Tienda no encontrada."
-                },
-                "default": {
-                    "description": ""
                 }
             },
             "summary": "Eliminar una tienda",
-            "tags": ["Tiendas"]
+            "tags": [
+                "Tiendas"
+            ]
         }
     },
     "/userstores": {
@@ -276,20 +232,12 @@
                 },
                 "400": {
                     "description": "Datos inválidos."
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "UserStore"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Asignar un usuario a una tienda",
-            "tags": ["Usuarios de las Tiendas"]
+            "tags": [
+                "Usuarios de las Tiendas"
+            ]
         },
         "get": {
             "description": "Retorna el listado completo de asignaciones entre usuarios y tiendas.",
@@ -308,9 +256,22 @@
                             }
                         }
                     }
-                },
-                "default": {
-                    "description": "",
+                }
+            },
+            "summary": "Obtener todas las relaciones usuario-tienda",
+            "tags": [
+                "Usuarios de las Tiendas"
+            ]
+        }
+    },
+    "/userstores/my-stores": {
+        "get": {
+            "description": "Retorna todas las tiendas asignadas al usuario que realiza la petición. Si el usuario es admin del tenant devuelve todas las tiendas del tenant.",
+            "operationId": "UserstoresController_findMyStores",
+            "parameters": [],
+            "responses": {
+                "200": {
+                    "description": "Lista de tiendas accesibles por el usuario.",
                     "content": {
                         "application/json": {
                             "schema": {
@@ -321,10 +282,15 @@
                             }
                         }
                     }
+                },
+                "401": {
+                    "description": "No autorizado."
                 }
             },
-            "summary": "Obtener todas las relaciones usuario-tienda",
-            "tags": ["Usuarios de las Tiendas"]
+            "summary": "Obtener las tiendas del usuario autenticado",
+            "tags": [
+                "Usuarios de las Tiendas"
+            ]
         }
     },
     "/userstores/{id}": {
@@ -358,23 +324,12 @@
                 },
                 "404": {
                     "description": "Usuario no encontrado."
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "UserStore"
-                                }
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Obtener tiendas de un usuario",
-            "tags": ["Usuarios de las Tiendas"]
+            "tags": [
+                "Usuarios de las Tiendas"
+            ]
         },
         "delete": {
             "description": "Elimina la relación entre un usuario y una tienda, revocando el acceso del usuario a esa tienda.",
@@ -396,13 +351,12 @@
                 },
                 "404": {
                     "description": "Asignación no encontrada."
-                },
-                "default": {
-                    "description": ""
                 }
             },
             "summary": "Eliminar asignación usuario-tienda",
-            "tags": ["Usuarios de las Tiendas"]
+            "tags": [
+                "Usuarios de las Tiendas"
+            ]
         }
     },
     "/storeproduct/transfer": {
@@ -429,13 +383,12 @@
                 },
                 "404": {
                     "description": "Tienda o Producto no encontrado."
-                },
-                "default": {
-                    "description": ""
                 }
             },
             "summary": "Transferir stock de la central a una tienda",
-            "tags": ["Productos de la Tienda"]
+            "tags": [
+                "Productos de la Tienda"
+            ]
         }
     },
     "/storeproduct/inventory": {
@@ -466,23 +419,12 @@
                             }
                         }
                     }
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "Product"
-                                }
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Consultar inventario de una tienda",
-            "tags": ["Productos de la Tienda"]
+            "tags": [
+                "Productos de la Tienda"
+            ]
         }
     },
     "/storeproduct/{id}": {
@@ -523,20 +465,12 @@
                 },
                 "404": {
                     "description": "Producto de tienda no encontrado."
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "StoreProduct"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Actualizar un producto en tienda (Inventario/Precios)",
-            "tags": ["Productos de la Tienda"]
+            "tags": [
+                "Productos de la Tienda"
+            ]
         }
     },
     "/store-monthly-targets": {
@@ -563,20 +497,12 @@
                             }
                         }
                     }
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "StoreMonthlyTarget"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Crear una meta mensual para una tienda",
-            "tags": ["Metas Mensuales de Tienda"]
+            "tags": [
+                "Metas Mensuales de Tienda"
+            ]
         },
         "get": {
             "operationId": "StoreMonthlyTargetsController_findAll",
@@ -594,23 +520,12 @@
                             }
                         }
                     }
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "StoreMonthlyTarget"
-                                }
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Listar todas las metas mensuales",
-            "tags": ["Metas Mensuales de Tienda"]
+            "tags": [
+                "Metas Mensuales de Tienda"
+            ]
         }
     },
     "/store-monthly-targets/{storeID}": {
@@ -642,20 +557,12 @@
                 },
                 "404": {
                     "description": "Tienda no encontrada."
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "number"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Obtener la meta mensual de una tienda por ID. period opcional: YYYY-MM-DD, YYYY-MM o YYYY/MM/DD, YYYY/MM",
-            "tags": ["Metas Mensuales de Tienda"]
+            "tags": [
+                "Metas Mensuales de Tienda"
+            ]
         },
         "post": {
             "operationId": "StoreMonthlyTargetsController_upsert",
@@ -690,20 +597,12 @@
                             }
                         }
                     }
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "StoreMonthlyTarget"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Crear o actualizar la meta mensual para la tienda en el periodo dado (por defecto mes actual).",
-            "tags": ["Metas Mensuales de Tienda"]
+            "tags": [
+                "Metas Mensuales de Tienda"
+            ]
         }
     },
     "/store-monthly-targets/{id}": {
@@ -744,20 +643,12 @@
                 },
                 "400": {
                     "description": "La meta pertenece a un mes pasado o el payload es inválido."
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "StoreMonthlyTarget"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Actualizar una meta mensual",
-            "tags": ["Metas Mensuales de Tienda"]
+            "tags": [
+                "Metas Mensuales de Tienda"
+            ]
         },
         "delete": {
             "description": "Solo permite eliminar metas del mes actual o de meses futuros.",
@@ -776,13 +667,12 @@
             "responses": {
                 "204": {
                     "description": "Meta mensual eliminada exitosamente."
-                },
-                "default": {
-                    "description": ""
                 }
             },
             "summary": "Eliminar una meta mensual",
-            "tags": ["Metas Mensuales de Tienda"]
+            "tags": [
+                "Metas Mensuales de Tienda"
+            ]
         }
     }
 }

@@ -1,59 +1,11 @@
 {
-    "CreateStoreMonthlyTargetDto": {
-        "type": "object",
-        "properties": {
-            "storeID": {
-                "type": "string",
-                "format": "uuid",
-                "description": "ID de la tienda a la que pertenece la meta mensual",
-                "example": "123e4567-e89b-12d3-a456-426614174000"
-            },
-            "period": {
-                "type": "string",
-                "description": "Mes objetivo en formato ISO. Se normaliza al primer día del mes.",
-                "example": "2026-04-01"
-            },
-            "targetAmount": {
-                "type": "number",
-                "minimum": 1,
-                "description": "Monto meta de ventas para ese mes",
-                "example": 25000000
-            }
-        },
-        "required": ["storeID", "period", "targetAmount"]
-    },
-    "UpsertStoreMonthlyTargetDto": {
-        "type": "object",
-        "properties": {
-            "period": {
-                "type": "string",
-                "description": "Periodo objetivo como YYYY/MM o YYYY/MM/DD. Si se omite, se usa el mes actual",
-                "example": "2026/04"
-            },
-            "targetAmount": {
-                "type": "number",
-                "minimum": 1,
-                "description": "Monto meta de ventas para ese mes",
-                "example": 26000000
-            }
-        },
-        "required": ["targetAmount"]
-    },
-    "UpdateStoreMonthlyTargetDto": {
-        "type": "object",
-        "properties": {
-            "targetAmount": {
-                "type": "number",
-                "minimum": 1,
-                "description": "Monto meta de ventas para ese mes",
-                "example": 26000000
-            }
-        }
-    },
     "StoreMonthlyTarget": {
         "type": "object",
         "properties": {
             "id": {
+                "type": "string"
+            },
+            "tenantID": {
                 "type": "string"
             },
             "store": {
@@ -75,12 +27,23 @@
                 "type": "string"
             }
         },
-        "required": ["id", "store", "period", "targetAmount", "createdAt", "updatedAt"]
+        "required": [
+            "id",
+            "tenantID",
+            "store",
+            "period",
+            "targetAmount",
+            "createdAt",
+            "updatedAt"
+        ]
     },
     "Store": {
         "type": "object",
         "properties": {
             "storeID": {
+                "type": "string"
+            },
+            "tenantID": {
                 "type": "string"
             },
             "location": {
@@ -109,11 +72,32 @@
                 "type": "string"
             },
             "type": {
-                "enum": ["central", "franchise", "consignment", "third_party"],
+                "enum": [
+                    "central",
+                    "franchise",
+                    "consignment",
+                    "third_party"
+                ],
                 "type": "string"
             },
             "isCentralStore": {
                 "type": "boolean"
+            },
+            "giro": {
+                "type": "string",
+                "nullable": true
+            },
+            "acteco": {
+                "type": "string",
+                "nullable": true
+            },
+            "cdgSIISucur": {
+                "type": "string",
+                "nullable": true
+            },
+            "businessName": {
+                "type": "string",
+                "nullable": true
             },
             "userStores": {
                 "type": "array",
@@ -144,6 +128,7 @@
         },
         "required": [
             "storeID",
+            "tenantID",
             "location",
             "rut",
             "address",
@@ -167,6 +152,9 @@
             "userStoreID": {
                 "type": "string"
             },
+            "tenantID": {
+                "type": "string"
+            },
             "user": {
                 "$ref": "#/components/schemas/User"
             },
@@ -182,7 +170,14 @@
                 "type": "string"
             }
         },
-        "required": ["userStoreID", "user", "store", "createdAt", "updatedAt"]
+        "required": [
+            "userStoreID",
+            "tenantID",
+            "user",
+            "store",
+            "createdAt",
+            "updatedAt"
+        ]
     },
     "CreateStoreDto": {
         "type": "object",
@@ -239,7 +234,12 @@
                 "example": "Tienda Principal"
             },
             "type": {
-                "enum": ["central", "franchise", "consignment", "third_party"],
+                "enum": [
+                    "central",
+                    "franchise",
+                    "consignment",
+                    "third_party"
+                ],
                 "type": "string",
                 "description": "Tipo de tienda según el negocio",
                 "default": "third_party"
@@ -249,9 +249,42 @@
                 "description": "Indica si es una tienda central (valor por defecto: false)",
                 "example": false,
                 "default": false
+            },
+            "giro": {
+                "type": "string",
+                "maxLength": 255,
+                "description": "Giro comercial de la tienda para emisión de DTE",
+                "example": "VENTA AL POR MENOR DE PRENDAS DE VESTIR"
+            },
+            "acteco": {
+                "type": "string",
+                "maxLength": 255,
+                "description": "Código de actividad económica SII (Acteco)",
+                "example": "477100"
+            },
+            "cdgSIISucur": {
+                "type": "string",
+                "maxLength": 64,
+                "description": "Código de sucursal entregado por el SII",
+                "example": "0"
+            },
+            "businessName": {
+                "type": "string",
+                "maxLength": 255,
+                "description": "Razón social del emisor (si difiere del nombre comercial)",
+                "example": "COMERCIAL ARAUCO SPA"
             }
         },
-        "required": ["location", "rut", "address", "phone", "city", "email", "name", "type"]
+        "required": [
+            "location",
+            "rut",
+            "address",
+            "phone",
+            "city",
+            "email",
+            "name",
+            "type"
+        ]
     },
     "UpdateStoreDto": {
         "type": "object",
@@ -308,7 +341,12 @@
                 "example": "Tienda Principal"
             },
             "type": {
-                "enum": ["central", "franchise", "consignment", "third_party"],
+                "enum": [
+                    "central",
+                    "franchise",
+                    "consignment",
+                    "third_party"
+                ],
                 "type": "string",
                 "description": "Tipo de tienda según el negocio",
                 "default": "third_party"
@@ -318,6 +356,30 @@
                 "description": "Indica si es una tienda central (valor por defecto: false)",
                 "example": false,
                 "default": false
+            },
+            "giro": {
+                "type": "string",
+                "maxLength": 255,
+                "description": "Giro comercial de la tienda para emisión de DTE",
+                "example": "VENTA AL POR MENOR DE PRENDAS DE VESTIR"
+            },
+            "acteco": {
+                "type": "string",
+                "maxLength": 255,
+                "description": "Código de actividad económica SII (Acteco)",
+                "example": "477100"
+            },
+            "cdgSIISucur": {
+                "type": "string",
+                "maxLength": 64,
+                "description": "Código de sucursal entregado por el SII",
+                "example": "0"
+            },
+            "businessName": {
+                "type": "string",
+                "maxLength": 255,
+                "description": "Razón social del emisor (si difiere del nombre comercial)",
+                "example": "COMERCIAL ARAUCO SPA"
             }
         }
     },
@@ -337,12 +399,18 @@
                 "example": "123e4567-e89b-12d3-a456-426614174001"
             }
         },
-        "required": ["userID", "storeID"]
+        "required": [
+            "userID",
+            "storeID"
+        ]
     },
     "StoreProduct": {
         "type": "object",
         "properties": {
             "storeProductID": {
+                "type": "string"
+            },
+            "tenantID": {
                 "type": "string"
             },
             "store": {
@@ -378,6 +446,7 @@
         },
         "required": [
             "storeProductID",
+            "tenantID",
             "store",
             "variation",
             "stock",
@@ -407,6 +476,63 @@
                 "minimum": 0,
                 "description": "Precio de venta al público en la tienda",
                 "example": 20
+            }
+        }
+    },
+    "CreateStoreMonthlyTargetDto": {
+        "type": "object",
+        "properties": {
+            "storeID": {
+                "type": "string",
+                "format": "uuid",
+                "description": "ID de la tienda a la que pertenece la meta mensual",
+                "example": "123e4567-e89b-12d3-a456-426614174000"
+            },
+            "period": {
+                "type": "string",
+                "description": "Mes objetivo en formato ISO. Se normaliza al primer día del mes.",
+                "example": "2026-04-01"
+            },
+            "targetAmount": {
+                "type": "number",
+                "minimum": 1,
+                "description": "Monto meta de ventas para ese mes",
+                "example": 25000000
+            }
+        },
+        "required": [
+            "storeID",
+            "period",
+            "targetAmount"
+        ]
+    },
+    "UpsertStoreMonthlyTargetDto": {
+        "type": "object",
+        "properties": {
+            "period": {
+                "type": "string",
+                "description": "Periodo objetivo como YYYY/MM o YYYY/MM/DD. Si se omite, se usa el mes actual",
+                "example": "2026/04"
+            },
+            "targetAmount": {
+                "type": "number",
+                "minimum": 1,
+                "description": "Monto meta de ventas para ese mes",
+                "example": 26000000
+            }
+        },
+        "required": [
+            "targetAmount"
+        ]
+    },
+    "UpdateStoreMonthlyTargetDto": {
+        "type": "object",
+        "properties": {
+            "targetAmount": {
+                "type": "number",
+                "minimum": 1,
+                "description": "Monto meta de ventas para ese mes",
+                "example": 26000000
             }
         }
     }

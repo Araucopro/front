@@ -1,0 +1,281 @@
+{
+    "LoginMasterDto": {
+        "type": "object",
+        "properties": {
+            "email": {
+                "type": "string",
+                "format": "email",
+                "example": "soporte@araucopro.com"
+            },
+            "password": {
+                "type": "string",
+                "minLength": 6,
+                "example": "Araucopro"
+            }
+        },
+        "required": [
+            "email",
+            "password"
+        ]
+    },
+    "CreateTenantDto": {
+        "type": "object",
+        "properties": {
+            "name": {
+                "type": "string",
+                "minLength": 2,
+                "example": "Tienda",
+                "description": "Nombre del tenant / empresa"
+            },
+            "status": {
+                "enum": [
+                    "PROVISIONING",
+                    "ACTIVE",
+                    "SUSPENDED",
+                    "ARCHIVED"
+                ],
+                "type": "string",
+                "default": "ACTIVE",
+                "example": "ACTIVE",
+                "description": "Estado inicial del tenant"
+            },
+            "maxStores": {
+                "type": "number",
+                "minimum": 1,
+                "example": 5,
+                "default": 5,
+                "description": "Cantidad máxima de tiendas permitidas"
+            },
+            "maxUsers": {
+                "type": "number",
+                "minimum": 1,
+                "example": 5,
+                "default": 5,
+                "description": "Cantidad máxima de usuarios permitidos"
+            },
+            "timeZone": {
+                "type": "string",
+                "example": "America/Santiago",
+                "default": "America/Santiago",
+                "description": "Zona horaria del tenant"
+            },
+            "locale": {
+                "type": "string",
+                "example": "es-CL",
+                "default": "es-CL",
+                "description": "Locale del tenant"
+            }
+        },
+        "required": [
+            "name"
+        ]
+    },
+    "UpdateTenantDto": {
+        "type": "object",
+        "properties": {
+            "name": {
+                "type": "string",
+                "minLength": 2,
+                "example": "Tienda",
+                "description": "Nombre del tenant / empresa"
+            },
+            "status": {
+                "enum": [
+                    "PROVISIONING",
+                    "ACTIVE",
+                    "SUSPENDED",
+                    "ARCHIVED"
+                ],
+                "type": "string",
+                "default": "ACTIVE",
+                "example": "ACTIVE",
+                "description": "Estado inicial del tenant"
+            },
+            "maxStores": {
+                "type": "number",
+                "minimum": 1,
+                "example": 5,
+                "default": 5,
+                "description": "Cantidad máxima de tiendas permitidas"
+            },
+            "maxUsers": {
+                "type": "number",
+                "minimum": 1,
+                "example": 5,
+                "default": 5,
+                "description": "Cantidad máxima de usuarios permitidos"
+            },
+            "timeZone": {
+                "type": "string",
+                "example": "America/Santiago",
+                "default": "America/Santiago",
+                "description": "Zona horaria del tenant"
+            },
+            "locale": {
+                "type": "string",
+                "example": "es-CL",
+                "default": "es-CL",
+                "description": "Locale del tenant"
+            }
+        }
+    },
+    "ProvisionTenantDto": {
+        "type": "object",
+        "properties": {
+            "adminEmail": {
+                "type": "string",
+                "format": "email",
+                "example": "admin@empresa.com",
+                "description": "Email del usuario administrador inicial del tenant"
+            },
+            "adminPassword": {
+                "type": "string",
+                "minLength": 6,
+                "example": "Password123!",
+                "description": "Contraseña del usuario administrador inicial"
+            },
+            "adminFirstName": {
+                "type": "string",
+                "example": "Juan",
+                "description": "Nombre del usuario administrador"
+            },
+            "adminLastName": {
+                "type": "string",
+                "example": "Pérez",
+                "description": "Apellido del usuario administrador"
+            },
+            "centralStoreName": {
+                "type": "string",
+                "example": "Tienda Central Matriz",
+                "description": "Nombre de la tienda central inicial"
+            },
+            "centralStoreAddress": {
+                "type": "string",
+                "example": "Av. Providencia 1234",
+                "description": "Dirección de la tienda central"
+            },
+            "centralStoreCode": {
+                "type": "string",
+                "example": "STORE-CENTRAL-01",
+                "description": "Código interno de la tienda central"
+            }
+        },
+        "required": [
+            "adminEmail",
+            "adminPassword",
+            "adminFirstName",
+            "adminLastName",
+            "centralStoreName"
+        ]
+    },
+    "UpdateSubscriptionDto": {
+        "type": "object",
+        "properties": {
+            "planType": {
+                "enum": [
+                    "BASIC",
+                    "STANDARD",
+                    "ENTERPRISE",
+                    "CUSTOM"
+                ],
+                "type": "string",
+                "example": "ENTERPRISE",
+                "description": "Tipo de plan asignado al tenant"
+            },
+            "subscriptionExpiresAt": {
+                "type": "string",
+                "example": "2026-12-31T23:59:59.000Z",
+                "description": "Fecha de expiración de la suscripción (ISO String)"
+            },
+            "autoRenew": {
+                "type": "boolean",
+                "example": true,
+                "description": "Si la suscripción se renueva automáticamente"
+            }
+        }
+    },
+    "Tenant": {
+        "type": "object",
+        "properties": {
+            "tenantID": {
+                "type": "string"
+            },
+            "name": {
+                "type": "string"
+            },
+            "slug": {
+                "type": "string"
+            },
+            "status": {
+                "enum": [
+                    "PROVISIONING",
+                    "ACTIVE",
+                    "SUSPENDED",
+                    "ARCHIVED"
+                ],
+                "type": "string"
+            },
+            "maxStores": {
+                "type": "number"
+            },
+            "maxUsers": {
+                "type": "number"
+            },
+            "planType": {
+                "enum": [
+                    "BASIC",
+                    "STANDARD",
+                    "ENTERPRISE",
+                    "CUSTOM"
+                ],
+                "type": "string"
+            },
+            "subscriptionExpiresAt": {
+                "format": "date-time",
+                "type": "string",
+                "nullable": true
+            },
+            "autoRenew": {
+                "type": "boolean"
+            },
+            "timeZone": {
+                "type": "string"
+            },
+            "locale": {
+                "type": "string"
+            },
+            "createdAt": {
+                "format": "date-time",
+                "type": "string"
+            },
+            "updatedAt": {
+                "format": "date-time",
+                "type": "string"
+            }
+        },
+        "required": [
+            "tenantID",
+            "name",
+            "slug",
+            "status",
+            "maxStores",
+            "maxUsers",
+            "planType",
+            "subscriptionExpiresAt",
+            "autoRenew",
+            "timeZone",
+            "locale",
+            "createdAt",
+            "updatedAt"
+        ]
+    },
+    "ImpersonateTenantDto": {
+        "type": "object",
+        "properties": {
+            "reason": {
+                "type": "string",
+                "example": "Soporte técnico / Auditoría"
+            }
+        }
+    }
+}

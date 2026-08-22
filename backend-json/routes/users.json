@@ -29,20 +29,12 @@
                 },
                 "500": {
                     "description": "Error interno del servidor."
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "User"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Crear un nuevo usuario",
-            "tags": ["Usuarios"]
+            "tags": [
+                "Usuarios"
+            ]
         },
         "get": {
             "operationId": "UsersController_findAll",
@@ -60,23 +52,12 @@
                             }
                         }
                     }
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "User"
-                                }
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Obtener todos los usuarios",
-            "tags": ["Usuarios"]
+            "tags": [
+                "Usuarios"
+            ]
         }
     },
     "/users/{id}/stores": {
@@ -109,20 +90,12 @@
                 },
                 "404": {
                     "description": "Usuario no encontrado."
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Obtener todas las tiendas de un usuario",
-            "tags": ["Usuarios"]
+            "tags": [
+                "Usuarios"
+            ]
         }
     },
     "/users/{email}": {
@@ -152,20 +125,12 @@
                 },
                 "404": {
                     "description": "Usuario no encontrado."
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "User"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Buscar un usuario por su email",
-            "tags": ["Usuarios"]
+            "tags": [
+                "Usuarios"
+            ]
         }
     },
     "/users/{id}": {
@@ -205,20 +170,12 @@
                 },
                 "404": {
                     "description": "Usuario no encontrado."
-                },
-                "default": {
-                    "description": "",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "User"
-                            }
-                        }
-                    }
                 }
             },
             "summary": "Actualizar un usuario por su ID",
-            "tags": ["Usuarios"]
+            "tags": [
+                "Usuarios"
+            ]
         },
         "delete": {
             "operationId": "UsersController_remove",
@@ -239,13 +196,12 @@
                 },
                 "404": {
                     "description": "Usuario no encontrado."
-                },
-                "default": {
-                    "description": ""
                 }
             },
             "summary": "Eliminar un usuario por su ID",
-            "tags": ["Usuarios"]
+            "tags": [
+                "Usuarios"
+            ]
         }
     }
 }

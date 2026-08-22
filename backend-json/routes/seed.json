@@ -1,0 +1,17 @@
+{
+    "/seed": {
+        "get": {
+            "operationId": "SeedController_executeSeed",
+            "parameters": [],
+            "responses": {
+                "200": {
+                    "description": "Datos cargados correctamente"
+                }
+            },
+            "summary": "Ejecutar carga de datos masiva (Restringido a usuario MASTER)",
+            "tags": [
+                "Seed (Datos de Prueba)"
+            ]
+        }
+    }
+}

@@ -17,11 +17,14 @@ type RawRelation = {
 type RawUser = {
     userID?: string
     id?: string
+    tenantID?: string
     name?: string
     email?: string
     role?: IUser["role"]
+    status?: IUser["status"]
     password?: string
     userImg?: string | null
+    sessionVersion?: number
     createdAt?: string
     updatedAt?: string
     userStores?: RawRelation[]
@@ -30,6 +33,7 @@ type RawUser = {
 
 type RawStore = {
     storeID?: string
+    tenantID?: string
     name?: string
     storeImg?: string | null
     location?: string
@@ -40,6 +44,10 @@ type RawStore = {
     email?: string
     type?: IStore["type"]
     isCentralStore?: boolean
+    giro?: string
+    acteco?: string
+    cdgSIISucur?: string
+    businessName?: string
     isAdminStore?: boolean
     markup?: string
     role?: string
@@ -65,11 +73,14 @@ export const normalizeUser = (raw: RawUser): IUser => {
 
     return {
         userID: raw.userID ?? raw.id ?? "",
+        tenantID: raw.tenantID,
         name: raw.name ?? "",
         email: raw.email ?? "",
         role: raw.role ?? "admin",
+        status: raw.status,
         password: raw.password ?? "",
         userImg: raw.userImg ?? null,
+        sessionVersion: raw.sessionVersion,
         createdAt: raw.createdAt ?? "",
         updatedAt: raw.updatedAt ?? "",
         userStores,
@@ -83,6 +94,7 @@ export const normalizeStore = (raw: RawStore): IStore => {
 
     return {
         storeID: raw.storeID ?? "",
+        tenantID: raw.tenantID,
         name: raw.name ?? "",
         storeImg: raw.storeImg ?? null,
         location: raw.location ?? "",
@@ -93,6 +105,10 @@ export const normalizeStore = (raw: RawStore): IStore => {
         email: raw.email ?? "",
         type: raw.type,
         isCentralStore: raw.isCentralStore,
+        giro: raw.giro,
+        acteco: raw.acteco,
+        cdgSIISucur: raw.cdgSIISucur,
+        businessName: raw.businessName,
         isAdminStore: raw.isAdminStore,
         markup: raw.markup,
         role: raw.role,

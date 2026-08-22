@@ -5,6 +5,9 @@
             "userID": {
                 "type": "string"
             },
+            "tenantID": {
+                "type": "string"
+            },
             "email": {
                 "type": "string"
             },
@@ -12,7 +15,12 @@
                 "type": "string"
             },
             "role": {
-                "enum": ["admin", "store_manager", "consignado", "tercero"],
+                "enum": [
+                    "admin",
+                    "store_manager",
+                    "consignado",
+                    "tercero"
+                ],
                 "type": "string"
             },
             "userImg": {
@@ -21,6 +29,9 @@
             },
             "password": {
                 "type": "string"
+            },
+            "sessionVersion": {
+                "type": "number"
             },
             "userStores": {
                 "type": "array",
@@ -37,7 +48,19 @@
                 "type": "string"
             }
         },
-        "required": ["userID", "email", "name", "role", "userImg", "password", "userStores", "createdAt", "updatedAt"]
+        "required": [
+            "userID",
+            "tenantID",
+            "email",
+            "name",
+            "role",
+            "userImg",
+            "password",
+            "sessionVersion",
+            "userStores",
+            "createdAt",
+            "updatedAt"
+        ]
     },
     "UpdateUserDto": {
         "type": "object",
@@ -47,7 +70,12 @@
             },
             "role": {
                 "type": "string",
-                "enum": ["admin", "store_manager", "consignado", "tercero"]
+                "enum": [
+                    "admin",
+                    "store_manager",
+                    "consignado",
+                    "tercero"
+                ]
             },
             "userImg": {
                 "type": "string"
