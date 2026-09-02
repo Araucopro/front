@@ -10,6 +10,7 @@ import { getAllUsers } from "@/actions/users/getAllUsers"
 import GestionUserForm from "../Edit/GestionUserForm"
 import { Edit, Trash2, User } from "lucide-react"
 import { useAuth } from "@/stores/user.store"
+import { getLegacyRoleLabel } from "@/lib/role-helpers"
 
 interface UsersTableProps {
     users: IUser[]
@@ -61,6 +62,7 @@ export default function UsersTable({ users }: UsersTableProps) {
                         <TableRow className="bg-gray-50 dark:bg-slate-700">
                             <TableHead className="font-medium text-gray-500 uppercase tracking-wider">NOMBRE</TableHead>
                             <TableHead className="font-medium text-gray-500 uppercase tracking-wider">CORREO</TableHead>
+                            <TableHead className="font-medium text-gray-500 uppercase tracking-wider">ROL</TableHead>
                             <TableHead className="font-medium text-gray-500 uppercase tracking-wider">
                                 TIENDAS
                             </TableHead>
@@ -74,6 +76,9 @@ export default function UsersTable({ users }: UsersTableProps) {
                                     {usuario.name}
                                 </TableCell>
                                 <TableCell className="text-blue-600">{usuario.email}</TableCell>
+                                <TableCell className="text-gray-600 dark:text-slate-200">
+                                    {getLegacyRoleLabel(usuario.role)}
+                                </TableCell>
                                 <TableCell className="text-gray-500 dark:text-white">
                                     {(usuario.userStores ?? [])
                                         .map((relation) => relation.store?.name)

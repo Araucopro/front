@@ -11,6 +11,7 @@ import {
     FaTags,
     FaTruck,
     FaUsers,
+    FaUserTie,
 } from "react-icons/fa"
 
 export const navItems = [
@@ -42,9 +43,12 @@ export const navItems = [
         ],
     },
     {
-        label: "UTI",
-        route: "/home/usuarios",
-        icon: FaUsers,
+        label: "Recursos Humanos",
+        icon: FaUserTie,
+        subItems: [
+            { label: "Usuarios y Tiendas", route: "/home/usuarios", icon: FaUsers },
+            { label: "Roles y Permisos", route: "/home/recursos-humanos", icon: FaUserTie },
+        ],
     },
     {
         label: "Control de Mando",

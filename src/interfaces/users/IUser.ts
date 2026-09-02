@@ -8,6 +8,7 @@ export interface IUser {
     name: string
     email: string
     role: UserRole
+    roleID?: string
     status?: "ACTIVE" | "INACTIVE"
     password: string
     userImg: string | null

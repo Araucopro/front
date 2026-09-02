@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { createUser } from "@/actions/users/createUser"
@@ -8,7 +8,8 @@ import { useAuth } from "@/stores/user.store"
 import { toast } from "sonner"
 import { getAllUsers } from "@/actions/users/getAllUsers"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Role } from "@/lib/userRoles"
+import { getRoles } from "@/actions/roles/getRoles"
+import { buildUserRolePayload, getRoleAssignmentValue, getRoleDisplayName, LEGACY_ROLE_OPTIONS } from "@/lib/role-helpers"
 
 export default function RegistroForm() {
     const [nombre, setNombre] = useState("")
@@ -18,6 +19,25 @@ export default function RegistroForm() {
 
     const router = useRouter()
     const { setUsers, users } = useAuth()
+    const [tenantRoles, setTenantRoles] = useState<Array<{ value: string; label: string }>>([])
+
+    useEffect(() => {
+        getRoles()
+            .then((roles) => {
+                setTenantRoles(
+                    roles.map((role) => ({
+                        value: getRoleAssignmentValue(role),
+                        label: getRoleDisplayName(role),
+                    })),
+                )
+            })
+            .catch(() => setTenantRoles([]))
+    }, [])
+
+    const roleOptions = useMemo(() => {
+        const options = tenantRoles.length > 0 ? tenantRoles : LEGACY_ROLE_OPTIONS
+        return Array.from(new Map(options.map((option) => [option.value, option])).values())
+    }, [tenantRoles])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -25,7 +45,7 @@ export default function RegistroForm() {
             await createUser({
                 name: nombre,
                 email: email,
-                role: role as any,
+                ...buildUserRolePayload(role),
                 password: password,
             })
 
@@ -107,10 +127,11 @@ export default function RegistroForm() {
                             <SelectValue placeholder="Seleccionar tipo" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value={Role.Admin}>Admin</SelectItem>
-                            <SelectItem value={Role.Vendedor}>Store Manager</SelectItem>
-                            <SelectItem value={Role.Consignado}>Consignado</SelectItem>
-                            <SelectItem value={Role.Tercero}>Tercero</SelectItem>
+                            {roleOptions.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                </SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
                 </div>
