@@ -38,6 +38,7 @@ export const navItems = [
             { label: "Crear boleta electronica", route: "/home/createsale?saleType=BOLETA", icon: FaReceipt },
             { label: "Guias de despacho", route: "/home/dispatch-guides", icon: FaTruck },
             { label: "Cotizar", route: "/home/quotes", icon: FaFileInvoice },
+            { label: "Clientes", route: "/home/clients", icon: FaUsers },
             { label: "Crear OC", route: "/home/purchaseOrder", icon: FaShoppingCart },
             { label: "Ordenes de Compra", route: "/home/invoices", icon: FaFileInvoice },
         ],
