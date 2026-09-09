@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import NewHumanResourcesUserDialog from "@/components/RecursosHumanos/NewHumanResourcesUserDialog"
+import HumanResourcesWorkerDetailDialog from "@/components/RecursosHumanos/HumanResourcesWorkerDetailDialog"
 import type { ITenantRole } from "@/interfaces/roles/IRole"
 import type { IStore } from "@/interfaces/stores/IStore"
 import type { IUser, IUsersResponse, UserStatus } from "@/interfaces/users/IUser"
@@ -91,6 +92,7 @@ export default function HumanResourcesWorkers({ initialData, roles, stores, load
     const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("ALL")
     const [isLoading, setIsLoading] = useState(false)
     const [isNewUserOpen, setIsNewUserOpen] = useState(false)
+    const [selectedWorker, setSelectedWorker] = useState<IUser | null>(null)
 
     const visibleRoles = useMemo(() => roles.filter((role) => !isInternalSystemRole(role)), [roles])
 
@@ -338,7 +340,7 @@ export default function HumanResourcesWorkers({ initialData, roles, stores, load
                                 </div>
                                 <div className="space-y-3">
                                     {group.users.map((user) => (
-                                        <WorkerRow key={user.userID} user={user} pendingCount={0} />
+                                        <WorkerRow key={user.userID} user={user} pendingCount={0} onOpen={() => setSelectedWorker(user)} />
                                     ))}
                                 </div>
                             </div>
@@ -388,6 +390,15 @@ export default function HumanResourcesWorkers({ initialData, roles, stores, load
                 stores={stores}
                 onCreated={() => fetchUsers(1)}
             />
+            <HumanResourcesWorkerDetailDialog
+                open={!!selectedWorker}
+                onOpenChange={(open) => {
+                    if (!open) setSelectedWorker(null)
+                }}
+                user={selectedWorker}
+                roles={visibleRoles}
+                onSaved={() => fetchUsers(currentPage)}
+            />
         </section>
     )
 }
@@ -418,11 +429,19 @@ function StatusCard({
     )
 }
 
-function WorkerRow({ user, pendingCount }: { user: IUser; pendingCount: number }) {
+function WorkerRow({ user, pendingCount, onOpen }: { user: IUser; pendingCount: number; onOpen: () => void }) {
     const active = (user.status ?? "ACTIVE") === "ACTIVE"
 
     return (
-        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <div
+            role="button"
+            tabIndex={0}
+            onClick={onOpen}
+            onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") onOpen()
+            }}
+            className="cursor-pointer rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
+        >
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="flex min-w-0 items-center gap-4">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sm font-black text-slate-700 dark:bg-slate-700 dark:text-white">
@@ -436,14 +455,25 @@ function WorkerRow({ user, pendingCount }: { user: IUser; pendingCount: number }
                 </div>
 
                 <div className="flex items-center justify-end gap-3">
-                    <Switch checked={active} className="data-[state=checked]:bg-slate-700" />
+                    <div onClick={(event) => event.stopPropagation()}>
+                        <Switch checked={active} className="data-[state=checked]:bg-slate-700" />
+                    </div>
                     {pendingCount > 0 && (
                         <div className="rounded-lg bg-amber-100 px-4 py-2 text-center text-xs font-bold text-amber-800">
                             <span className="block text-base leading-none">{pendingCount}</span>
                             pendiente
                         </div>
                     )}
-                    <Button type="button" variant="ghost" size="icon" title="Ver trabajador">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        title="Ver trabajador"
+                        onClick={(event) => {
+                            event.stopPropagation()
+                            onOpen()
+                        }}
+                    >
                         <ChevronRight className="h-4 w-4" />
                     </Button>
                 </div>
