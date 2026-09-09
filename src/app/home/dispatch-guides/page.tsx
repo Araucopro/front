@@ -1,3 +1,4 @@
+import { getClients } from "@/actions/clients/getClients"
 import { getDispatchGuidePage } from "@/actions/dispatch-guides/getDispatchGuides"
 import { getAllProducts } from "@/actions/products/getAllProducts"
 import { getStoreStockSaleProducts } from "@/actions/inventory/getStoreStock"
@@ -35,6 +36,16 @@ const getProductsForGuide = async (storeID?: string) => {
     return getAllProducts()
 }
 
+const getInitialClients = async () => {
+    try {
+        const response = await getClients({ page: 1, limit: 100 })
+        return response.clients
+    } catch (error) {
+        console.warn("DispatchGuidesPage: clients preload failed:", error)
+        return []
+    }
+}
+
 export default async function DispatchGuidesPage({ searchParams }: DispatchGuidesPageProps) {
     const resolvedSearchParams = await searchParams
     const storeID = parseParam(resolvedSearchParams?.storeID)
@@ -50,9 +61,10 @@ export default async function DispatchGuidesPage({ searchParams }: DispatchGuide
         limit: 50,
     }
 
-    const [guidesPage, products] = await Promise.all([
+    const [guidesPage, products, clients] = await Promise.all([
         effectiveStoreID ? getDispatchGuidePage(effectiveStoreID, filters) : getDispatchGuidePage("", filters),
         getProductsForGuide(effectiveStoreID),
+        getInitialClients(),
     ])
 
     return (
@@ -61,6 +73,7 @@ export default async function DispatchGuidesPage({ searchParams }: DispatchGuide
                 initialGuides={guidesPage.dispatchGuides}
                 initialMeta={guidesPage.meta}
                 initialProducts={products}
+                initialClients={clients}
                 initialStoreID={effectiveStoreID}
                 initialFilters={filters}
             />

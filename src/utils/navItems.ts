@@ -3,6 +3,7 @@ import {
     FaCashRegister,
     FaChartBar,
     FaChartLine,
+    FaCog,
     FaExchangeAlt,
     FaFileInvoice,
     FaHome,
@@ -45,10 +46,14 @@ export const navItems = [
     },
     {
         label: "Recursos Humanos",
+        route: "/home/recursos-humanos",
         icon: FaUserTie,
+    },
+    {
+        label: "Configuración",
+        icon: FaCog,
         subItems: [
-            { label: "Usuarios y Tiendas", route: "/home/usuarios", icon: FaUsers },
-            { label: "Roles y Permisos", route: "/home/recursos-humanos", icon: FaUserTie },
+            { label: "Usuarios", route: "/home/configuracion/usuarios", icon: FaUsers },
         ],
     },
     {

@@ -72,6 +72,7 @@ export default function Sidebar() {
             return items.filter(
                 (item) =>
                     item.label !== "Recursos Humanos" &&
+                    item.label !== "Configuración" &&
                     item.label !== "Estado de Resultados" &&
                     item.label !== "Control de Mando",
             )
@@ -83,6 +84,7 @@ export default function Sidebar() {
                     item.label !== "Caja" &&
                     item.label !== "Inventario" &&
                     item.label !== "Recursos Humanos" &&
+                    item.label !== "Configuración" &&
                     item.label !== "Control de Mando" &&
                     item.label !== "Estado de Resultados",
             )

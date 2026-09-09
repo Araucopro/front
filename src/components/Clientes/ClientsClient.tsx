@@ -282,6 +282,7 @@ export default function ClientsClient({ initialData, loadError }: ClientsClientP
                         <TableHeader>
                             <TableRow className="bg-slate-50 dark:bg-slate-900">
                                 <TableHead>Tipo</TableHead>
+                                <TableHead>ID</TableHead>
                                 <TableHead>Razón social</TableHead>
                                 <TableHead>RUT</TableHead>
                                 <TableHead>Dirección</TableHead>
@@ -293,7 +294,7 @@ export default function ClientsClient({ initialData, loadError }: ClientsClientP
                         <TableBody>
                             {clients.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="py-12 text-center text-slate-500 dark:text-slate-300">
+                                    <TableCell colSpan={8} className="py-12 text-center text-slate-500 dark:text-slate-300">
                                         <Building2 className="mx-auto mb-3 h-10 w-10 text-slate-300" />
                                         No hay clientes registrados.
                                     </TableCell>
@@ -305,6 +306,9 @@ export default function ClientsClient({ initialData, loadError }: ClientsClientP
                                             <Badge variant="outline" className={segmentStyles[client.segment]}>
                                                 {segmentLabels[client.segment]}
                                             </Badge>
+                                        </TableCell>
+                                        <TableCell className="max-w-[180px] break-all font-mono text-xs text-slate-500 dark:text-slate-300">
+                                            {client.clientID}
                                         </TableCell>
                                         <TableCell className="font-medium text-slate-950 dark:text-white">
                                             {client.name}

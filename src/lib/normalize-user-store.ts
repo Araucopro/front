@@ -25,6 +25,7 @@ type RawUser = {
     status?: IUser["status"]
     password?: string
     userImg?: string | null
+    phone?: string | null
     sessionVersion?: number
     createdAt?: string
     updatedAt?: string
@@ -82,6 +83,7 @@ export const normalizeUser = (raw: RawUser): IUser => {
         status: raw.status,
         password: raw.password ?? "",
         userImg: raw.userImg ?? null,
+        phone: raw.phone ?? null,
         sessionVersion: raw.sessionVersion,
         createdAt: raw.createdAt ?? "",
         updatedAt: raw.updatedAt ?? "",

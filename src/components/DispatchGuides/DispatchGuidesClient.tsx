@@ -18,6 +18,7 @@ import {
     Truck,
 } from "lucide-react"
 import { toast } from "sonner"
+import { getClients } from "@/actions/clients/getClients"
 import { anularDispatchGuide } from "@/actions/dispatch-guides/anularDispatchGuide"
 import { getDispatchGuidePage } from "@/actions/dispatch-guides/getDispatchGuides"
 import { createDispatchGuide } from "@/actions/dispatch-guides/postDispatchGuide"
@@ -42,6 +43,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import type { IClient } from "@/interfaces/clients/IClient"
 import type {
     DispatchGuideStatus,
     DispatchGuideTransferIndicator,
@@ -85,6 +87,7 @@ type DispatchGuidesClientProps = {
     initialGuides: IDispatchGuideOperationResponse[]
     initialMeta: IDispatchGuideListMeta
     initialProducts: IProduct[]
+    initialClients: IClient[]
     initialStoreID?: string
     initialFilters?: IDispatchGuideListFilters
 }
@@ -160,6 +163,21 @@ const buildSearchText = (product: IProduct, variation: IProductVariation) =>
             .join(" "),
     )
 
+const buildClientSearchText = (client: IClient) =>
+    normalizeSearchText(
+        [client.clientID, client.rut, client.name, client.giro, client.email, client.address, client.city]
+            .filter(Boolean)
+            .join(" "),
+    )
+
+const mergeClientsById = (current: IClient[], next: IClient[]) => {
+    const clientsById = new Map(current.map((client) => [client.clientID, client]))
+    for (const client of next) {
+        clientsById.set(client.clientID, client)
+    }
+    return Array.from(clientsById.values())
+}
+
 const formatDate = (value?: string) => {
     if (!value) return "Sin fecha"
     const date = new Date(`${value}T12:00:00`)
@@ -188,6 +206,7 @@ export default function DispatchGuidesClient({
     initialGuides,
     initialMeta,
     initialProducts,
+    initialClients,
     initialStoreID = "",
     initialFilters = {},
 }: DispatchGuidesClientProps) {
@@ -206,6 +225,9 @@ export default function DispatchGuidesClient({
     const [pendingActionID, setPendingActionID] = useState<string | null>(null)
 
     const [productInput, setProductInput] = useState("")
+    const [clientInput, setClientInput] = useState("")
+    const [clientOptions, setClientOptions] = useState(initialClients)
+    const [loadingClients, setLoadingClients] = useState(false)
     const [cartItems, setCartItems] = useState<GuideCartItem[]>([])
     const [receiver, setReceiver] = useState<IDispatchGuideReceiver>(emptyReceiver)
     const [destination, setDestination] = useState({ address: "", city: "" })
@@ -244,6 +266,7 @@ export default function DispatchGuidesClient({
     }, [effectiveStoreID, initialProducts])
 
     const normalizedQuery = useMemo(() => normalizeSearchText(productInput), [productInput])
+    const normalizedClientQuery = useMemo(() => normalizeSearchText(clientInput), [clientInput])
 
     const searchResults = useMemo(() => {
         if (normalizedQuery.length < 2) return []
@@ -253,6 +276,15 @@ export default function DispatchGuidesClient({
             .filter((option) => tokens.every((token) => option.searchText.includes(token)))
             .slice(0, 20)
     }, [normalizedQuery, storeOptions])
+
+    const clientSearchResults = useMemo(() => {
+        if (normalizedClientQuery.length < 2) return []
+
+        const tokens = normalizedClientQuery.split(" ").filter(Boolean)
+        return clientOptions
+            .filter((client) => tokens.every((token) => buildClientSearchText(client).includes(token)))
+            .slice(0, 10)
+    }, [clientOptions, normalizedClientQuery])
 
     const cartTotal = useMemo(
         () => cartItems.reduce((sum, item) => sum + item.quantity * item.priceList, 0),
@@ -289,6 +321,7 @@ export default function DispatchGuidesClient({
 
     const resetCreateForm = () => {
         setProductInput("")
+        setClientInput("")
         setCartItems([])
         setReceiver(emptyReceiver)
         setDestination({ address: "", city: "" })
@@ -298,6 +331,50 @@ export default function DispatchGuidesClient({
         setManualDiscount("0")
         setIssueDate(getChileYYYYMMDD(new Date()))
         setIndTraslado("1")
+    }
+
+    const handleCreateDialogOpenChange = (nextOpen: boolean) => {
+        if (nextOpen) {
+            resetCreateForm()
+        }
+        setOpenCreate(nextOpen)
+    }
+
+    const handleClientInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+        setClientInput(event.target.value)
+        setClientID("")
+    }
+
+    const selectClient = (client: IClient) => {
+        setClientID(client.clientID)
+        setClientInput(`${client.name} - ${client.rut}`)
+        setReceiver({
+            rut: client.rut,
+            name: client.name,
+            address: client.address ?? "",
+            city: client.city ?? "",
+            giro: client.giro ?? "",
+            email: client.email ?? "",
+        })
+        setDestination((current) => ({
+            address: current.address || client.address || "",
+            city: current.city || client.city || "",
+        }))
+    }
+
+    const handleClientEnterPressed = (event: KeyboardEvent<HTMLInputElement>) => {
+        const isEnterPress = event.key === "Enter" || event.key === "NumpadEnter"
+        if (!isEnterPress) return
+
+        event.preventDefault()
+        if (clientSearchResults.length === 1) {
+            selectClient(clientSearchResults[0])
+            return
+        }
+
+        if (clientSearchResults.length > 1) {
+            toast.message("Selecciona un cliente de la lista")
+        }
     }
 
     const addSearchOption = (option: ProductOption) => {
@@ -435,7 +512,7 @@ export default function DispatchGuidesClient({
                 city: destination.city.trim(),
             },
             ...(clientID.trim() ? { clientID: clientID.trim() } : {}),
-            issueDate,
+            issueDate: getChileYYYYMMDD(new Date()),
             indTraslado,
             includePrices,
             ...(Number.isFinite(discount) && discount > 0 ? { manualDiscount: discount } : {}),
@@ -528,6 +605,28 @@ export default function DispatchGuidesClient({
     }
 
     useEffect(() => {
+        const query = clientInput.trim()
+        if (query.length < 2 || clientID) {
+            setLoadingClients(false)
+            return
+        }
+
+        setLoadingClients(true)
+        const timeoutID = window.setTimeout(async () => {
+            try {
+                const response = await getClients({ page: 1, limit: 10, search: query })
+                setClientOptions((current) => mergeClientsById(current, response.clients))
+            } catch (error) {
+                console.warn("DispatchGuidesClient: client search failed:", error)
+            } finally {
+                setLoadingClients(false)
+            }
+        }, 300)
+
+        return () => window.clearTimeout(timeoutID)
+    }, [clientID, clientInput])
+
+    useEffect(() => {
         if (!effectiveStoreID || effectiveStoreID === initialStoreID) return
         void loadGuides({
             ...currentFilters,
@@ -538,6 +637,7 @@ export default function DispatchGuidesClient({
     }, [effectiveStoreID, initialStoreID])
 
     const hasProductResults = normalizedQuery.length >= 2 && productInput.trim() !== ""
+    const hasClientResults = normalizedClientQuery.length >= 2 && clientInput.trim() !== "" && !clientID
 
     return (
         <div className="flex min-h-0 flex-1 flex-col gap-5">
@@ -562,7 +662,7 @@ export default function DispatchGuidesClient({
                         {loadingList ? <LoaderCircle className="animate-spin" /> : <RefreshCw />}
                         Actualizar
                     </Button>
-                    <Button type="button" onClick={() => setOpenCreate(true)} disabled={!effectiveStoreID}>
+                    <Button type="button" onClick={() => handleCreateDialogOpenChange(true)} disabled={!effectiveStoreID}>
                         <Plus />
                         Nueva guia
                     </Button>
@@ -715,7 +815,7 @@ export default function DispatchGuidesClient({
                 Mostrando {guides.length} de {meta.total} guias.
             </div>
 
-            <Dialog open={openCreate} onOpenChange={setOpenCreate}>
+            <Dialog open={openCreate} onOpenChange={handleCreateDialogOpenChange}>
                 <DialogContent className="max-h-[92vh] max-w-5xl overflow-y-auto p-6">
                     <DialogHeader>
                         <DialogTitle>Nueva guia de despacho</DialogTitle>
@@ -728,7 +828,13 @@ export default function DispatchGuidesClient({
                         <section className="grid gap-4 rounded-lg border border-slate-200 p-4 dark:border-slate-700 lg:grid-cols-4">
                             <div className="space-y-2">
                                 <Label>Fecha emision</Label>
-                                <Input type="date" value={issueDate} onChange={(event) => setIssueDate(event.target.value)} />
+                                <Input
+                                    type="date"
+                                    value={issueDate}
+                                    disabled
+                                    aria-readonly="true"
+                                    className="cursor-default opacity-100 disabled:cursor-default disabled:opacity-100"
+                                />
                             </div>
                             <div className="space-y-2 lg:col-span-2">
                                 <Label>Indicador de traslado</Label>
@@ -796,8 +902,53 @@ export default function DispatchGuidesClient({
                                 <Input value={receiver.city} onChange={(event) => setReceiverField("city", event)} />
                             </div>
                             <div className="space-y-2 lg:col-span-3">
-                                <Label>Cliente registrado (ID opcional)</Label>
-                                <Input value={clientID} onChange={(event) => setClientID(event.target.value)} />
+                                <Label>Cliente registrado</Label>
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-500" />
+                                    <Input
+                                        value={clientInput}
+                                        onChange={handleClientInputChange}
+                                        onKeyDown={handleClientEnterPressed}
+                                        placeholder="Buscar por nombre, RUT o ID..."
+                                        className="pl-9"
+                                    />
+                                    {hasClientResults && (
+                                        <ul className="absolute z-50 mt-2 max-h-72 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800">
+                                            {clientSearchResults.length > 0 ? (
+                                                clientSearchResults.map((client) => (
+                                                    <li key={client.clientID}>
+                                                        <button
+                                                            type="button"
+                                                            className="flex w-full items-center justify-between gap-3 p-3 text-left hover:bg-blue-50 dark:hover:bg-slate-700"
+                                                            onClick={() => selectClient(client)}
+                                                        >
+                                                            <span className="min-w-0">
+                                                                <span className="block truncate text-sm font-medium text-slate-900 dark:text-white">
+                                                                    {client.name}
+                                                                </span>
+                                                                <span className="block truncate text-xs text-slate-500">
+                                                                    RUT {client.rut} - ID {client.clientID}
+                                                                </span>
+                                                            </span>
+                                                            <span className="text-xs font-semibold text-slate-500">
+                                                                {client.segment === "WHOLESALE" ? "Mayorista" : "Retail"}
+                                                            </span>
+                                                        </button>
+                                                    </li>
+                                                ))
+                                            ) : (
+                                                <li className="p-3 text-sm text-slate-500">
+                                                    {loadingClients ? "Buscando clientes..." : "Sin clientes para esta busqueda"}
+                                                </li>
+                                            )}
+                                        </ul>
+                                    )}
+                                </div>
+                                {clientID && (
+                                    <p className="text-xs text-slate-500">
+                                        ID seleccionado: <span className="font-mono">{clientID}</span>
+                                    </p>
+                                )}
                             </div>
                         </section>
 
