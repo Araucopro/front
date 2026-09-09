@@ -3,13 +3,16 @@ import {
     FaCashRegister,
     FaChartBar,
     FaChartLine,
+    FaCog,
     FaExchangeAlt,
     FaFileInvoice,
     FaHome,
     FaReceipt,
     FaShoppingCart,
     FaTags,
+    FaTruck,
     FaUsers,
+    FaUserTie,
 } from "react-icons/fa"
 
 export const navItems = [
@@ -34,15 +37,24 @@ export const navItems = [
             { label: "Venta", route: "/home/createsale?saleType=NOTA_VENTA", icon: FaCashRegister },
             { label: "Crear factura electronica", route: "/home/createsale?saleType=FACTURA", icon: FaFileInvoice },
             { label: "Crear boleta electronica", route: "/home/createsale?saleType=BOLETA", icon: FaReceipt },
+            { label: "Guias de despacho", route: "/home/dispatch-guides", icon: FaTruck },
             { label: "Cotizar", route: "/home/quotes", icon: FaFileInvoice },
+            { label: "Clientes", route: "/home/clients", icon: FaUsers },
             { label: "Crear OC", route: "/home/purchaseOrder", icon: FaShoppingCart },
             { label: "Ordenes de Compra", route: "/home/invoices", icon: FaFileInvoice },
         ],
     },
     {
-        label: "UTI",
-        route: "/home/usuarios",
-        icon: FaUsers,
+        label: "Recursos Humanos",
+        route: "/home/recursos-humanos",
+        icon: FaUserTie,
+    },
+    {
+        label: "Configuración",
+        icon: FaCog,
+        subItems: [
+            { label: "Usuarios", route: "/home/configuracion/usuarios", icon: FaUsers },
+        ],
     },
     {
         label: "Control de Mando",

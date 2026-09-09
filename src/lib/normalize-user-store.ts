@@ -21,9 +21,11 @@ type RawUser = {
     name?: string
     email?: string
     role?: IUser["role"]
+    roleID?: string
     status?: IUser["status"]
     password?: string
     userImg?: string | null
+    phone?: string | null
     sessionVersion?: number
     createdAt?: string
     updatedAt?: string
@@ -77,9 +79,11 @@ export const normalizeUser = (raw: RawUser): IUser => {
         name: raw.name ?? "",
         email: raw.email ?? "",
         role: raw.role ?? "admin",
+        roleID: raw.roleID,
         status: raw.status,
         password: raw.password ?? "",
         userImg: raw.userImg ?? null,
+        phone: raw.phone ?? null,
         sessionVersion: raw.sessionVersion,
         createdAt: raw.createdAt ?? "",
         updatedAt: raw.updatedAt ?? "",

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
@@ -17,6 +17,8 @@ import { removeUserFromStore } from "@/actions/stores/removeUserFromStore"
 import Modal from "./ModalGestion"
 import { User, Store, Plus, Trash2, Save, X } from "lucide-react"
 import { useAuth } from "@/stores/user.store"
+import { getRoles } from "@/actions/roles/getRoles"
+import { buildUserRolePayload, getRoleAssignmentValue, getRoleDisplayName, LEGACY_ROLE_OPTIONS } from "@/lib/role-helpers"
 
 interface GestionUserFormProps {
     isOpen: boolean
@@ -30,6 +32,8 @@ export default function GestionUserForm({ isOpen, onClose, usuario }: GestionUse
 
     // Estados para los campos del formulario
     const [nombre, setNombre] = useState(usuario.name)
+    const [role, setRole] = useState(usuario.roleID ?? usuario.role ?? "")
+    const [tenantRoles, setTenantRoles] = useState<Array<{ value: string; label: string }>>([])
     const [tiendAsignadas, setTiendasAsignadas] = useState(
         (usuario.userStores ?? [])
             .map((relation) => relation.store)
@@ -43,14 +47,37 @@ export default function GestionUserForm({ isOpen, onClose, usuario }: GestionUse
         (store) => !tiendAsignadas.some((userStore) => userStore.storeID === store.storeID),
     )
 
+    useEffect(() => {
+        getRoles()
+            .then((roles) => {
+                setTenantRoles(
+                    roles.map((tenantRole) => ({
+                        value: getRoleAssignmentValue(tenantRole),
+                        label: getRoleDisplayName(tenantRole),
+                    })),
+                )
+            })
+            .catch(() => setTenantRoles([]))
+    }, [])
+
+    const roleOptions = useMemo(() => {
+        const options = tenantRoles.length > 0 ? tenantRoles : LEGACY_ROLE_OPTIONS
+        return Array.from(new Map(options.map((option) => [option.value, option])).values())
+    }, [tenantRoles])
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsLoading(true)
 
         try {
             // Actualizar nombre si cambió
-            if (nombre !== usuario.name) {
-                await updateUser(usuario.userID, { name: nombre })
+            const payload = {
+                ...(nombre !== usuario.name ? { name: nombre } : {}),
+                ...(role !== (usuario.roleID ?? usuario.role) ? buildUserRolePayload(role) : {}),
+            }
+
+            if (Object.keys(payload).length > 0) {
+                await updateUser(usuario.userID, payload)
             }
 
             toast.success("Usuario actualizado exitosamente")
@@ -135,6 +162,24 @@ export default function GestionUserForm({ isOpen, onClose, usuario }: GestionUse
                                 disabled
                                 className="bg-gray-50 text-gray-500 dark:bg-slate-800"
                             />
+                        </div>
+
+                        <div>
+                            <Label htmlFor="role" className="text-sm font-medium mb-2 dark:text-white">
+                                Rol
+                            </Label>
+                            <Select value={role} onValueChange={setRole}>
+                                <SelectTrigger id="role" className="dark:bg-slate-800 dark:border-sky-50">
+                                    <SelectValue placeholder="Seleccionar rol" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {roleOptions.map((option) => (
+                                        <SelectItem key={option.value} value={option.value}>
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
                 </div>

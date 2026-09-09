@@ -10,7 +10,7 @@ import { IUser } from "@/interfaces/users/IUser"
  */
 export const updateUser = async (
     id: string,
-    data: { name?: string; role?: string; userImg?: string; password?: string },
+    data: { name?: string; role?: string; roleID?: string; userImg?: string; password?: string },
 ): Promise<IUser> => {
     return await fetcher<IUser>(`${API_URL}/users/${id}`, {
         method: "PATCH",

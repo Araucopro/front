@@ -3,6 +3,7 @@ export const Role = {
     Consignado: "consignado",
     Vendedor: "store_manager",
     Tercero: "tercero",
-}
+} as const
 
-export type UserRole = "admin" | "consignado" | "store_manager" | "tercero"
+export type LegacyUserRole = (typeof Role)[keyof typeof Role]
+export type UserRole = LegacyUserRole | (string & {})
