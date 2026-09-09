@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import NewHumanResourcesUserDialog from "@/components/RecursosHumanos/NewHumanResourcesUserDialog"
 import type { ITenantRole } from "@/interfaces/roles/IRole"
+import type { IStore } from "@/interfaces/stores/IStore"
 import type { IUser, IUsersResponse, UserStatus } from "@/interfaces/users/IUser"
 import { getLegacyRoleLabel, getRoleDisplayName } from "@/lib/role-helpers"
 import { cn } from "@/lib/utils"
@@ -20,6 +22,7 @@ type StatusFilter = "ALL" | "ACTIVE" | "INACTIVE" | "TERMINATED"
 type HumanResourcesWorkersProps = {
     initialData: IUsersResponse
     roles: ITenantRole[]
+    stores: IStore[]
     loadError?: string
 }
 
@@ -79,7 +82,7 @@ const getRoleTextColor = (index: number) => {
     return colors[index % colors.length]
 }
 
-export default function HumanResourcesWorkers({ initialData, roles, loadError }: HumanResourcesWorkersProps) {
+export default function HumanResourcesWorkers({ initialData, roles, stores, loadError }: HumanResourcesWorkersProps) {
     const [activeTab, setActiveTab] = useState<WorkersTab>("workers")
     const [users, setUsers] = useState(initialData.users)
     const [meta, setMeta] = useState(initialData.meta)
@@ -87,6 +90,7 @@ export default function HumanResourcesWorkers({ initialData, roles, loadError }:
     const [selectedRoleID, setSelectedRoleID] = useState(ALL_ROLES_VALUE)
     const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("ALL")
     const [isLoading, setIsLoading] = useState(false)
+    const [isNewUserOpen, setIsNewUserOpen] = useState(false)
 
     const visibleRoles = useMemo(() => roles.filter((role) => !isInternalSystemRole(role)), [roles])
 
@@ -220,7 +224,7 @@ export default function HumanResourcesWorkers({ initialData, roles, loadError }:
                             {statusCounts.active} persona{statusCounts.active === 1 ? "" : "s"}
                         </span>
                     </div>
-                    <Button type="button" className="bg-slate-700 text-white hover:bg-slate-800">
+                    <Button type="button" className="bg-slate-700 text-white hover:bg-slate-800" onClick={() => setIsNewUserOpen(true)}>
                         <UserPlus className="h-4 w-4" />
                         Nuevo usuario
                     </Button>
@@ -376,6 +380,14 @@ export default function HumanResourcesWorkers({ initialData, roles, loadError }:
                     No hay vacaciones programadas en el mock actual.
                 </div>
             )}
+
+            <NewHumanResourcesUserDialog
+                open={isNewUserOpen}
+                onOpenChange={setIsNewUserOpen}
+                roles={visibleRoles}
+                stores={stores}
+                onCreated={() => fetchUsers(1)}
+            />
         </section>
     )
 }
