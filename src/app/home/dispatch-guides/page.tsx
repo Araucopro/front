@@ -2,7 +2,7 @@ import { getClients } from "@/actions/clients/getClients"
 import { getDispatchGuidePage } from "@/actions/dispatch-guides/getDispatchGuides"
 import { getAllProducts } from "@/actions/products/getAllProducts"
 import { getStoreStockSaleProducts } from "@/actions/inventory/getStoreStock"
-import { getSalesPage } from "@/actions/sales/getSales"
+import { getSales } from "@/actions/sales/getSales"
 import DispatchGuidesClient from "@/components/DispatchGuides/DispatchGuidesClient"
 import type {
     DispatchGuideStatus,
@@ -55,8 +55,10 @@ const getReferenceableSalesForGuide = async (storeID?: string) => {
     if (!storeID) return []
 
     try {
-        const response = await getSalesPage(storeID, { status: "EMITIDA", page: 1, limit: 50 })
-        return response.sales.filter(hasReferenceableDte)
+        const sales = await getSales(storeID, { status: "EMITIDA" })
+        return sales
+            .filter(hasReferenceableDte)
+            .sort((a, b) => Date.parse(b.issueDate ?? b.createdAt) - Date.parse(a.issueDate ?? a.createdAt))
     } catch (error) {
         console.warn("DispatchGuidesPage: referenceable sales preload failed:", error)
         return []
