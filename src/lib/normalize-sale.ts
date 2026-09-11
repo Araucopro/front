@@ -12,6 +12,7 @@ import type {
 } from "@/interfaces/sales/ISale"
 import { pickArray, pickFirst, toStringValue } from "./normalize-helpers"
 import { normalizeStore } from "./normalize-user-store"
+import { normalizeReturn, type RawReturn } from "./normalize-return"
 
 export type RawSaleVariation = {
     variationID?: string
@@ -32,6 +33,7 @@ export type RawSaleProductSummary = {
 }
 
 export type RawSaleProduct = {
+    saleItemID?: string
     saleProductID?: string
     saleID?: string
     variationID?: string
@@ -100,6 +102,8 @@ export type RawSale = {
     SaleProducts?: RawSaleProduct[]
     return?: RawSaleReturn | null
     Return?: RawSaleReturn | null
+    returns?: RawReturn[]
+    Returns?: RawReturn[]
 }
 
 export type RawSaleDte = {
@@ -129,7 +133,8 @@ const normalizeVariation = (raw: RawSaleVariation | null | undefined): IVariatio
 })
 
 const normalizeSaleProduct = (raw: RawSaleProduct): ISaleProduct => ({
-    saleProductID: raw.saleProductID ?? "",
+    saleItemID: raw.saleItemID ?? raw.saleProductID ?? "",
+    saleProductID: raw.saleProductID ?? raw.saleItemID ?? "",
     saleID: raw.saleID ?? "",
     variationID: raw.variationID ?? raw.variation?.variationID ?? "",
     storeProductID: raw.storeProductID,
@@ -226,6 +231,7 @@ export const normalizeSale = (raw: RawSale, fallbackStoreID = "", dte?: RawSaleD
     const store = pickFirst(raw.store, raw.Store) ?? null
     const saleProducts = pickArray(raw.saleProducts, raw.SaleProducts, raw.items)
     const saleReturn = pickFirst(raw.return, raw.Return) ?? null
+    const returns = pickArray(raw.returns, raw.Returns)
     const receiver = pickFirst(raw.receiver, raw.Receiver) ?? null
 
     return {
@@ -243,6 +249,7 @@ export const normalizeSale = (raw: RawSale, fallbackStoreID = "", dte?: RawSaleD
         Store: normalizeStore(store ?? {}),
         SaleProducts: saleProducts.map(normalizeSaleProduct),
         Return: normalizeSaleReturn(saleReturn),
+        Returns: returns.map(normalizeReturn),
     }
 }
 

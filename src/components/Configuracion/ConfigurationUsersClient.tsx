@@ -61,12 +61,12 @@ const statusClasses: Record<string, string> = {
 }
 
 const roleColorClasses = [
-    "border-blue-100 bg-blue-50 text-blue-900",
-    "border-cyan-100 bg-cyan-50 text-cyan-800",
-    "border-sky-100 bg-sky-50 text-sky-800",
-    "border-emerald-100 bg-emerald-50 text-emerald-800",
-    "border-amber-100 bg-amber-50 text-amber-800",
-    "border-purple-100 bg-purple-50 text-purple-800",
+    "border-blue-300 bg-blue-100 text-blue-950 dark:border-blue-700 dark:bg-blue-950/70 dark:text-blue-100",
+    "border-cyan-300 bg-cyan-100 text-cyan-950 dark:border-cyan-700 dark:bg-cyan-950/70 dark:text-cyan-100",
+    "border-sky-300 bg-sky-100 text-sky-950 dark:border-sky-700 dark:bg-sky-950/70 dark:text-sky-100",
+    "border-emerald-300 bg-emerald-100 text-emerald-950 dark:border-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-100",
+    "border-amber-300 bg-amber-100 text-amber-950 dark:border-amber-700 dark:bg-amber-950/70 dark:text-amber-100",
+    "border-purple-300 bg-purple-100 text-purple-950 dark:border-purple-700 dark:bg-purple-950/70 dark:text-purple-100",
 ]
 
 const isInternalSystemRole = (role?: Pick<ITenantRole, "name" | "systemKey"> | null) => {
@@ -234,7 +234,13 @@ export default function ConfigurationUsersClient({
                             No hay roles visibles para este tenant.
                         </div>
                     ) : (
-                        visibleRoles.map((role, index) => <RolePermissionsRow key={role.id} role={role} colorClass={roleColorClasses[index % roleColorClasses.length]} />)
+                        visibleRoles.map((role, index) => (
+                            <RolePermissionsRow
+                                key={role.id}
+                                role={role}
+                                colorClass={roleColorClasses[index % roleColorClasses.length]}
+                            />
+                        ))
                     )}
                 </div>
             </section>
@@ -339,41 +345,43 @@ export default function ConfigurationUsersClient({
     )
 }
 
-function RolePermissionsRow({ role, colorClass }: { role: ITenantRole; colorClass: string }) {
+function RolePermissionsRow({
+    role,
+    colorClass,
+}: {
+    role: ITenantRole
+    colorClass: string
+}) {
     const groupedPermissions = role.permissions.reduce<Record<string, IRolePermission[]>>((groups, permission) => {
         const subject = getPermissionSubject(permission)
         groups[subject] = [...(groups[subject] ?? []), permission]
         return groups
     }, {})
 
+    const permissionSummary = Object.entries(groupedPermissions)
+        .map(([subject, permissions]) => {
+            const actions = Array.from(
+                new Set(
+                    permissions.map((permission) => {
+                        const action = getPermissionAction(permission)
+                        return permission.scope === "ALL" ? action : `${action} (${permission.scope})`
+                    }),
+                ),
+            )
+            return `${subject}: ${actions.join(", ")}`
+        })
+        .join(" · ")
+
     return (
-        <div className="grid gap-3 border-b border-slate-100 pb-4 last:border-b-0 last:pb-0 dark:border-slate-700 lg:grid-cols-[160px_1fr]">
-            <div className="flex items-start gap-2">
-                <Badge variant="outline" className={cn("uppercase", colorClass)}>
+        <div className="grid items-start gap-3 sm:grid-cols-[150px_1fr]">
+            <div>
+                <Badge variant="outline" className={cn("px-3 py-1 text-xs font-bold", colorClass)}>
                     {getRoleDisplayName(role)}
                 </Badge>
             </div>
-            {role.permissions.length === 0 ? (
-                <p className="text-sm text-slate-500 dark:text-slate-300">Sin permisos asignados.</p>
-            ) : (
-                <div className="flex flex-wrap gap-2">
-                    {Object.entries(groupedPermissions).map(([subject, permissions]) => (
-                        <div key={subject} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
-                            <p className="text-xs font-bold uppercase text-slate-500">{subject}</p>
-                            <div className="mt-2 flex flex-wrap gap-1.5">
-                                {permissions.map((permission) => (
-                                    <span
-                                        key={permission.permissionKey}
-                                        className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-600 shadow-sm dark:bg-slate-800 dark:text-slate-200"
-                                    >
-                                        {getPermissionAction(permission)} · {permission.scope}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
+            <p className="pt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                {permissionSummary || "Sin permisos asignados."}
+            </p>
         </div>
     )
 }

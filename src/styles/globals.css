@@ -50,13 +50,17 @@
 
 .friendly-loading-messages {
     position: relative;
+    overflow: hidden;
 }
 
 .friendly-loading-messages > span {
     position: absolute;
     inset: 0;
     opacity: 0;
-    animation: friendly-loading-message 12s ease-in-out infinite both;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: friendly-loading-message 12s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

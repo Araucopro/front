@@ -8,7 +8,14 @@ import { IPurchaseOrder } from "@/interfaces/orders/IPurchaseOrder"
 import { useRouter } from "next/navigation"
 import { toPrice } from "@/utils/priceFormat"
 import { getAnulatedProducts } from "@/lib/getAnulatedProducts"
-import { CalendarDays, MoreHorizontal, RefreshCw, Search } from "lucide-react"
+import { CalendarDays, Eye, MoreHorizontal, RefreshCw, RotateCcw, Search } from "lucide-react"
+import { AnularVentaModal } from "@/components/Modals/AnularVentaModal"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 type TableItem = ISaleResponse | IPurchaseOrder
 
@@ -44,9 +51,11 @@ const monthFormatter = new Intl.DateTimeFormat("es-CL", {
     timeZone: "America/Santiago",
 })
 
-const timeFormatter = new Intl.DateTimeFormat("es-CL", {
+const timeFormatter = new Intl.DateTimeFormat("en-GB", {
     hour: "2-digit",
     minute: "2-digit",
+    hourCycle: "h23",
+    numberingSystem: "latn",
     timeZone: "America/Santiago",
 })
 
@@ -68,14 +77,28 @@ const getStoreName = (item: TableItem) => {
 
 const getSaleTotals = (item: ISaleResponse) => {
     const nulledProducts = getAnulatedProducts(item)
-    const totalNulledAmount = nulledProducts.reduce((acc, p) => acc + p.quantitySold * Number(p.unitPrice), 0)
-    const totalNulledUnits = nulledProducts.reduce((acc, p) => acc + p.quantitySold, 0)
+    const returnedProductAmount = nulledProducts.reduce((acc, p) => acc + p.quantitySold * Number(p.unitPrice), 0)
+    const completedDiscountAmount = (item.Returns ?? [])
+        .filter((ret) => ret.status === "COMPLETADA" && ret.returnType === "DESCUENTO")
+        .reduce((total, ret) => total + ret.discountAmount, 0)
+    const totalNulledAmount = returnedProductAmount + completedDiscountAmount
 
     return {
         nulledProducts,
         totalNulledAmount,
-        totalNulledUnits,
     }
+}
+
+const getSaleDisplayStatus = (sale: ISaleResponse) => {
+    const completedReturns = (sale.Returns ?? []).filter((ret) => ret.status === "COMPLETADA")
+    if (sale.status === "Anulado" || sale.status === "ANULADA" || completedReturns.some((ret) => ret.returnType === "TOTAL")) {
+        return "ANULADA"
+    }
+    if (sale.status === "DEVUELTA" || completedReturns.length > 0) return "DEVUELTA"
+    if ((sale.Returns ?? []).some((ret) => ret.status === "PENDIENTE" || ret.status === "APROBADA")) {
+        return "DEVOLUCIÓN PENDIENTE"
+    }
+    return sale.status
 }
 
 const getSaleProductLabel = (saleProduct: ISaleProduct) => {
@@ -109,7 +132,7 @@ const getActiveSaleProducts = (item: ISaleResponse, nulledProducts: ISaleProduct
 
         return [
             {
-                key: sp.saleProductID || sp.variationID || `${item.saleID}-${index}`,
+                key: sp.saleItemID || sp.saleProductID || sp.variationID || `${item.saleID}-${index}`,
                 quantity: actualQuantity,
                 label: getSaleProductLabel(sp),
                 searchText: getSaleProductSearchText(sp),
@@ -135,7 +158,7 @@ const buildSearchText = (item: TableItem) => {
     const amountText =
         "saleID" in item
             ? typeof item.total === "number"
-                ? `$${toPrice(item.total - getSaleTotals(item).totalNulledAmount)}`
+                ? `$${toPrice(Math.max(item.total - getSaleTotals(item).totalNulledAmount, 0))}`
                 : "Sin dato"
             : item.total
               ? `$${toPrice(Number(item.total))}`
@@ -147,7 +170,7 @@ const buildSearchText = (item: TableItem) => {
             date.toISOString(),
             date.toLocaleString("es-CL"),
             getProductsSearchText(item),
-            item.status,
+            getSaleDisplayStatus(item),
             item.saleType,
             item.dte?.FOLIO,
             item.paymentType,
@@ -165,7 +188,7 @@ const statusClassName = (status: string) => {
     if (["Pagado", "EMITIDA", "CONVERTIDA"].includes(status)) {
         return "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200"
     }
-    if (status === "Pendiente") {
+    if (status === "Pendiente" || status === "DEVOLUCIÓN PENDIENTE") {
         return "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-200"
     }
     return "bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-200"
@@ -184,6 +207,7 @@ const paymentClassName = (paymentType?: string) => {
 const SalesTable: React.FC<Props> = ({ items }) => {
     const router = useRouter()
     const [searchTerm, setSearchTerm] = useState("")
+    const [selectedSale, setSelectedSale] = useState<ISaleResponse | null>(null)
 
     const filteredItems = useMemo(() => {
         const query = normalizeText(searchTerm)
@@ -276,19 +300,15 @@ const SalesTable: React.FC<Props> = ({ items }) => {
                                         const date = getItemDate(item)
 
                                         if ("saleID" in item) {
-                                            const { nulledProducts, totalNulledAmount, totalNulledUnits } =
-                                                getSaleTotals(item)
+                                            const { nulledProducts, totalNulledAmount } = getSaleTotals(item)
                                             const products = getActiveSaleProducts(item, nulledProducts)
                                             const visibleProducts = products.slice(0, 2)
                                             const extraProductsCount = Math.max(products.length - visibleProducts.length, 0)
 
-                                            const statusText =
-                                                item.status === "Anulado" && totalNulledUnits > 0
-                                                    ? `Anulado (${totalNulledUnits})`
-                                                    : item.status
+                                            const statusText = getSaleDisplayStatus(item)
                                             const amount =
                                                 typeof item.total === "number"
-                                                    ? `$${toPrice(item.total - totalNulledAmount)}`
+                                                    ? `$${toPrice(Math.max(item.total - totalNulledAmount, 0))}`
                                                     : "Sin dato"
 
                                             return (
@@ -348,24 +368,33 @@ const SalesTable: React.FC<Props> = ({ items }) => {
                                                     <TableCell className="align-middle">
                                                         <span
                                                             className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClassName(
-                                                                item.status,
+                                                                statusText,
                                                             )}`}
                                                         >
                                                             {statusText}
                                                         </span>
                                                     </TableCell>
                                                     <TableCell className="align-middle">
-                                                        <button
-                                                            type="button"
-                                                            title="Ver detalle"
-                                                            onClick={(event) => {
-                                                                event.stopPropagation()
-                                                                urlRedirectToSingleSale(item)
-                                                            }}
-                                                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:hover:text-white"
-                                                        >
-                                                            <MoreHorizontal className="h-4 w-4" />
-                                                        </button>
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <button
+                                                                    type="button"
+                                                                    title="Acciones de venta"
+                                                                    onClick={(event) => event.stopPropagation()}
+                                                                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:hover:text-white"
+                                                                >
+                                                                    <MoreHorizontal className="h-4 w-4" />
+                                                                </button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end" onClick={(event) => event.stopPropagation()}>
+                                                                <DropdownMenuItem onSelect={() => urlRedirectToSingleSale(item)}>
+                                                                    <Eye className="mr-2 h-4 w-4" /> Ver detalle
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem onSelect={() => setSelectedSale(item)} className="text-rose-700">
+                                                                    <RotateCcw className="mr-2 h-4 w-4" /> Gestionar devolución
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
                                                     </TableCell>
                                                 </TableRow>
                                             )
@@ -434,6 +463,15 @@ const SalesTable: React.FC<Props> = ({ items }) => {
                     </TableBody>
                 </Table>
             </div>
+            {selectedSale && (
+                <AnularVentaModal
+                    isOpen
+                    setIsOpen={(open) => {
+                        if (!open) setSelectedSale(null)
+                    }}
+                    sale={selectedSale}
+                />
+            )}
         </div>
     )
 }
