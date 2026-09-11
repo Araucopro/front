@@ -5,7 +5,6 @@ import { CartTable } from "@/components/CreateSale/CartTable"
 import { useSaleStore } from "@/stores/sale.store"
 import { ISaleReceiver, ISaleRequest, PaymentType, SaleType } from "@/interfaces/sales/ISale"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { IProduct } from "@/interfaces/products/IProduct"
 import { toPrice } from "@/utils/priceFormat"
 import { Button } from "../ui/button"
@@ -16,12 +15,70 @@ import { toast } from "sonner"
 import { DiscountModal, DiscountStoreProductOption } from "@/components/Discounts/DiscountModal"
 import { getPriceCheck } from "@/actions/pricing/getPriceCheck"
 import { getChileYYYYMMDD } from "@/utils/chile-date"
-import { UserPlus, X } from "lucide-react"
+import { Banknote, Building2, CreditCard, FileText, Receipt, UserPlus, WalletCards, X } from "lucide-react"
 
 const DEFAULT_RECEIVER_EMAIL = "soporte@araucopro.com"
 const EMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
 const isSpecialStoreFilter = (value: string | null) => value === "all" || value === "propias" || value === "consignadas"
 const saleTypes = new Set<SaleType>(["BOLETA", "FACTURA", "NOTA_VENTA"])
+const saleTypeOptions: Array<{
+    value: SaleType
+    label: string
+    description: string
+    icon: typeof Receipt
+    selectedClassName: string
+}> = [
+    {
+        value: "BOLETA",
+        label: "Boleta electrónica",
+        description: "Venta directa",
+        icon: Receipt,
+        selectedClassName: "border-blue-500 bg-blue-50 text-blue-800 ring-blue-200 dark:bg-blue-950/40 dark:text-blue-200",
+    },
+    {
+        value: "NOTA_VENTA",
+        label: "Nota de venta",
+        description: "Sin DTE inmediato",
+        icon: FileText,
+        selectedClassName: "border-amber-500 bg-amber-50 text-amber-900 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-200",
+    },
+    {
+        value: "FACTURA",
+        label: "Factura electrónica",
+        description: "Con datos del receptor",
+        icon: Building2,
+        selectedClassName: "border-emerald-500 bg-emerald-50 text-emerald-900 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200",
+    },
+]
+const paymentTypeOptions: Array<{
+    value: PaymentType
+    label: string
+    description: string
+    icon: typeof Banknote
+    selectedClassName: string
+}> = [
+    {
+        value: "Efectivo",
+        label: "Efectivo",
+        description: "Pago en caja",
+        icon: Banknote,
+        selectedClassName: "border-amber-500 bg-amber-50 text-amber-900 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-200",
+    },
+    {
+        value: "Debito",
+        label: "Débito",
+        description: "Tarjeta de débito",
+        icon: CreditCard,
+        selectedClassName: "border-blue-500 bg-blue-50 text-blue-800 ring-blue-200 dark:bg-blue-950/40 dark:text-blue-200",
+    },
+    {
+        value: "Credito",
+        label: "Crédito",
+        description: "Tarjeta de crédito",
+        icon: WalletCards,
+        selectedClassName: "border-violet-500 bg-violet-50 text-violet-900 ring-violet-200 dark:bg-violet-950/40 dark:text-violet-200",
+    },
+]
 const getSaleTypeFromParam = (value: string | null): SaleType =>
     value && saleTypes.has(value as SaleType) ? (value as SaleType) : "BOLETA"
 const isValidEmail = (value: string) => {
@@ -211,32 +268,76 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
 
                 <CartTable />
                 <div className="mt-4 flex flex-col gap-6">
-                <div className="grid gap-4 rounded-lg border border-gray-200 p-4 dark:border-gray-700 sm:grid-cols-2">
+                <div className="grid gap-4 rounded-lg border border-gray-200 p-4 dark:border-gray-700 xl:grid-cols-2">
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Documento</label>
-                        <Select value={saleType} onValueChange={(value: SaleType) => setSaleType(value)}>
-                            <SelectTrigger>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="BOLETA">Boleta electrónica</SelectItem>
-                                <SelectItem value="NOTA_VENTA">Nota de venta</SelectItem>
-                                <SelectItem value="FACTURA">Factura electrónica</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <div className="grid gap-2 sm:grid-cols-3" role="group" aria-label="Tipo de documento">
+                            {saleTypeOptions.map((option) => {
+                                const Icon = option.icon
+                                const selected = saleType === option.value
+
+                                return (
+                                    <button
+                                        key={option.value}
+                                        type="button"
+                                        aria-pressed={selected}
+                                        onClick={() => setSaleType(option.value)}
+                                        className={`flex min-h-20 items-center gap-3 rounded-lg border px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                                            selected
+                                                ? `${option.selectedClassName} ring-1`
+                                                : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                                        }`}
+                                    >
+                                        <span
+                                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${
+                                                selected ? "bg-white/70 dark:bg-slate-900/50" : "bg-slate-100 dark:bg-slate-800"
+                                            }`}
+                                        >
+                                            <Icon className="h-4 w-4" />
+                                        </span>
+                                        <span className="min-w-0">
+                                            <span className="block text-sm font-semibold leading-tight">{option.label}</span>
+                                            <span className="mt-1 block text-xs opacity-70">{option.description}</span>
+                                        </span>
+                                    </button>
+                                )
+                            })}
+                        </div>
                     </div>
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Tipo de pago</label>
-                        <Select value={paymentMethod} onValueChange={(value: PaymentType) => setPaymentMethod(value)}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Seleccionar tipo de pago" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="Efectivo">Efectivo</SelectItem>
-                                <SelectItem value="Debito">Débito</SelectItem>
-                                <SelectItem value="Credito">Crédito</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <div className="grid gap-2 sm:grid-cols-3" role="group" aria-label="Tipo de pago">
+                            {paymentTypeOptions.map((option) => {
+                                const Icon = option.icon
+                                const selected = paymentMethod === option.value
+
+                                return (
+                                    <button
+                                        key={option.value}
+                                        type="button"
+                                        aria-pressed={selected}
+                                        onClick={() => setPaymentMethod(option.value)}
+                                        className={`flex min-h-20 items-center gap-3 rounded-lg border px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                                            selected
+                                                ? `${option.selectedClassName} ring-1`
+                                                : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                                        }`}
+                                    >
+                                        <span
+                                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${
+                                                selected ? "bg-white/70 dark:bg-slate-900/50" : "bg-slate-100 dark:bg-slate-800"
+                                            }`}
+                                        >
+                                            <Icon className="h-4 w-4" />
+                                        </span>
+                                        <span className="min-w-0">
+                                            <span className="block text-sm font-semibold leading-tight">{option.label}</span>
+                                            <span className="mt-1 block text-xs opacity-70">{option.description}</span>
+                                        </span>
+                                    </button>
+                                )
+                            })}
+                        </div>
                     </div>
                 </div>
 

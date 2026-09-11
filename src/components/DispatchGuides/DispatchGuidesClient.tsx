@@ -21,6 +21,7 @@ import { toast } from "sonner"
 import { getClients } from "@/actions/clients/getClients"
 import { anularDispatchGuide } from "@/actions/dispatch-guides/anularDispatchGuide"
 import { getDispatchGuidePage } from "@/actions/dispatch-guides/getDispatchGuides"
+import { invoiceDispatchGuide } from "@/actions/dispatch-guides/invoiceDispatchGuide"
 import { createDispatchGuide } from "@/actions/dispatch-guides/postDispatchGuide"
 import { reconcileDispatchGuide } from "@/actions/dispatch-guides/reconcileDispatchGuide"
 import { Badge } from "@/components/ui/badge"
@@ -48,6 +49,7 @@ import type {
     DispatchGuideStatus,
     DispatchGuideTransferIndicator,
     ICreateDispatchGuide,
+    DispatchGuideInvoicePaymentType,
     IDispatchGuideListFilters,
     IDispatchGuideListMeta,
     IDispatchGuideOperationResponse,
@@ -56,6 +58,7 @@ import type {
 } from "@/interfaces/dispatch-guides/IDispatchGuide"
 import type { IProduct } from "@/interfaces/products/IProduct"
 import type { IProductVariation, IStoreProduct } from "@/interfaces/products/IProductVariation"
+import type { ISaleProduct, ISaleReceiver, ISaleResponse } from "@/interfaces/sales/ISale"
 import { useTienda } from "@/stores/tienda.store"
 import { getChileYYYYMMDD } from "@/utils/chile-date"
 import { toPrice } from "@/utils/priceFormat"
@@ -88,6 +91,7 @@ type DispatchGuidesClientProps = {
     initialMeta: IDispatchGuideListMeta
     initialProducts: IProduct[]
     initialClients: IClient[]
+    initialReferenceableSales: ISaleResponse[]
     initialStoreID?: string
     initialFilters?: IDispatchGuideListFilters
 }
@@ -178,6 +182,51 @@ const mergeClientsById = (current: IClient[], next: IClient[]) => {
     return Array.from(clientsById.values())
 }
 
+const getSaleDteDocumentID = (sale: ISaleResponse) => sale.dte?.dteDocumentID ?? ""
+
+const buildReferenceSearchText = (sale: ISaleResponse) =>
+    normalizeSearchText(
+        [
+            sale.saleID,
+            sale.saleType,
+            sale.dte?.FOLIO?.toString(),
+            sale.dte?.dteDocumentID,
+            sale.receiver?.rut,
+            sale.receiver?.name,
+            sale.receiver?.email,
+        ]
+            .filter(Boolean)
+            .join(" "),
+    )
+
+const normalizeRut = (value?: string) => value?.replace(/[.\s]/g, "").toLowerCase() ?? ""
+
+const receiversMatch = (receiver: IDispatchGuideReceiver, referencedReceiver?: ISaleReceiver | null) => {
+    if (!referencedReceiver?.rut) return false
+    return normalizeRut(receiver.rut) === normalizeRut(referencedReceiver.rut)
+}
+
+const getReferenceLabel = (sale: ISaleResponse) => {
+    const folio = sale.dte?.FOLIO ? `folio ${sale.dte.FOLIO}` : sale.saleID.slice(0, 8)
+    return `${sale.saleType ?? "Documento"} ${folio} - ${sale.receiver?.rut ?? "sin RUT"}`
+}
+
+const saleProductToCartItem = (product: ISaleProduct): GuideCartItem | null => {
+    if (!product.storeProductID) return null
+
+    const quantity = toNumber(product.quantitySold)
+    return {
+        storeProductID: product.storeProductID,
+        variationID: product.variationID,
+        productName: product.productName ?? product.variation.sku ?? "Producto vendido",
+        sku: product.variation.sku,
+        sizeNumber: product.variation.size,
+        priceList: toNumber(product.unitPrice),
+        quantity: quantity > 0 ? quantity : 1,
+        stockQuantity: quantity > 0 ? quantity : 1,
+    }
+}
+
 const formatDate = (value?: string) => {
     if (!value) return "Sin fecha"
     const date = new Date(`${value}T12:00:00`)
@@ -207,6 +256,7 @@ export default function DispatchGuidesClient({
     initialMeta,
     initialProducts,
     initialClients,
+    initialReferenceableSales,
     initialStoreID = "",
     initialFilters = {},
 }: DispatchGuidesClientProps) {
@@ -223,11 +273,14 @@ export default function DispatchGuidesClient({
     const [openCreate, setOpenCreate] = useState(false)
     const [selectedGuide, setSelectedGuide] = useState<IDispatchGuideOperationResponse | null>(null)
     const [pendingActionID, setPendingActionID] = useState<string | null>(null)
+    const [invoicingGuideID, setInvoicingGuideID] = useState<string | null>(null)
 
     const [productInput, setProductInput] = useState("")
     const [clientInput, setClientInput] = useState("")
     const [clientOptions, setClientOptions] = useState(initialClients)
     const [loadingClients, setLoadingClients] = useState(false)
+    const [referenceInput, setReferenceInput] = useState("")
+    const [selectedReferenceSale, setSelectedReferenceSale] = useState<ISaleResponse | null>(null)
     const [cartItems, setCartItems] = useState<GuideCartItem[]>([])
     const [receiver, setReceiver] = useState<IDispatchGuideReceiver>(emptyReceiver)
     const [destination, setDestination] = useState({ address: "", city: "" })
@@ -238,6 +291,9 @@ export default function DispatchGuidesClient({
     const [issueDate, setIssueDate] = useState(() => getChileYYYYMMDD(new Date()))
     const [indTraslado, setIndTraslado] = useState<DispatchGuideTransferIndicator>("1")
     const [creating, setCreating] = useState(false)
+    const [invoicePaymentType, setInvoicePaymentType] = useState<DispatchGuideInvoicePaymentType>("Efectivo")
+    const [invoiceIssueDate, setInvoiceIssueDate] = useState(() => getChileYYYYMMDD(new Date()))
+    const [additionalInvoiceGuideIDs, setAdditionalInvoiceGuideIDs] = useState<string[]>([])
 
     const storeOptions = useMemo<ProductOption[]>(() => {
         if (!Array.isArray(initialProducts) || !effectiveStoreID) return []
@@ -267,6 +323,7 @@ export default function DispatchGuidesClient({
 
     const normalizedQuery = useMemo(() => normalizeSearchText(productInput), [productInput])
     const normalizedClientQuery = useMemo(() => normalizeSearchText(clientInput), [clientInput])
+    const normalizedReferenceQuery = useMemo(() => normalizeSearchText(referenceInput), [referenceInput])
 
     const searchResults = useMemo(() => {
         if (normalizedQuery.length < 2) return []
@@ -286,6 +343,16 @@ export default function DispatchGuidesClient({
             .slice(0, 10)
     }, [clientOptions, normalizedClientQuery])
 
+    const referenceSearchResults = useMemo(() => {
+        if (normalizedReferenceQuery.length < 2) return []
+
+        const tokens = normalizedReferenceQuery.split(" ").filter(Boolean)
+        return initialReferenceableSales
+            .filter((sale) => getSaleDteDocumentID(sale))
+            .filter((sale) => tokens.every((token) => buildReferenceSearchText(sale).includes(token)))
+            .slice(0, 10)
+    }, [initialReferenceableSales, normalizedReferenceQuery])
+
     const cartTotal = useMemo(
         () => cartItems.reduce((sum, item) => sum + item.quantity * item.priceList, 0),
         [cartItems],
@@ -298,6 +365,19 @@ export default function DispatchGuidesClient({
         page: 1,
         limit: meta.limit || 50,
     }
+
+    const additionalInvoiceGuideOptions = useMemo(() => {
+        if (!selectedGuide?.dispatchGuide.receiver?.rut) return []
+
+        const selectedID = selectedGuide.dispatchGuide.dispatchGuideID
+        const receiverRut = selectedGuide.dispatchGuide.receiver.rut.trim().toLowerCase()
+
+        return guides.filter((guide) => {
+            const guideID = guide.dispatchGuide.dispatchGuideID
+            const guideRut = guide.dispatchGuide.receiver?.rut?.trim().toLowerCase()
+            return guideID !== selectedID && guideRut === receiverRut && guide.dispatchGuide.status === "EMITIDA"
+        })
+    }, [guides, selectedGuide])
 
     const loadGuides = async (filters: IDispatchGuideListFilters = currentFilters) => {
         if (!effectiveStoreID) {
@@ -322,6 +402,8 @@ export default function DispatchGuidesClient({
     const resetCreateForm = () => {
         setProductInput("")
         setClientInput("")
+        setReferenceInput("")
+        setSelectedReferenceSale(null)
         setCartItems([])
         setReceiver(emptyReceiver)
         setDestination({ address: "", city: "" })
@@ -338,6 +420,66 @@ export default function DispatchGuidesClient({
             resetCreateForm()
         }
         setOpenCreate(nextOpen)
+    }
+
+    const handleReferenceInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+        setReferenceInput(event.target.value)
+        setSelectedReferenceSale(null)
+    }
+
+    const clearReferenceSale = () => {
+        setReferenceInput("")
+        setSelectedReferenceSale(null)
+    }
+
+    const selectReferenceSale = (sale: ISaleResponse) => {
+        if (!sale.receiver) {
+            toast.error("El documento seleccionado no tiene receptor para referenciar")
+            return
+        }
+
+        const referencedItems = sale.SaleProducts.map(saleProductToCartItem).filter(
+            (item): item is GuideCartItem => Boolean(item),
+        )
+
+        setSelectedReferenceSale(sale)
+        setReferenceInput(getReferenceLabel(sale))
+        setClientID("")
+        setClientInput("")
+        setReceiver({
+            rut: sale.receiver.rut,
+            name: sale.receiver.name,
+            address: sale.receiver.address,
+            city: sale.receiver.city,
+            giro: sale.receiver.giro,
+            email: sale.receiver.email,
+        })
+        setDestination((current) => ({
+            address: current.address || sale.receiver?.address || "",
+            city: current.city || sale.receiver?.city || "",
+        }))
+
+        if (referencedItems.length > 0) {
+            setCartItems(referencedItems)
+            setProductInput("")
+        } else {
+            toast.message("Referencia seleccionada sin items con storeProductID; agrega los items manualmente")
+        }
+    }
+
+    const handleReferenceEnterPressed = (event: KeyboardEvent<HTMLInputElement>) => {
+        const isEnterPress = event.key === "Enter" || event.key === "NumpadEnter"
+        if (!isEnterPress) return
+
+        event.preventDefault()
+        if (referenceSearchResults.length === 1) {
+            selectReferenceSale(referenceSearchResults[0])
+            return
+        }
+
+        if (referenceSearchResults.length > 1) {
+            toast.message("Selecciona un documento de la lista")
+        }
     }
 
     const handleClientInputChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -472,6 +614,9 @@ export default function DispatchGuidesClient({
         if (receiver.email?.trim() && !/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(receiver.email.trim())) {
             return "Ingresa un correo valido para el receptor"
         }
+        if (selectedReferenceSale && !receiversMatch(receiver, selectedReferenceSale.receiver)) {
+            return "El receptor debe ser el mismo de la factura referenciada"
+        }
         if (manualDiscount) {
             const discount = Number(manualDiscount)
             if (!Number.isFinite(discount) || discount < 0 || discount > 100) {
@@ -493,6 +638,7 @@ export default function DispatchGuidesClient({
             }).filter(([, value]) => Boolean(value)),
         ) as IDispatchGuideTransport
         const shouldSendTransport = Object.values(trimmedTransport).some(Boolean)
+        const referencedDteDocumentID = selectedReferenceSale ? getSaleDteDocumentID(selectedReferenceSale) : ""
 
         return {
             items: cartItems.map((item) => ({
@@ -515,6 +661,7 @@ export default function DispatchGuidesClient({
             issueDate: getChileYYYYMMDD(new Date()),
             indTraslado,
             includePrices,
+            ...(referencedDteDocumentID ? { referencedDteDocumentID } : {}),
             ...(Number.isFinite(discount) && discount > 0 ? { manualDiscount: discount } : {}),
             ...(shouldSendTransport ? { transport: trimmedTransport } : {}),
         }
@@ -590,6 +737,49 @@ export default function DispatchGuidesClient({
         }
     }
 
+    const toggleAdditionalInvoiceGuide = (dispatchGuideID: string, checked: boolean) => {
+        setAdditionalInvoiceGuideIDs((current) =>
+            checked
+                ? Array.from(new Set([...current, dispatchGuideID]))
+                : current.filter((id) => id !== dispatchGuideID),
+        )
+    }
+
+    const handleInvoiceGuide = async () => {
+        if (!selectedGuide) return
+        if (!effectiveStoreID) {
+            toast.error("Selecciona una tienda antes de facturar la guia")
+            return
+        }
+        if (selectedGuide.dispatchGuide.status !== "EMITIDA") {
+            toast.error("Solo puedes facturar guias emitidas")
+            return
+        }
+
+        const dispatchGuideID = selectedGuide.dispatchGuide.dispatchGuideID
+
+        try {
+            setInvoicingGuideID(dispatchGuideID)
+            const dte = await invoiceDispatchGuide(dispatchGuideID, effectiveStoreID, {
+                paymentType: invoicePaymentType,
+                issueDate: invoiceIssueDate || undefined,
+                ...(additionalInvoiceGuideIDs.length > 0
+                    ? { additionalDispatchGuideIDs: additionalInvoiceGuideIDs }
+                    : {}),
+            })
+            const folio = dte.FOLIO ? ` Folio ${dte.FOLIO}.` : ""
+            toast.success(`Factura electronica emitida.${folio}`)
+            setAdditionalInvoiceGuideIDs([])
+            await loadGuides()
+            router.refresh()
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "No se pudo convertir la guia a factura"
+            toast.error(message)
+        } finally {
+            setInvoicingGuideID(null)
+        }
+    }
+
     const handleFilterSubmit = async () => {
         await loadGuides(currentFilters)
     }
@@ -627,6 +817,13 @@ export default function DispatchGuidesClient({
     }, [clientID, clientInput])
 
     useEffect(() => {
+        if (!selectedGuide) return
+        setInvoicePaymentType("Efectivo")
+        setInvoiceIssueDate(getChileYYYYMMDD(new Date()))
+        setAdditionalInvoiceGuideIDs([])
+    }, [selectedGuide?.dispatchGuide.dispatchGuideID])
+
+    useEffect(() => {
         if (!effectiveStoreID || effectiveStoreID === initialStoreID) return
         void loadGuides({
             ...currentFilters,
@@ -638,6 +835,9 @@ export default function DispatchGuidesClient({
 
     const hasProductResults = normalizedQuery.length >= 2 && productInput.trim() !== ""
     const hasClientResults = normalizedClientQuery.length >= 2 && clientInput.trim() !== "" && !clientID
+    const hasReferenceResults =
+        normalizedReferenceQuery.length >= 2 && referenceInput.trim() !== "" && !selectedReferenceSale
+    const isReceiverLocked = Boolean(selectedReferenceSale)
 
     return (
         <div className="flex min-h-0 flex-1 flex-col gap-5">
@@ -876,30 +1076,117 @@ export default function DispatchGuidesClient({
                             </div>
                         </section>
 
+                        <section className="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
+                            <div className="space-y-2">
+                                <Label>Documento referenciado (opcional)</Label>
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-500" />
+                                    <Input
+                                        value={referenceInput}
+                                        onChange={handleReferenceInputChange}
+                                        onKeyDown={handleReferenceEnterPressed}
+                                        placeholder="Buscar por folio, RUT, razon social o ID DTE..."
+                                        className="pl-9"
+                                    />
+                                    {hasReferenceResults && (
+                                        <ul className="absolute z-50 mt-2 max-h-72 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800">
+                                            {referenceSearchResults.length > 0 ? (
+                                                referenceSearchResults.map((sale) => (
+                                                    <li key={getSaleDteDocumentID(sale)}>
+                                                        <button
+                                                            type="button"
+                                                            className="flex w-full items-center justify-between gap-3 p-3 text-left hover:bg-blue-50 dark:hover:bg-slate-700"
+                                                            onClick={() => selectReferenceSale(sale)}
+                                                        >
+                                                            <span className="min-w-0">
+                                                                <span className="block truncate text-sm font-medium text-slate-900 dark:text-white">
+                                                                    {getReferenceLabel(sale)}
+                                                                </span>
+                                                                <span className="block truncate text-xs text-slate-500">
+                                                                    {sale.receiver?.name} - {formatDate(sale.issueDate ?? sale.createdAt)}
+                                                                </span>
+                                                            </span>
+                                                            <span className="text-sm font-semibold">${toPrice(sale.total)}</span>
+                                                        </button>
+                                                    </li>
+                                                ))
+                                            ) : (
+                                                <li className="p-3 text-sm text-slate-500">
+                                                    Sin documentos emitidos para esta busqueda
+                                                </li>
+                                            )}
+                                        </ul>
+                                    )}
+                                </div>
+                                {selectedReferenceSale && (
+                                    <div className="flex flex-col gap-2 rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-800 dark:bg-blue-950/40 dark:text-blue-100 sm:flex-row sm:items-center sm:justify-between">
+                                        <span>
+                                            Se enviara referencia DTE{" "}
+                                            <span className="font-mono">{getSaleDteDocumentID(selectedReferenceSale)}</span>.
+                                        </span>
+                                        <Button type="button" variant="ghost" size="sm" onClick={clearReferenceSale}>
+                                            Quitar referencia
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+
                         <section className="grid gap-4 rounded-lg border border-slate-200 p-4 dark:border-slate-700 lg:grid-cols-3">
                             <div className="space-y-2">
                                 <Label>RUT receptor</Label>
-                                <Input value={receiver.rut} onChange={(event) => setReceiverField("rut", event)} />
+                                <Input
+                                    value={receiver.rut}
+                                    onChange={(event) => setReceiverField("rut", event)}
+                                    readOnly={isReceiverLocked}
+                                    className={isReceiverLocked ? "bg-slate-50 text-slate-600" : undefined}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label>Razon social</Label>
-                                <Input value={receiver.name} onChange={(event) => setReceiverField("name", event)} />
+                                <Input
+                                    value={receiver.name}
+                                    onChange={(event) => setReceiverField("name", event)}
+                                    readOnly={isReceiverLocked}
+                                    className={isReceiverLocked ? "bg-slate-50 text-slate-600" : undefined}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label>Correo</Label>
-                                <Input type="email" value={receiver.email ?? ""} onChange={(event) => setReceiverField("email", event)} />
+                                <Input
+                                    type="email"
+                                    value={receiver.email ?? ""}
+                                    onChange={(event) => setReceiverField("email", event)}
+                                    readOnly={isReceiverLocked}
+                                    className={isReceiverLocked ? "bg-slate-50 text-slate-600" : undefined}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label>Giro</Label>
-                                <Input value={receiver.giro} onChange={(event) => setReceiverField("giro", event)} />
+                                <Input
+                                    value={receiver.giro}
+                                    onChange={(event) => setReceiverField("giro", event)}
+                                    readOnly={isReceiverLocked}
+                                    className={isReceiverLocked ? "bg-slate-50 text-slate-600" : undefined}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label>Direccion receptor</Label>
-                                <Input value={receiver.address} onChange={(event) => setReceiverField("address", event)} />
+                                <Input
+                                    value={receiver.address}
+                                    onChange={(event) => setReceiverField("address", event)}
+                                    readOnly={isReceiverLocked}
+                                    className={isReceiverLocked ? "bg-slate-50 text-slate-600" : undefined}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label>Ciudad receptor</Label>
-                                <Input value={receiver.city} onChange={(event) => setReceiverField("city", event)} />
+                                <Input
+                                    value={receiver.city}
+                                    onChange={(event) => setReceiverField("city", event)}
+                                    readOnly={isReceiverLocked}
+                                    className={isReceiverLocked ? "bg-slate-50 text-slate-600" : undefined}
+                                />
                             </div>
                             <div className="space-y-2 lg:col-span-3">
                                 <Label>Cliente registrado</Label>
@@ -910,6 +1197,7 @@ export default function DispatchGuidesClient({
                                         onChange={handleClientInputChange}
                                         onKeyDown={handleClientEnterPressed}
                                         placeholder="Buscar por nombre, RUT o ID..."
+                                        disabled={isReceiverLocked}
                                         className="pl-9"
                                     />
                                     {hasClientResults && (
@@ -1245,6 +1533,102 @@ export default function DispatchGuidesClient({
                                         )}
                                     </div>
                                 )}
+
+                                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/30">
+                                    <div className="flex flex-col gap-4">
+                                        <div className="flex flex-col gap-1">
+                                            <p className="font-semibold text-emerald-950 dark:text-emerald-100">
+                                                Convertir a factura electronica
+                                            </p>
+                                            <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                                                Emite una Factura Electronica 33 referenciando esta guia. No descuenta stock nuevamente.
+                                            </p>
+                                        </div>
+
+                                        <div className="grid gap-3 sm:grid-cols-2">
+                                            <div className="space-y-2">
+                                                <Label>Tipo de pago</Label>
+                                                <Select
+                                                    value={invoicePaymentType}
+                                                    onValueChange={(value: DispatchGuideInvoicePaymentType) =>
+                                                        setInvoicePaymentType(value)
+                                                    }
+                                                >
+                                                    <SelectTrigger className="bg-white dark:bg-slate-900">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="Efectivo">Efectivo</SelectItem>
+                                                        <SelectItem value="Debito">Debito</SelectItem>
+                                                        <SelectItem value="Credito">Credito</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Fecha de emision</Label>
+                                                <Input
+                                                    type="date"
+                                                    value={invoiceIssueDate}
+                                                    onChange={(event) => setInvoiceIssueDate(event.target.value)}
+                                                    className="bg-white dark:bg-slate-900"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {additionalInvoiceGuideOptions.length > 0 && (
+                                            <div className="rounded-md border border-emerald-200 bg-white p-3 dark:border-emerald-900 dark:bg-slate-900">
+                                                <p className="mb-2 text-xs font-semibold uppercase text-slate-500">
+                                                    Guias adicionales del mismo receptor
+                                                </p>
+                                                <div className="grid gap-2">
+                                                    {additionalInvoiceGuideOptions.map((guide) => {
+                                                        const id = guide.dispatchGuide.dispatchGuideID
+                                                        return (
+                                                            <label
+                                                                key={id}
+                                                                className="flex cursor-pointer items-center justify-between gap-3 rounded-md border border-slate-200 px-3 py-2 text-sm dark:border-slate-700"
+                                                            >
+                                                                <span>
+                                                                    Guia {guide.dte?.FOLIO ?? guide.dispatchGuide.folio ?? id.slice(0, 8)}
+                                                                    <span className="ml-2 text-slate-500">
+                                                                        {formatDate(guide.dispatchGuide.issueDate)}
+                                                                    </span>
+                                                                </span>
+                                                                <Checkbox
+                                                                    checked={additionalInvoiceGuideIDs.includes(id)}
+                                                                    onCheckedChange={(checked) =>
+                                                                        toggleAdditionalInvoiceGuide(id, checked === true)
+                                                                    }
+                                                                />
+                                                            </label>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="flex justify-end">
+                                            <Button
+                                                type="button"
+                                                onClick={handleInvoiceGuide}
+                                                disabled={
+                                                    selectedGuide.dispatchGuide.status !== "EMITIDA" ||
+                                                    invoicingGuideID === selectedGuide.dispatchGuide.dispatchGuideID
+                                                }
+                                                className="bg-emerald-700 hover:bg-emerald-800"
+                                            >
+                                                {invoicingGuideID === selectedGuide.dispatchGuide.dispatchGuideID ? (
+                                                    <LoaderCircle className="animate-spin" />
+                                                ) : (
+                                                    <FileText />
+                                                )}
+                                                {invoicingGuideID === selectedGuide.dispatchGuide.dispatchGuideID
+                                                    ? "Facturando..."
+                                                    : "Convertir a factura"}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </>
                     )}

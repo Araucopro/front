@@ -1,8 +1,10 @@
 import { getRoles } from "@/actions/roles/getRoles"
+import { getAllStores } from "@/actions/stores/getAllStores"
 import { getUsersPage } from "@/actions/users/getAllUsers"
 import HumanResourcesOverview from "@/components/RecursosHumanos/HumanResourcesOverview"
 import HumanResourcesWorkers from "@/components/RecursosHumanos/HumanResourcesWorkers"
 import type { ITenantRole } from "@/interfaces/roles/IRole"
+import type { IStore } from "@/interfaces/stores/IStore"
 import type { IUsersResponse } from "@/interfaces/users/IUser"
 
 export default async function RecursosHumanosPage() {
@@ -11,15 +13,18 @@ export default async function RecursosHumanosPage() {
         meta: { page: 1, limit: 10, total: 0 },
     }
     let roles: ITenantRole[] = []
+    let stores: IStore[] = []
     let loadError: string | undefined
 
     try {
-        const [usersResponse, rolesResponse] = await Promise.all([
+        const [usersResponse, rolesResponse, storesResponse] = await Promise.all([
             getUsersPage({ limit: 10, offset: 0 }),
             getRoles(),
+            getAllStores(),
         ])
         usersData = usersResponse
         roles = rolesResponse
+        stores = storesResponse
     } catch (error) {
         loadError = error instanceof Error ? error.message : "No se pudieron cargar los trabajadores."
     }
@@ -35,7 +40,7 @@ export default async function RecursosHumanosPage() {
                 <HumanResourcesOverview />
             </div>
 
-            <HumanResourcesWorkers initialData={usersData} roles={roles} loadError={loadError} />
+            <HumanResourcesWorkers initialData={usersData} roles={roles} stores={stores} loadError={loadError} />
         </div>
     )
 }

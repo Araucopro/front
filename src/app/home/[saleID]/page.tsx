@@ -1,4 +1,5 @@
 import { getSingleSale } from "@/actions/sales/getSales"
+import { getReturns } from "@/actions/returns/returnActions"
 import { getStoreById } from "@/actions/stores/getStoreById"
 import AnularVentaControl from "@/components/Caja/AnularVentaControl"
 import ConvertSaleButton from "@/components/Caja/ConvertSaleButton"
@@ -35,7 +36,15 @@ export default async function SingleSalePage({ params, searchParams }: PropsSale
         )
     }
 
-    const sale = await getSingleSale(saleID, storeID)
+    const [fetchedSale, returnOperations] = await Promise.all([
+        getSingleSale(saleID, storeID),
+        getReturns(storeID, { saleID }).catch(() => []),
+    ])
+    const fetchedReturns = returnOperations.map((operation) => operation.ret)
+    const sale = {
+        ...fetchedSale,
+        Returns: fetchedReturns.length > 0 ? fetchedReturns : fetchedSale.Returns,
+    }
     const resolvedStore = sale.Store?.storeID
         ? sale.Store
         : sale.storeID
@@ -48,6 +57,10 @@ export default async function SingleSalePage({ params, searchParams }: PropsSale
     const nulledProducts = getAnulatedProducts(sale)
     const total = products.reduce((acc, act) => acc + act.quantitySold * Number(act.unitPrice), 0)
     const totalNulled = nulledProducts.reduce((acc, act) => acc + act.quantitySold * Number(act.unitPrice), 0)
+    const totalDiscounted = sale.Returns.filter(
+        (ret) => ret.status === "COMPLETADA" && ret.returnType === "DESCUENTO",
+    ).reduce((acc, ret) => acc + ret.discountAmount, 0)
+    const adjustedTotal = Math.max(total - totalNulled - totalDiscounted, 0)
 
     const cantidadTotalProductos = products.reduce((acc, act) => act.quantitySold + acc, 0)
     const fecha = new Date(sale.createdAt).toLocaleDateString("es-MX", {
@@ -62,7 +75,15 @@ export default async function SingleSalePage({ params, searchParams }: PropsSale
         address: `${resolvedStore.location ?? ""} ${resolvedStore.address ?? ""}`.trim() || resolvedStore.address,
     }
 
-    const neto = (total - totalNulled) / 1.19
+    const neto = adjustedTotal / 1.19
+    const completedReturns = sale.Returns.filter((ret) => ret.status === "COMPLETADA")
+    const displayStatus = completedReturns.some((ret) => ret.returnType === "TOTAL")
+        ? "ANULADA"
+        : completedReturns.length > 0
+          ? "DEVUELTA"
+          : sale.Returns.some((ret) => ret.status === "PENDIENTE" || ret.status === "APROBADA")
+            ? "DEVOLUCIÓN PENDIENTE"
+            : sale.status
     const pdfHref = sale.dte?.PDF
         ? /^(https?:|data:)/.test(sale.dte.PDF)
             ? sale.dte.PDF
@@ -73,7 +94,6 @@ export default async function SingleSalePage({ params, searchParams }: PropsSale
             ? sale.dte.XML
             : `data:application/xml;base64,${sale.dte.XML}`
         : null
-    const isLegacySale = !sale.saleType && ["Pagado", "Pendiente", "Anulado"].includes(sale.status)
 
     return (
         <div className="bg-white min-h-screen dark:bg-slate-900 text-gray-900 dark:text-gray-100 p-4">
@@ -105,8 +125,8 @@ export default async function SingleSalePage({ params, searchParams }: PropsSale
                         cantidadTotalProductos={cantidadTotalProductos}
                         fecha={fecha}
                         paymentType={sale.paymentType}
-                        status={sale.status}
-                        total={total - totalNulled}
+                        status={displayStatus}
+                        total={adjustedTotal}
                         saleType={sale.saleType}
                         folio={sale.dte?.FOLIO}
                     />
@@ -147,27 +167,27 @@ export default async function SingleSalePage({ params, searchParams }: PropsSale
                     {sale.saleType === "NOTA_VENTA" && sale.status !== "CONVERTIDA" && (
                         <ConvertSaleButton saleID={sale.saleID} storeID={sale.storeID || storeID} />
                     )}
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                    <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-6 shadow-sm ring-1 ring-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/30 dark:ring-emerald-900/50">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="flex items-center gap-2 text-lg font-semibold">
-                                <ShoppingBag className="w-5 h-5 text-green-600 dark:text-green-400" />
+                                <ShoppingBag className="w-5 h-5 text-emerald-700 dark:text-emerald-300" />
                                 Productos
                             </h3>
                         </div>
                         <div className="overflow-x-auto">
-                            <SingleSaleTable products={products} />
+                            <SingleSaleTable products={products} tone="success" />
                         </div>
                     </div>
                     {nulledProducts.length > 0 && (
-                        <div className="bg-red-50 dark:bg-red-950 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                        <div className="rounded-lg border border-rose-400 bg-rose-100 p-6 shadow-sm ring-1 ring-rose-200 dark:border-rose-800 dark:bg-rose-950/40 dark:ring-rose-900/60">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="flex items-center gap-2 text-lg font-semibold">
-                                    <ShoppingBag className="w-5 h-5 text-green-600 dark:text-green-400" />
+                                    <ShoppingBag className="w-5 h-5 text-rose-700 dark:text-rose-300" />
                                     Productos anulados
                                 </h3>
                             </div>
                             <div className="overflow-x-auto">
-                                <SingleSaleTable products={nulledProducts} />
+                                <SingleSaleTable products={nulledProducts} tone="danger" />
                             </div>
                         </div>
                     )}
@@ -201,7 +221,7 @@ export default async function SingleSalePage({ params, searchParams }: PropsSale
                     <FinancialSummary total={neto} discount={0} />
                     <div className="flex flex-col md:flex-row gap-3 justify-end mt-6">
                         <PrintSaleButton sale={displaySale} />
-                        {isLegacySale && <AnularVentaControl sale={displaySale} />}
+                        <AnularVentaControl sale={displaySale} />
                     </div>
                 </div>
             </div>

@@ -2,11 +2,13 @@ import { getClients } from "@/actions/clients/getClients"
 import { getDispatchGuidePage } from "@/actions/dispatch-guides/getDispatchGuides"
 import { getAllProducts } from "@/actions/products/getAllProducts"
 import { getStoreStockSaleProducts } from "@/actions/inventory/getStoreStock"
+import { getSales } from "@/actions/sales/getSales"
 import DispatchGuidesClient from "@/components/DispatchGuides/DispatchGuidesClient"
 import type {
     DispatchGuideStatus,
     IDispatchGuideListFilters,
 } from "@/interfaces/dispatch-guides/IDispatchGuide"
+import type { ISaleResponse } from "@/interfaces/sales/ISale"
 
 export const revalidate = 0
 
@@ -46,6 +48,23 @@ const getInitialClients = async () => {
     }
 }
 
+const hasReferenceableDte = (sale: ISaleResponse) =>
+    Boolean(sale.dte?.dteDocumentID && sale.receiver?.rut && sale.receiver?.name)
+
+const getReferenceableSalesForGuide = async (storeID?: string) => {
+    if (!storeID) return []
+
+    try {
+        const sales = await getSales(storeID, { status: "EMITIDA" })
+        return sales
+            .filter(hasReferenceableDte)
+            .sort((a, b) => Date.parse(b.issueDate ?? b.createdAt) - Date.parse(a.issueDate ?? a.createdAt))
+    } catch (error) {
+        console.warn("DispatchGuidesPage: referenceable sales preload failed:", error)
+        return []
+    }
+}
+
 export default async function DispatchGuidesPage({ searchParams }: DispatchGuidesPageProps) {
     const resolvedSearchParams = await searchParams
     const storeID = parseParam(resolvedSearchParams?.storeID)
@@ -61,10 +80,11 @@ export default async function DispatchGuidesPage({ searchParams }: DispatchGuide
         limit: 50,
     }
 
-    const [guidesPage, products, clients] = await Promise.all([
+    const [guidesPage, products, clients, referenceableSales] = await Promise.all([
         effectiveStoreID ? getDispatchGuidePage(effectiveStoreID, filters) : getDispatchGuidePage("", filters),
         getProductsForGuide(effectiveStoreID),
         getInitialClients(),
+        getReferenceableSalesForGuide(effectiveStoreID),
     ])
 
     return (
@@ -74,6 +94,7 @@ export default async function DispatchGuidesPage({ searchParams }: DispatchGuide
                 initialMeta={guidesPage.meta}
                 initialProducts={products}
                 initialClients={clients}
+                initialReferenceableSales={referenceableSales}
                 initialStoreID={effectiveStoreID}
                 initialFilters={filters}
             />

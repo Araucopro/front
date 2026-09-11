@@ -36,6 +36,7 @@ export interface ICreateDispatchGuide {
     indTraslado?: DispatchGuideTransferIndicator
     issueDate?: string
     manualDiscount?: number
+    referencedDteDocumentID?: string
     receiver?: IDispatchGuideReceiver
     transport?: IDispatchGuideTransport
 }
@@ -88,6 +89,14 @@ export interface IDispatchGuideDte {
     XML?: string
     WARNING: unknown[]
     saleID: string | null
+}
+
+export type DispatchGuideInvoicePaymentType = "Efectivo" | "Debito" | "Credito"
+
+export interface IInvoiceDispatchGuides {
+    paymentType: DispatchGuideInvoicePaymentType
+    additionalDispatchGuideIDs?: string[]
+    issueDate?: string
 }
 
 export interface IDispatchGuideReferenceItem {
