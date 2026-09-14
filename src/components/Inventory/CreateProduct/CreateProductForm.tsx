@@ -34,7 +34,7 @@ const findCategoryNameByID = (categories: ICategory[], categoryID: string): stri
 }
 
 export default function CreateProductForm({
-    categories,
+    categories: initialCategories,
     initialStoreID,
 }: {
     categories: ICategory[]
@@ -43,6 +43,7 @@ export default function CreateProductForm({
     const router = useRouter()
     const { storeSelected } = useTienda()
     const [isUploading, setIsUploading] = useState(false)
+    const [categories, setCategories] = useState(initialCategories)
     const [bulkProgress, setBulkProgress] = useState<BulkProgress | null>(null)
     const [formPage, setFormPage] = useState(1)
     const { products, errors, addProduct, setProducts, resetForm } = useProductFormStore()
@@ -230,7 +231,11 @@ export default function CreateProductForm({
                     </div>
                 </div>
 
-                <ExcelImporter categories={categories} disabled={isUploading} />
+                <ExcelImporter
+                    categories={categories}
+                    disabled={isUploading}
+                    onCategoriesChange={setCategories}
+                />
 
                 {bulkProgress && (
                     <div
