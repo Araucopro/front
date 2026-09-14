@@ -34,13 +34,14 @@ interface MasterNavigationGroup {
         label: string
         icon: IconType
         active?: boolean
+        available?: boolean
     }>
 }
 
 const navigationGroups: MasterNavigationGroup[] = [
     {
         label: "Resumen",
-        items: [{ label: "Escritorio", icon: FaHome, active: true }],
+        items: [{ label: "Escritorio", icon: FaHome, active: true, available: true }],
     },
     {
         label: "Módulos",
@@ -66,24 +67,28 @@ const metrics = [
         value: "6",
         detail: "tenants en la plataforma",
         valueClassName: "text-[#122238]",
+        available: true,
     },
     {
         label: "Usuarios totales",
-        value: "25",
-        detail: "en todos los negocios",
+        value: "—",
+        detail: "Pendiente de métrica agregada en el API",
         valueClassName: "text-[#122238]",
+        available: false,
     },
     {
         label: "Ventas de portafolio",
-        value: "$1.413.500.000.-",
-        detail: "CLP en todos los tenants",
+        value: "—",
+        detail: "Pendiente de métrica agregada en el API",
         valueClassName: "text-[#12623c]",
+        available: false,
     },
     {
         label: "Comisión neta AraucoPro",
-        value: "$11.594.010.-",
-        detail: "0,74% ($10.459.900) + boletas ($1.134.110)",
+        value: "—",
+        detail: "Pendiente de métrica agregada en el API",
         valueClassName: "text-[#b95509]",
+        available: false,
     },
 ]
 
@@ -116,7 +121,7 @@ function MasterSidebar({
     const handleMockNavigation = (label: string) => {
         onClose()
         if (label !== "Escritorio") {
-            toast.info(`${label} se implementará en una siguiente etapa`)
+            toast.info(`${label}: en desarrollo`)
         }
     }
 
@@ -157,7 +162,12 @@ function MasterSidebar({
                                             }`}
                                         >
                                             <Icon className="h-3.5 w-3.5 text-[#b9c7d3]" />
-                                            {item.label}
+                                            <span className="min-w-0 flex-1">{item.label}</span>
+                                            {!item.available && (
+                                                <span className="rounded-full border border-amber-400/70 px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-wide text-amber-300">
+                                                    En desarrollo
+                                                </span>
+                                            )}
                                         </button>
                                     )
                                 })}
@@ -261,6 +271,11 @@ export default function MasterDashboard({ initialTenants, initialError }: Master
                             <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-[#758296]">
                                 {metric.label}
                             </p>
+                            {!metric.available && (
+                                <span className="mt-2 inline-flex rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[8px] font-bold uppercase tracking-wide text-amber-700">
+                                    En desarrollo
+                                </span>
+                            )}
                             <p className={`mt-3 text-[26px] font-extrabold leading-none tracking-tight ${metric.valueClassName}`}>
                                 {index === 0 ? tenantTotal ?? "—" : metric.value}
                             </p>
@@ -272,23 +287,32 @@ export default function MasterDashboard({ initialTenants, initialError }: Master
                 <section className="mt-6 rounded-[13px] border border-[#dfe2e7] bg-white px-4 py-5 sm:px-6">
                     <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
                         <div>
-                            <h1 className="text-sm font-extrabold">Evolución mensual de Ventas Brutas</h1>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <h1 className="text-sm font-extrabold">Evolución mensual de Ventas Brutas</h1>
+                                <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[8px] font-bold uppercase tracking-wide text-amber-700">
+                                    En desarrollo
+                                </span>
+                            </div>
                             <p className="mt-1 text-[10px] tracking-wide text-[#8792a2]">
-                                Una barra por mes del período elegido. Franja naranja = ingreso neto AraucoPro.
+                                Maqueta visual pendiente de un endpoint de métricas agregadas de plataforma.
                             </p>
                         </div>
                         <div className="flex flex-col gap-2 sm:flex-row">
                             <select
                                 aria-label="Filtrar por negocio"
                                 defaultValue="all"
-                                className="h-8 rounded-lg border border-[#dfe3e8] bg-[#f8f9fb] px-3 text-[10px] outline-none"
+                                disabled
+                                title="En desarrollo"
+                                className="h-8 cursor-not-allowed rounded-lg border border-[#dfe3e8] bg-[#f8f9fb] px-3 text-[10px] opacity-60 outline-none"
                             >
                                 <option value="all">Todos los negocios</option>
                             </select>
                             <select
                                 aria-label="Seleccionar período"
                                 defaultValue="2026"
-                                className="h-8 rounded-lg border border-[#dfe3e8] bg-[#f8f9fb] px-3 text-[10px] font-semibold outline-none"
+                                disabled
+                                title="En desarrollo"
+                                className="h-8 cursor-not-allowed rounded-lg border border-[#dfe3e8] bg-[#f8f9fb] px-3 text-[10px] font-semibold opacity-60 outline-none"
                             >
                                 <option value="2026">Presente año (2026)</option>
                             </select>
