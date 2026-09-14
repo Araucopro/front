@@ -10,7 +10,12 @@ import type { ISaleDte } from "@/interfaces/sales/ISale"
 
 type RawReturnDte = Partial<Omit<ISaleDte, "FOLIO">> & {
     FOLIO?: number | string | null
+    folio?: number | string | null
+    token?: string
     status?: string
+    pdf?: string
+    xml?: string
+    warning?: unknown[]
 }
 
 type RawReturnItem = Partial<IReturnItem> & {
@@ -51,15 +56,16 @@ const normalizeReturnItem = (raw: RawReturnItem): IReturnItem => ({
 
 const normalizeReturnDte = (raw: RawReturnDte | null | undefined): ISaleDte | null => {
     if (!raw) return null
-    const folio = raw.FOLIO === null || raw.FOLIO === undefined || raw.FOLIO === "" ? null : Number(raw.FOLIO)
+    const rawFolio = raw.FOLIO ?? raw.folio
+    const folio = rawFolio === null || rawFolio === undefined || rawFolio === "" ? null : Number(rawFolio)
     return {
         dteDocumentID: raw.dteDocumentID ?? "",
-        TOKEN: raw.TOKEN ?? "",
+        TOKEN: raw.TOKEN ?? raw.token ?? "",
         FOLIO: folio !== null && Number.isFinite(folio) ? folio : null,
         STATUS: raw.STATUS ?? raw.status ?? "",
-        PDF: raw.PDF,
-        XML: raw.XML,
-        WARNING: Array.isArray(raw.WARNING) ? raw.WARNING : [],
+        PDF: raw.PDF ?? raw.pdf,
+        XML: raw.XML ?? raw.xml,
+        WARNING: Array.isArray(raw.WARNING) ? raw.WARNING : Array.isArray(raw.warning) ? raw.warning : [],
         saleID: raw.saleID ?? null,
     }
 }

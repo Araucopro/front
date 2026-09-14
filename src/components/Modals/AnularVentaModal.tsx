@@ -30,7 +30,7 @@ import { Role } from "@/lib/userRoles"
 import { useAuth } from "@/stores/user.store"
 import { getChileYYYYMMDD } from "@/utils/chile-date"
 import { toPrice } from "@/utils/priceFormat"
-import { FileText, LoaderCircle, RotateCcw } from "lucide-react"
+import { AlertTriangle, FileText, LoaderCircle, RotateCcw } from "lucide-react"
 import { toast } from "sonner"
 
 interface Props {
@@ -81,14 +81,45 @@ const getDocumentUrl = (document: string) =>
     /^(https?:|data:|blob:)/i.test(document) ? document : `data:application/pdf;base64,${document}`
 
 const openCreditNote = (dte: ISaleDte | null) => {
-    if (!dte?.PDF || typeof window === "undefined") return false
+    if (!dte?.PDF || typeof window === "undefined") return
     const openedWindow = window.open(getDocumentUrl(dte.PDF), "_blank")
     if (openedWindow) openedWindow.opener = null
-    return openedWindow !== null
 }
 
 const initialReturnOperations = (returns: IReturn[]): IReturnOperationResponse[] =>
     returns.map((ret) => ({ ret, dte: null }))
+
+const extractWarningMessages = (value: unknown): string[] => {
+    if (typeof value === "string") return value.trim() ? [value.trim()] : []
+    if (Array.isArray(value)) return value.flatMap(extractWarningMessages)
+    if (!value || typeof value !== "object") return []
+    return Object.values(value).flatMap(extractWarningMessages)
+}
+
+const isCreditNoteIssued = ({ ret, dte }: IReturnOperationResponse) =>
+    Boolean(dte && (dte.STATUS.toUpperCase() === "EMITIDO" || (dte.FOLIO && ret.status === "COMPLETADA")))
+
+const getOperationWarnings = ({ ret, dte }: IReturnOperationResponse) => {
+    const warnings = extractWarningMessages(dte?.WARNING ?? [])
+    warnings.push(...extractWarningMessages(ret.dteDocument?.errorDetail))
+    if (dte?.STATUS && dte.STATUS.toUpperCase() !== "EMITIDO") {
+        warnings.push(`El facturador respondió con estado ${dte.STATUS}.`)
+    }
+    if (isCreditNoteIssued({ ret, dte }) && !dte?.PDF) {
+        warnings.push("La nota de crédito fue emitida, pero el API no incluyó el documento PDF.")
+    }
+    return [...new Set(warnings)]
+}
+
+const showOperationWarnings = (operation: IReturnOperationResponse) => {
+    getOperationWarnings(operation).forEach((warning, index) => {
+        toast.warning("Advertencia de la nota de crédito", {
+            description: warning,
+            duration: 12000,
+            id: `return-warning-${operation.ret.returnID}-${index}`,
+        })
+    })
+}
 
 export function AnularVentaModal({ isOpen, setIsOpen, sale }: Props) {
     const router = useRouter()
@@ -224,13 +255,17 @@ export function AnularVentaModal({ isOpen, setIsOpen, sale }: Props) {
             setQuantities({})
             setDiscountAmount("")
             setReason("")
-            const openedCreditNote = openCreditNote(operation.dte)
+            openCreditNote(operation.dte)
             const folio = operation.dte?.FOLIO ? ` Folio ${operation.dte.FOLIO}.` : ""
+            const creditNoteIssued = isCreditNoteIssued(operation)
             toast.success(
-                operation.dte
-                    ? `Devolución registrada. Nota de crédito emitida.${folio}${openedCreditNote ? "" : " Puedes abrirla desde la solicitud."}`
-                    : "Devolución registrada y enviada a aprobación.",
+                creditNoteIssued
+                    ? `Devolución registrada. Nota de crédito emitida.${folio}`
+                    : operation.dte
+                      ? "Devolución registrada. La nota de crédito requiere revisión."
+                      : "Devolución registrada y enviada a aprobación.",
             )
+            showOperationWarnings(operation)
             router.refresh()
         } catch (submitError) {
             const message = submitError instanceof Error ? submitError.message : "No fue posible registrar la devolución."
@@ -259,19 +294,23 @@ export function AnularVentaModal({ isOpen, setIsOpen, sale }: Props) {
                         : item,
                 ),
             )
-            const openedCreditNote = openCreditNote(operation.dte)
+            openCreditNote(operation.dte)
             const folio = operation.dte?.FOLIO ? ` Folio ${operation.dte.FOLIO}.` : ""
+            const creditNoteIssued = isCreditNoteIssued(operation)
             toast.success(
                 transition === "approve"
-                    ? operation.dte
-                        ? `Devolución aprobada. Nota de crédito emitida.${folio}${openedCreditNote ? "" : " Puedes abrirla desde la solicitud."}`
-                        : "Devolución aprobada."
+                    ? creditNoteIssued
+                        ? `Devolución aprobada. Nota de crédito emitida.${folio}`
+                        : operation.dte
+                          ? "Devolución aprobada. La nota de crédito requiere revisión."
+                          : "Devolución aprobada."
                     : transition === "reject"
                       ? "Devolución rechazada."
                       : transition === "cancel"
                         ? "Devolución cancelada."
                         : "Conciliación actualizada.",
             )
+            showOperationWarnings(operation)
             router.refresh()
         } catch (transitionError) {
             toast.error(transitionError instanceof Error ? transitionError.message : "No fue posible actualizar la devolución.")
@@ -302,44 +341,64 @@ export function AnularVentaModal({ isOpen, setIsOpen, sale }: Props) {
                                 {isLoadingReturns && <LoaderCircle className="h-4 w-4 animate-spin" />}
                             </div>
                             <div className="space-y-2">
-                                {returnOperations.map(({ ret, dte }) => (
-                                    <div key={ret.returnID} className="flex flex-col gap-3 rounded-md border bg-white p-3 dark:bg-slate-800 sm:flex-row sm:items-center sm:justify-between">
-                                        <div>
-                                            <p className="text-sm font-semibold">
-                                                {typeLabels[ret.returnType]} · {statusLabels[ret.status]}
-                                            </p>
-                                            <p className="mt-1 text-xs text-slate-500">
-                                                {ret.returnType === "DESCUENTO"
-                                                    ? `$${toPrice(ret.discountAmount)}`
-                                                    : `${ret.items.reduce((sum, item) => sum + item.quantity, 0)} unidad(es)`}
-                                                {ret.folio ? ` · NCE ${ret.folio}` : ""}
-                                            </p>
+                                {returnOperations.map((operation) => {
+                                    const { ret, dte } = operation
+                                    const warnings = getOperationWarnings(operation)
+                                    return (
+                                        <div key={ret.returnID} className="flex flex-col gap-3 rounded-md border bg-white p-3 dark:bg-slate-800 sm:flex-row sm:items-center sm:justify-between">
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-sm font-semibold">
+                                                    {typeLabels[ret.returnType]} · {statusLabels[ret.status]}
+                                                </p>
+                                                <p className="mt-1 text-xs text-slate-500">
+                                                    {ret.returnType === "DESCUENTO"
+                                                        ? `$${toPrice(ret.discountAmount)}`
+                                                        : `${ret.items.reduce((sum, item) => sum + item.quantity, 0)} unidad(es)`}
+                                                    {ret.folio ? ` · NCE ${ret.folio}` : ""}
+                                                </p>
+                                                {warnings.length > 0 && (
+                                                    <div
+                                                        role="alert"
+                                                        className="mt-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
+                                                    >
+                                                        <p className="flex items-center gap-1.5 text-xs font-semibold">
+                                                            <AlertTriangle className="h-4 w-4 shrink-0" />
+                                                            Advertencia de la nota de crédito
+                                                        </p>
+                                                        <ul className="mt-1 list-disc space-y-1 pl-5 text-xs">
+                                                            {warnings.map((warning) => (
+                                                                <li key={warning}>{warning}</li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {dte?.PDF && (
+                                                    <Button type="button" size="sm" variant="outline" asChild>
+                                                        <a href={getDocumentUrl(dte.PDF)} target="_blank" rel="noreferrer">
+                                                            <FileText /> Nota de crédito
+                                                        </a>
+                                                    </Button>
+                                                )}
+                                                {ret.status === "PENDIENTE" && isAdmin && (
+                                                    <>
+                                                        <Button type="button" size="sm" onClick={() => void runTransition(ret, "approve")} disabled={activeActionID !== null}>Aprobar</Button>
+                                                        <Button type="button" size="sm" variant="outline" onClick={() => void runTransition(ret, "reject")} disabled={activeActionID !== null}>Rechazar</Button>
+                                                    </>
+                                                )}
+                                                {ret.status === "PENDIENTE" && (
+                                                    <Button type="button" size="sm" variant="ghost" onClick={() => void runTransition(ret, "cancel")} disabled={activeActionID !== null}>Cancelar</Button>
+                                                )}
+                                                {ret.status === "APROBADA" && isAdmin && (
+                                                    <Button type="button" size="sm" variant="outline" onClick={() => void runTransition(ret, "reconcile")} disabled={activeActionID !== null}>
+                                                        <RotateCcw /> Reconciliar NCE
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className="flex flex-wrap gap-2">
-                                            {dte?.PDF && (
-                                                <Button type="button" size="sm" variant="outline" asChild>
-                                                    <a href={getDocumentUrl(dte.PDF)} target="_blank" rel="noreferrer">
-                                                        <FileText /> Nota de crédito
-                                                    </a>
-                                                </Button>
-                                            )}
-                                            {ret.status === "PENDIENTE" && isAdmin && (
-                                                <>
-                                                    <Button type="button" size="sm" onClick={() => void runTransition(ret, "approve")} disabled={activeActionID !== null}>Aprobar</Button>
-                                                    <Button type="button" size="sm" variant="outline" onClick={() => void runTransition(ret, "reject")} disabled={activeActionID !== null}>Rechazar</Button>
-                                                </>
-                                            )}
-                                            {ret.status === "PENDIENTE" && (
-                                                <Button type="button" size="sm" variant="ghost" onClick={() => void runTransition(ret, "cancel")} disabled={activeActionID !== null}>Cancelar</Button>
-                                            )}
-                                            {ret.status === "APROBADA" && isAdmin && (
-                                                <Button type="button" size="sm" variant="outline" onClick={() => void runTransition(ret, "reconcile")} disabled={activeActionID !== null}>
-                                                    <RotateCcw /> Reconciliar NCE
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
+                                    )
+                                })}
                             </div>
                         </section>
                     )}
