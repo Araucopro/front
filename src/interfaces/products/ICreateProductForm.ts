@@ -14,6 +14,7 @@ export interface CreateProductFormData {
     name: string
     image: string
     categoryID: string
+    categoryName?: string
     genre: "Hombre" | "Mujer" | "Unisex"
     brand: "D3SI" | "Otro"
     sizes: Size[]

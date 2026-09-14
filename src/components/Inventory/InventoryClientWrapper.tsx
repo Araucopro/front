@@ -236,6 +236,7 @@ export default function UnifiedInventoryClientWrapper({ initialProducts, categor
                     filteredStockTotal={filteredStockTotal}
                     uniqueProductsInCurrentPage={uniqueProductsInCurrentPage}
                     searchedProductsLength={filteredProducts.length}
+                    categories={categories}
                 />
                 <div className="flex justify-between lg:mt-0 mt-6 lg:flex-row flex-col lg:items-center">
                     <p className="text-sm text-gray-600 dark:text-gray-400">

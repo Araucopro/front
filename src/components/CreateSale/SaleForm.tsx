@@ -268,9 +268,33 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
 
                 <CartTable />
                 <div className="mt-4 flex flex-col gap-6">
-                <div className="grid gap-4 rounded-lg border border-gray-200 p-4 dark:border-gray-700 xl:grid-cols-2">
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Documento</label>
+                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
+                    <div className="mb-4 border-b border-slate-100 pb-3 dark:border-slate-800">
+                        <p className="text-sm font-semibold text-slate-900 dark:text-white">Configura el documento</p>
+                        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                            Selecciona una opción en cada grupo para continuar con la venta.
+                        </p>
+                    </div>
+
+                    <div className="relative grid gap-4 xl:grid-cols-2 xl:gap-8">
+                        <div
+                            aria-hidden="true"
+                            className="absolute inset-y-0 left-1/2 hidden -translate-x-1/2 items-center xl:flex"
+                        >
+                            <span className="h-full w-px bg-slate-300 dark:bg-slate-600" />
+                            <span className="absolute left-1/2 flex h-7 w-7 -translate-x-1/2 items-center justify-center rounded-full border border-slate-300 bg-white text-[10px] font-bold text-slate-500 shadow-sm dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300">
+                                Y
+                            </span>
+                        </div>
+
+                    <div className="space-y-3 rounded-lg border border-blue-100 bg-blue-50/30 p-3 dark:border-blue-950 dark:bg-blue-950/10">
+                        <div className="flex items-center gap-2">
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">1</span>
+                            <div>
+                                <label className="text-sm font-semibold text-slate-800 dark:text-slate-100">Documento</label>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400">¿Qué documento deseas emitir?</p>
+                            </div>
+                        </div>
                         <div className="grid gap-2 sm:grid-cols-3" role="group" aria-label="Tipo de documento">
                             {saleTypeOptions.map((option) => {
                                 const Icon = option.icon
@@ -304,8 +328,21 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
                             })}
                         </div>
                     </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Tipo de pago</label>
+
+                    <div className="flex items-center gap-3 xl:hidden" aria-hidden="true">
+                        <span className="h-px flex-1 bg-slate-300 dark:bg-slate-600" />
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-300 bg-white text-[10px] font-bold text-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300">Y</span>
+                        <span className="h-px flex-1 bg-slate-300 dark:bg-slate-600" />
+                    </div>
+
+                    <div className="space-y-3 rounded-lg border border-amber-100 bg-amber-50/30 p-3 dark:border-amber-950 dark:bg-amber-950/10">
+                        <div className="flex items-center gap-2">
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 text-xs font-bold text-white">2</span>
+                            <div>
+                                <label className="text-sm font-semibold text-slate-800 dark:text-slate-100">Tipo de pago</label>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400">¿Cómo pagará el cliente?</p>
+                            </div>
+                        </div>
                         <div className="grid gap-2 sm:grid-cols-3" role="group" aria-label="Tipo de pago">
                             {paymentTypeOptions.map((option) => {
                                 const Icon = option.icon
@@ -338,6 +375,7 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
                                 )
                             })}
                         </div>
+                    </div>
                     </div>
                 </div>
 

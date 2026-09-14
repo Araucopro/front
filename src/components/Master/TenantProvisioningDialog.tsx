@@ -45,6 +45,9 @@ const INITIAL_USER: IProvisionTenantUser = {
     email: "",
     name: "",
     role: "admin",
+    roleID: "",
+    status: "ACTIVE",
+    userImg: "",
     password: "",
 }
 
@@ -58,6 +61,7 @@ const INITIAL_STORE: IProvisionTenantStore = {
     name: "",
     type: "central",
     isCentralStore: true,
+    storeImg: "",
     giro: "",
     acteco: "",
     cdgSIISucur: "",
@@ -199,11 +203,16 @@ export default function TenantProvisioningDialog({
         const acteco = storeForm.acteco?.trim()
         const cdgSIISucur = storeForm.cdgSIISucur?.trim()
         const businessName = storeForm.businessName?.trim()
+        const storeImg = storeForm.storeImg?.trim()
 
         if (giro) store.giro = giro
         if (acteco) store.acteco = acteco
         if (cdgSIISucur) store.cdgSIISucur = cdgSIISucur
         if (businessName) store.businessName = businessName
+        if (storeImg) store.storeImg = storeImg
+
+        const roleID = userForm.roleID?.trim()
+        const userImg = userForm.userImg?.trim()
 
         try {
             setIsSubmitting(true)
@@ -212,6 +221,9 @@ export default function TenantProvisioningDialog({
                     email: userForm.email.trim(),
                     name: userForm.name.trim(),
                     role: "admin",
+                    status: "ACTIVE",
+                    ...(roleID ? { roleID } : {}),
+                    ...(userImg ? { userImg } : {}),
                     password: userForm.password,
                 },
                 store,
@@ -402,6 +414,18 @@ export default function TenantProvisioningDialog({
                                 </div>
 
                                 <div className="space-y-2">
+                                    <Label htmlFor="admin-role-id">Role ID del tenant (opcional)</Label>
+                                    <Input
+                                        id="admin-role-id"
+                                        value={userForm.roleID ?? ""}
+                                        onChange={(event) =>
+                                            setUserForm((current) => ({ ...current, roleID: event.target.value }))
+                                        }
+                                        placeholder="UUID del rol personalizado"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
                                     <Label htmlFor="admin-password">Contraseña inicial</Label>
                                     <Input
                                         id="admin-password"
@@ -414,6 +438,18 @@ export default function TenantProvisioningDialog({
                                         placeholder="Mínimo 8 caracteres"
                                         autoComplete="new-password"
                                         required
+                                    />
+                                </div>
+
+                                <div className="space-y-2 sm:col-span-2">
+                                    <Label htmlFor="admin-image">Imagen del usuario (opcional)</Label>
+                                    <Input
+                                        id="admin-image"
+                                        value={userForm.userImg ?? ""}
+                                        onChange={(event) =>
+                                            setUserForm((current) => ({ ...current, userImg: event.target.value }))
+                                        }
+                                        placeholder="https://..."
                                     />
                                 </div>
                             </fieldset>
@@ -512,6 +548,18 @@ export default function TenantProvisioningDialog({
                                         }
                                         placeholder="Av. Principal 100"
                                         required
+                                    />
+                                </div>
+
+                                <div className="space-y-2 sm:col-span-2">
+                                    <Label htmlFor="store-image">Imagen de la tienda (opcional)</Label>
+                                    <Input
+                                        id="store-image"
+                                        value={storeForm.storeImg ?? ""}
+                                        onChange={(event) =>
+                                            setStoreForm((current) => ({ ...current, storeImg: event.target.value }))
+                                        }
+                                        placeholder="https://..."
                                     />
                                 </div>
 

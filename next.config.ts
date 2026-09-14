@@ -38,6 +38,14 @@ const nextConfig: NextConfig = {
             },
             {
                 protocol: "https",
+                hostname: "lsco.scene7.com",
+            },
+            {
+                protocol: "https",
+                hostname: "*.cloudfront.net",
+            },
+            {
+                protocol: "https",
                 hostname: "example.com",
             },
             {

@@ -4,6 +4,7 @@ import * as XLSX from "xlsx"
 import type { IProduct } from "@/interfaces/products/IProduct"
 import type { IRawProduct } from "@/interfaces/products/IRawProduct"
 import { InventoryRow } from "@/interfaces/products/IInventoryRow"
+import type { ICategory } from "@/interfaces/categories/ICategory"
 
 type InventoryDataRow = InventoryRow
 type ExportableProduct = IProduct | IRawProduct
@@ -20,10 +21,56 @@ const getVariations = (product: ExportableProduct): ExportableVariation[] => {
     return []
 }
 
-const getCategoryName = (product: ExportableProduct) => {
-    if ("Category" in product && product.Category?.name) return product.Category.name
-    if ("category" in product && product.category?.name) return product.category.name
-    return ""
+type CategoryWithRelations = ICategory & {
+    parent?: ICategory | null
+    Parent?: ICategory | null
+    children?: ICategory[]
+}
+
+const getCategoryChildren = (category: ICategory): ICategory[] => {
+    const categoryWithRelations = category as CategoryWithRelations
+    return category.subcategories ?? categoryWithRelations.children ?? []
+}
+
+const findCategoryById = (
+    categories: ICategory[],
+    categoryID: string,
+    parent: ICategory | null = null,
+): { category: ICategory; parent: ICategory | null } | null => {
+    for (const category of categories) {
+        if (category.categoryID === categoryID) return { category, parent }
+
+        const childMatch = findCategoryById(getCategoryChildren(category), categoryID, category)
+        if (childMatch) return childMatch
+    }
+
+    return null
+}
+
+const getProductCategory = (product: ExportableProduct): ICategory | null => {
+    if ("Category" in product && product.Category) return product.Category
+    if ("category" in product && product.category) return product.category
+    return null
+}
+
+const getCategoryNames = (product: ExportableProduct, categories: ICategory[]) => {
+    const productCategory = getProductCategory(product)
+    const categoryID = productCategory?.categoryID || product.categoryID
+    if (!categoryID) return { parent: "", subcategory: "" }
+
+    const match = findCategoryById(categories, categoryID)
+    const category = match?.category ?? productCategory
+    if (!category?.name) return { parent: "", subcategory: "" }
+
+    const categoryWithRelations = category as CategoryWithRelations
+    const embeddedParent = categoryWithRelations.parent ?? categoryWithRelations.Parent
+    const parent = match?.parent ?? embeddedParent ?? categories.find((item) => item.categoryID === category.parentID)
+
+    if (parent?.name) {
+        return { parent: parent.name, subcategory: category.name }
+    }
+
+    return { parent: category.name, subcategory: "" }
 }
 
 const getStoreProducts = (variation: ExportableVariation) => {
@@ -67,17 +114,20 @@ const getVariationSize = (variation: ExportableVariation) => {
     return variation.size
 }
 
-export function exportInventoryToExcel(products: ExportableProduct[]) {
+export function exportInventoryToExcel(products: ExportableProduct[], categories: ICategory[]) {
     const data: InventoryDataRow[] = []
 
     products.forEach((product) => {
         getVariations(product).forEach((variation) => {
+            const categoryNames = getCategoryNames(product, categories)
+
             data.push({
                 Producto: product.name,
                 Imagen: product.image,
                 Género: product.genre,
                 Marca: product.brand,
-                Categoría: getCategoryName(product),
+                "Categoría padre": categoryNames.parent,
+                Subcategoría: categoryNames.subcategory,
                 Talla: getVariationSize(variation),
                 Cantidad: getVariationStock(variation),
                 "Precio Costo Neto": getVariationPriceCost(variation),

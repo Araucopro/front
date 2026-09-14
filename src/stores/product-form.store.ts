@@ -20,6 +20,7 @@ const getInitialProduct = (): CreateProductFormData => ({
     name: "",
     image: "",
     categoryID: "",
+    categoryName: "",
     genre: "Unisex",
     brand: "Otro",
     tempId: Math.random().toString(36).substring(7),
@@ -128,7 +129,9 @@ export const useProductFormStore = create<ProductFormState>((set, get) => ({
                 category: "",
             }
             if (!product.name.trim()) productErrors.name = "Falta llenar este campo"
-            if (!product.categoryID.trim()) productErrors.category = "Falta seleccionar una categoría"
+            if (!product.categoryID.trim() && !product.categoryName?.trim()) {
+                productErrors.category = "Falta seleccionar o indicar una categoría"
+            }
 
             product.sizes.forEach((size) => {
                 const sizeErrors: Record<string, string> = {}

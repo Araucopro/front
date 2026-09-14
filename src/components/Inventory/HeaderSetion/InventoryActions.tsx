@@ -4,12 +4,18 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import type { IProduct } from "@/interfaces/products/IProduct"
 import type { IRawProduct } from "@/interfaces/products/IRawProduct"
+import type { ICategory } from "@/interfaces/categories/ICategory"
 import { exportInventoryToExcel } from "@/utils/exportInventoryToExcel"
 import { Button } from "@/components/ui/button"
 import { CategoryManagementModal } from "@/components/CategorySection/EditCategory/CategoryManagementModal"
 import { useTienda } from "@/stores/tienda.store"
 
-export default function InventoryActions({ products }: { products: Array<IProduct | IRawProduct> }) {
+interface InventoryActionsProps {
+    products: Array<IProduct | IRawProduct>
+    categories: ICategory[]
+}
+
+export default function InventoryActions({ products, categories }: InventoryActionsProps) {
     const router = useRouter()
     const { storeSelected } = useTienda()
     const [showCategoryModal, setShowCategoryModal] = useState(false)
@@ -22,7 +28,7 @@ export default function InventoryActions({ products }: { products: Array<IProduc
             alert("No hay productos para exportar.")
             return
         }
-        exportInventoryToExcel(products)
+        exportInventoryToExcel(products, categories)
     }
 
     return (
