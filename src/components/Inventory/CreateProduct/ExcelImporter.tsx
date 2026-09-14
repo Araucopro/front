@@ -61,12 +61,13 @@ function validateExcelRows(rows: any[]): string | null {
     return null
 }
 
-export function ExcelImporter({ categories }: { categories: ICategory[] }) {
+export function ExcelImporter({ categories, disabled = false }: { categories: ICategory[]; disabled?: boolean }) {
     const setProducts = useProductFormStore((state) => state.setProducts)
     const dropRef = useRef<HTMLDivElement>(null)
 
     const handleExcelImport = useCallback(
         async (file: File) => {
+            if (disabled) return
             try {
                 const data = await file.arrayBuffer()
                 const workbook = XLSX.read(data)
@@ -85,17 +86,13 @@ export function ExcelImporter({ categories }: { categories: ICategory[] }) {
                 for (const row of json) {
                     const genre = (normalizeExcelText(row["Género"]) || "Unisex") as Genre
                     const brand = (normalizeExcelText(row["Marca"]) || "Otro") as Brand
-                    let categoryName = normalizeExcelText(row["Categoría"]) || "Calzado"
-                    let catId = findCategoryIdByName(categories, categoryName)
-                    if (!catId) {
-                        categoryName = "Otro"
-                        catId = findCategoryIdByName(categories, "Otro")
-                    }
+                    const categoryName = normalizeExcelText(row["Categoría"]) || "Otro"
+                    const catId = findCategoryIdByName(categories, categoryName)
 
                     const defaultImage = ""
                     const image = normalizeExcelText(row["Imagen"]) || defaultImage
                     const productName = normalizeExcelText(row["Producto"])
-                    const key = `${productName}|${image}|${catId}|${genre}|${brand}`
+                    const key = normalizeExcelText(productName).toLocaleLowerCase("es-CL")
                     const sku = normalizeExcelText(row["Código EAN"]) || generateRandomSku()
 
                     const size = {
@@ -108,12 +105,27 @@ export function ExcelImporter({ categories }: { categories: ICategory[] }) {
                     }
 
                     if (productMap.has(key)) {
-                        productMap.get(key)!.sizes.push(size)
+                        const existingProduct = productMap.get(key)!
+                        const hasConflictingData =
+                            normalizeExcelText(existingProduct.categoryName).toLocaleLowerCase("es-CL") !==
+                                categoryName.toLocaleLowerCase("es-CL") ||
+                            normalizeExcelText(existingProduct.brand).toLocaleLowerCase("es-CL") !==
+                                normalizeExcelText(brand).toLocaleLowerCase("es-CL") ||
+                            existingProduct.genre !== genre
+
+                        if (hasConflictingData) {
+                            toast.error(
+                                `El producto "${productName}" aparece con distinta categoría, marca o género. Unifica sus datos en el Excel.`,
+                            )
+                            return
+                        }
+                        existingProduct.sizes.push(size)
                     } else {
                         productMap.set(key, {
                             name: productName,
                             image,
                             categoryID: catId,
+                            categoryName,
                             genre,
                             brand,
                             sizes: [size],
@@ -130,7 +142,7 @@ export function ExcelImporter({ categories }: { categories: ICategory[] }) {
                 toast.error("Error al procesar el archivo Excel.")
             }
         },
-        [categories, setProducts],
+        [categories, disabled, setProducts],
     )
 
     const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -170,7 +182,11 @@ export function ExcelImporter({ categories }: { categories: ICategory[] }) {
     return (
         <div
             ref={dropRef}
-            className="mb-6 flex flex-col lg:flex-row items-start gap-4 border-2 border-dashed border-blue-400 rounded-xl p-4 bg-blue-50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20 transition-colors cursor-pointer"
+            className={`mb-6 flex flex-col items-start gap-4 rounded-xl border-2 border-dashed p-4 transition-colors lg:flex-row ${
+                disabled
+                    ? "cursor-not-allowed border-slate-300 bg-slate-100 opacity-60 dark:border-slate-700 dark:bg-slate-900"
+                    : "cursor-pointer border-blue-400 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/10 dark:hover:bg-blue-900/20"
+            }`}
             style={{ minHeight: 80 }}
         >
             <div className="flex-1 flex flex-col gap-2">
@@ -180,11 +196,15 @@ export function ExcelImporter({ categories }: { categories: ICategory[] }) {
                 <span className="text-xs text-gray-500 dark:text-gray-400">
                     Arrastra y suelta el archivo aquí o haz clic para seleccionarlo.
                 </span>
+                <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                    Los archivos grandes se dividen automáticamente en lotes de 100 productos; las variantes no cuentan como productos adicionales.
+                </span>
             </div>
             <Input
                 type="file"
                 accept=".xlsx"
                 onChange={handleFileInput}
+                disabled={disabled}
                 className="max-w-xs"
                 style={{ display: "block" }}
             />

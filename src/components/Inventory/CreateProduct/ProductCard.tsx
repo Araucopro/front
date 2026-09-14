@@ -141,7 +141,11 @@ export function ProductCard({ productIndex, product, categories, error }: Produc
                 <CategorySelector
                     categories={categories}
                     selectedCategoryId={product.categoryID}
-                    onCategorySelect={(categoryID) => handleProductChange(productIndex, "categoryID", categoryID)}
+                    selectedCategoryName={product.categoryName}
+                    onCategorySelect={(categoryID, categoryName) => {
+                        handleProductChange(productIndex, "categoryID", categoryID)
+                        handleProductChange(productIndex, "categoryName", categoryName)
+                    }}
                     error={error?.category}
                 />
 

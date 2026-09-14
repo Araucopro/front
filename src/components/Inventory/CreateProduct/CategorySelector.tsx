@@ -17,7 +17,8 @@ interface CategoryOption {
 interface CategorySelectorProps {
     categories: ICategory[]
     selectedCategoryId: string
-    onCategorySelect: (categoryId: string) => void
+    selectedCategoryName?: string
+    onCategorySelect: (categoryId: string, categoryName: string) => void
     error?: string
 }
 
@@ -25,7 +26,13 @@ const normalizeText = (text: string) => {
     return text.toLowerCase().replace(/\s+/g, " ").trim()
 }
 
-export function CategorySelector({ categories, selectedCategoryId, onCategorySelect, error }: CategorySelectorProps) {
+export function CategorySelector({
+    categories,
+    selectedCategoryId,
+    selectedCategoryName,
+    onCategorySelect,
+    error,
+}: CategorySelectorProps) {
     const [showModal, setShowModal] = useState(false)
     const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([])
     const [search, setSearch] = useState("")
@@ -34,20 +41,29 @@ export function CategorySelector({ categories, selectedCategoryId, onCategorySel
     const dropdownRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
-        const subcategories = categories.flatMap((c) => c.subcategories)
-        const subCatOptions: CategoryOption[] = subcategories.map((cat) => ({
-            id: cat?.categoryID ?? "",
-            childName: cat?.name ?? "",
-            label: `${categories.find((c) => c.categoryID === cat?.parentID)?.name} / ${cat?.name}`,
-            parentName: categories.find((c) => c.categoryID === cat?.parentID)?.name ?? "",
-        }))
-        setCategoryOptions(subCatOptions)
+        const options: CategoryOption[] = categories.flatMap((category) => [
+            {
+                id: category.categoryID,
+                childName: category.name,
+                label: category.name,
+                parentName: "",
+            },
+            ...(category.subcategories ?? []).map((subcategory) => ({
+                id: subcategory.categoryID,
+                childName: subcategory.name,
+                label: `${category.name} / ${subcategory.name}`,
+                parentName: category.name,
+            })),
+        ])
+        setCategoryOptions(options)
 
-        const selectedOption = subCatOptions.find((option) => option.id === selectedCategoryId)
+        const selectedOption = options.find((option) => option.id === selectedCategoryId)
         if (selectedOption) {
             setSearch(selectedOption.label)
+        } else {
+            setSearch(selectedCategoryName ?? "")
         }
-    }, [categories, selectedCategoryId])
+    }, [categories, selectedCategoryId, selectedCategoryName])
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -74,7 +90,7 @@ export function CategorySelector({ categories, selectedCategoryId, onCategorySel
     }
 
     const handleSelect = (option: CategoryOption) => {
-        onCategorySelect(option.id)
+        onCategorySelect(option.id, option.childName)
         setSearch(option.label)
         setShowDropdown(false)
     }
@@ -117,10 +133,14 @@ export function CategorySelector({ categories, selectedCategoryId, onCategorySel
                                 className="w-full text-left px-4 py-3 dark:bg-slate-800 bg-white hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors border-b border-gray-100 dark:border-slate-700 last:border-b-0"
                             >
                                 <div className="flex items-center gap-2">
-                                    <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {option.parentName}
-                                    </div>
-                                    <ChevronDown className="w-3 h-3 text-gray-400 rotate-[-90deg]" />
+                                    {option.parentName && (
+                                        <>
+                                            <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                                {option.parentName}
+                                            </div>
+                                            <ChevronDown className="w-3 h-3 text-gray-400 rotate-[-90deg]" />
+                                        </>
+                                    )}
                                     <div className="text-sm text-gray-600 dark:text-gray-300">{option.childName}</div>
                                 </div>
                             </Button>
