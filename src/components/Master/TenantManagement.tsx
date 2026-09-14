@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { ChevronLeft, ChevronRight, Loader2, RefreshCw } from "lucide-react"
+import { useState, type FormEvent } from "react"
+import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Search, X } from "lucide-react"
 import { getTenants } from "@/actions/master/tenantActions"
 import TenantManagementDialog from "@/components/Master/TenantManagementDialog"
 import TenantProvisioningDialog from "@/components/Master/TenantProvisioningDialog"
@@ -60,17 +60,32 @@ export default function TenantManagement({
     const [selectedTenant, setSelectedTenant] = useState<TenantReference | null>(null)
     const [isManagementOpen, setIsManagementOpen] = useState(false)
     const [managedTenant, setManagedTenant] = useState<ITenant | null>(null)
+    const [search, setSearch] = useState("")
+    const [status, setStatus] = useState<TenantStatus | "">("")
+    const [appliedSearch, setAppliedSearch] = useState("")
+    const [appliedStatus, setAppliedStatus] = useState<TenantStatus | "">("")
 
     const currentPage = Math.floor(tenants.offset / tenants.limit) + 1
     const totalPages = Math.max(1, Math.ceil(tenants.total / tenants.limit))
 
-    const loadTenants = async (offset: number) => {
+    const loadTenants = async (
+        offset: number,
+        filters: { search: string; status: TenantStatus | "" } = {
+            search: appliedSearch,
+            status: appliedStatus,
+        },
+    ) => {
         try {
             setIsLoading(true)
             setError("")
-            const response = await getTenants({ limit: tenants.limit, offset })
+            const response = await getTenants({
+                limit: tenants.limit,
+                offset,
+                ...(filters.search.trim() ? { search: filters.search.trim() } : {}),
+                ...(filters.status ? { status: filters.status } : {}),
+            })
             setTenants(response)
-            onTotalChange?.(response.total)
+            if (!filters.search && !filters.status) onTotalChange?.(response.total)
         } catch (loadError) {
             const message = loadError instanceof Error ? loadError.message : "No se pudieron cargar los tenants"
             setError(message)
@@ -78,6 +93,22 @@ export default function TenantManagement({
         } finally {
             setIsLoading(false)
         }
+    }
+
+    const handleFilters = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault()
+        const nextSearch = search.trim()
+        setAppliedSearch(nextSearch)
+        setAppliedStatus(status)
+        await loadTenants(0, { search: nextSearch, status })
+    }
+
+    const clearFilters = async () => {
+        setSearch("")
+        setStatus("")
+        setAppliedSearch("")
+        setAppliedStatus("")
+        await loadTenants(0, { search: "", status: "" })
     }
 
     const startNewTenant = () => {
@@ -113,6 +144,62 @@ export default function TenantManagement({
             </div>
 
             <div className="overflow-hidden rounded-[13px] border border-[#dfe2e7] bg-white">
+                <form
+                    onSubmit={handleFilters}
+                    className="flex flex-col gap-3 border-b border-[#eceef1] bg-[#fbfbfc] p-4 sm:flex-row sm:items-end"
+                >
+                    <div className="min-w-0 flex-1">
+                        <label htmlFor="tenant-search" className="mb-1.5 block text-[10px] font-semibold text-[#536174]">
+                            Buscar negocio
+                        </label>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#8994a3]" />
+                            <input
+                                id="tenant-search"
+                                value={search}
+                                onChange={(event) => setSearch(event.target.value)}
+                                placeholder="Nombre o slug"
+                                className="h-9 w-full rounded-md border border-[#dfe2e7] bg-white pl-9 pr-3 text-xs outline-none focus:border-[#0e5c3b]"
+                            />
+                        </div>
+                    </div>
+                    <div className="sm:w-48">
+                        <label htmlFor="tenant-status-filter" className="mb-1.5 block text-[10px] font-semibold text-[#536174]">
+                            Estado
+                        </label>
+                        <select
+                            id="tenant-status-filter"
+                            value={status}
+                            onChange={(event) => setStatus(event.target.value as TenantStatus | "")}
+                            className="h-9 w-full rounded-md border border-[#dfe2e7] bg-white px-3 text-xs outline-none focus:border-[#0e5c3b]"
+                        >
+                            <option value="">Todos</option>
+                            <option value="PROVISIONING">Provisionando</option>
+                            <option value="ACTIVE">Activo</option>
+                            <option value="SUSPENDED">Suspendido</option>
+                            <option value="ARCHIVED">Archivado</option>
+                        </select>
+                    </div>
+                    <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-[#0e5c3b] px-4 text-xs font-semibold text-white disabled:opacity-60"
+                    >
+                        <Search className="h-3.5 w-3.5" />
+                        Aplicar
+                    </button>
+                    {(appliedSearch || appliedStatus) && (
+                        <button
+                            type="button"
+                            onClick={clearFilters}
+                            disabled={isLoading}
+                            className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-[#dfe2e7] px-4 text-xs font-semibold text-[#536174] disabled:opacity-60"
+                        >
+                            <X className="h-3.5 w-3.5" />
+                            Limpiar
+                        </button>
+                    )}
+                </form>
                 {error && (
                     <div className="flex items-center justify-between gap-3 border-b border-red-200 bg-red-50 px-5 py-3 text-xs text-red-700">
                         <span>{error}</span>
@@ -160,7 +247,11 @@ export default function TenantManagement({
                             {tenants.items.length === 0 ? (
                                 <tr>
                                     <td colSpan={9} className="px-5 py-12 text-center text-xs text-[#758296]">
-                                        {error ? "No fue posible obtener los tenants." : "Aún no hay tenants registrados."}
+                                        {error
+                                            ? "No fue posible obtener los tenants."
+                                            : appliedSearch || appliedStatus
+                                              ? "No se encontraron tenants con esos filtros."
+                                              : "Aún no hay tenants registrados."}
                                     </td>
                                 </tr>
                             ) : (
@@ -198,21 +289,20 @@ export default function TenantManagement({
                                         </td>
                                         <td className="px-5 py-3.5">
                                             <div className="flex items-center gap-2">
-                                                {tenant.status === "PROVISIONING" ? (
+                                                {tenant.status === "PROVISIONING" && (
                                                     <button
                                                         onClick={() => resumeProvisioning(tenant)}
                                                         className="whitespace-nowrap rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-[9px] font-bold text-amber-800 hover:bg-amber-100"
                                                     >
                                                         Continuar provisión
                                                     </button>
-                                                ) : (
-                                                    <button
-                                                        onClick={() => manageTenant(tenant)}
-                                                        className="whitespace-nowrap rounded-md border border-[#b9c7d3] bg-white px-3 py-1.5 text-[9px] font-bold text-[#294157] hover:bg-[#f5f7f8]"
-                                                    >
-                                                        Gestionar
-                                                    </button>
                                                 )}
+                                                <button
+                                                    onClick={() => manageTenant(tenant)}
+                                                    className="whitespace-nowrap rounded-md border border-[#b9c7d3] bg-white px-3 py-1.5 text-[9px] font-bold text-[#294157] hover:bg-[#f5f7f8]"
+                                                >
+                                                    Gestionar
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>

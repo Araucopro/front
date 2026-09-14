@@ -1,6 +1,7 @@
 "use client"
 import InventoryActions from "@/components/Inventory/HeaderSetion/InventoryActions"
 import InventoryStats from "@/components/Inventory/HeaderSetion/InventoryStats"
+import type { ICategory } from "@/interfaces/categories/ICategory"
 import { inventoryStore } from "@/stores/inventory.store"
 import { useAuth } from "@/stores/user.store"
 
@@ -9,6 +10,7 @@ interface InventoryHeaderProps {
     filteredStockTotal: number
     uniqueProductsInCurrentPage: number
     searchedProductsLength: number
+    categories: ICategory[]
 }
 
 export default function InventoryHeader({
@@ -16,6 +18,7 @@ export default function InventoryHeader({
     filteredStockTotal,
     uniqueProductsInCurrentPage,
     searchedProductsLength,
+    categories,
 }: InventoryHeaderProps) {
     const { rawProducts } = inventoryStore()
     const { user } = useAuth()
@@ -29,7 +32,7 @@ export default function InventoryHeader({
                 {/* CREAR PRODUCTO Y DESCARGAR EXCEL, no se muestra si es store manager ni tercero */}
                 {user?.role !== "store_manager" && user?.role !== "tercero" && (
                     <div className="h-11">
-                        <InventoryActions products={rawProducts} />
+                        <InventoryActions products={rawProducts} categories={categories} />
                     </div>
                 )}
             </div>

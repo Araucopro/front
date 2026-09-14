@@ -1,11 +1,19 @@
 import { IStore } from "../stores/IStore"
 import { IUser } from "../users/IUser"
+import type { IReturn } from "../returns/IReturn"
 
 // Para enviar una nueva venta desde el frontend
 export type PaymentType = "Efectivo" | "Debito" | "Credito"
 export type SaleType = "BOLETA" | "FACTURA" | "NOTA_VENTA"
 export type ElectronicDocumentType = Exclude<SaleType, "NOTA_VENTA">
-export type PaymentStatus = "Pagado" | "Pendiente" | "Anulado" | "EMITIDA" | "CONVERTIDA"
+export type PaymentStatus =
+    | "Pagado"
+    | "Pendiente"
+    | "Anulado"
+    | "EMITIDA"
+    | "CONVERTIDA"
+    | "ANULADA"
+    | "DEVUELTA"
 
 export interface ISaleItemRequest {
     storeProductID: string
@@ -87,6 +95,7 @@ export interface IVariationInSale {
 }
 
 export interface ISaleProduct {
+    saleItemID: string
     saleProductID: string
     saleID: string
     variationID: string
@@ -116,6 +125,7 @@ export interface ISaleResponse {
     Store: IStore
     SaleProducts: ISaleProduct[]
     Return: ISaleReturn | null
+    Returns: IReturn[]
 }
 
 export interface IsaleProductReturned {

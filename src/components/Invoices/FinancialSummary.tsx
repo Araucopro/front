@@ -14,7 +14,7 @@ export default function FinancialSummary({ total, discount }: Props) {
     const grandTotal = total * 1.19
 
     return (
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50 p-6 rounded-lg border border-blue-200 dark:border-blue-800">
+        <div className="rounded-lg border border-blue-400 bg-gradient-to-r from-blue-100 to-indigo-100 p-6 shadow-sm ring-1 ring-blue-200 dark:border-blue-700 dark:from-blue-950/70 dark:to-indigo-950/70 dark:ring-blue-900/60">
             <h3 className="flex items-center gap-2 text-lg font-semibold mb-4 text-blue-900 dark:text-blue-100">
                 <CreditCard className="w-5 h-5" />
                 Desglose de Totales

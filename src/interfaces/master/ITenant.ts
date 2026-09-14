@@ -36,10 +36,22 @@ export interface ICreateTenant {
     locale: string
 }
 
+export interface IUpdateTenant {
+    name?: string
+    status?: TenantStatus
+    maxStores?: number
+    maxUsers?: number
+    timeZone?: string
+    locale?: string
+}
+
 export interface IProvisionTenantUser {
     email: string
     name: string
     role: "admin"
+    roleID?: string
+    status?: IUser["status"]
+    userImg?: string
     password: string
 }
 
@@ -53,6 +65,7 @@ export interface IProvisionTenantStore {
     name: string
     type: "central"
     isCentralStore: true
+    storeImg?: string | null
     giro?: string
     acteco?: string
     cdgSIISucur?: string
@@ -107,6 +120,7 @@ export interface ICreateTenantUser {
     email: string
     name: string
     role: UserRole
+    roleID?: string
     status?: IUser["status"]
     userImg?: string
     password: string
@@ -115,6 +129,7 @@ export interface ICreateTenantUser {
 export interface IUpdateTenantUser {
     name?: string
     role?: UserRole
+    roleID?: string
     status?: IUser["status"]
     userImg?: string
     password?: string

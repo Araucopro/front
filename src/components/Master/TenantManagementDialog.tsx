@@ -20,6 +20,7 @@ import {
     exportTenantData,
     getTenant,
     getTenantMetrics,
+    updateTenant,
     updateTenantStatus,
     updateTenantStore,
     updateTenantSubscription,
@@ -42,6 +43,7 @@ import {
     type ICreateTenantUser,
     type ITenant,
     type ITenantMetrics,
+    type IUpdateTenant,
     type IUpdateTenantStore,
     type IUpdateTenantUser,
     type TenantPlanType,
@@ -60,7 +62,8 @@ interface TenantManagementDialogProps {
     onTenantChanged: () => void | Promise<void>
 }
 
-const STATUS_LABELS: Record<Exclude<TenantStatus, "PROVISIONING">, string> = {
+const STATUS_LABELS: Record<TenantStatus, string> = {
+    PROVISIONING: "Provisionando",
     ACTIVE: "Activo",
     SUSPENDED: "Suspendido",
     ARCHIVED: "Archivado",
@@ -71,19 +74,30 @@ const USER_ROLE_OPTIONS: Array<{ value: UserRole; label: string }> = [
     { value: "store_manager", label: "Vendedor" },
     { value: "consignado", label: "Consignado" },
     { value: "tercero", label: "Tercero" },
+    { value: "system", label: "Sistema" },
 ]
 
 type DirectoryForm = "user" | "store" | null
 type UserFormState = ICreateTenantUser
 type StoreFormState = ICreateTenantStore
+type TenantFormState = Pick<ITenant, "name" | "maxStores" | "maxUsers" | "timeZone" | "locale">
 
 const EMPTY_USER_FORM: UserFormState = {
     email: "",
     name: "",
     role: "store_manager",
+    roleID: "",
     status: "ACTIVE",
     userImg: "",
     password: "",
+}
+
+const EMPTY_TENANT_FORM: TenantFormState = {
+    name: "",
+    maxStores: 1,
+    maxUsers: 1,
+    timeZone: "America/Santiago",
+    locale: "es-CL",
 }
 
 const EMPTY_STORE_FORM: StoreFormState = {
@@ -166,12 +180,14 @@ export default function TenantManagementDialog({
     const [error, setError] = useState("")
     const [isLoading, setIsLoading] = useState(false)
     const [isSavingSubscription, setIsSavingSubscription] = useState(false)
+    const [isSavingTenant, setIsSavingTenant] = useState(false)
     const [isSavingStatus, setIsSavingStatus] = useState(false)
     const [isExporting, setIsExporting] = useState(false)
     const [planType, setPlanType] = useState<TenantPlanType>("STANDARD")
     const [expiration, setExpiration] = useState("")
     const [autoRenew, setAutoRenew] = useState(true)
-    const [nextStatus, setNextStatus] = useState<Exclude<TenantStatus, "PROVISIONING">>("ACTIVE")
+    const [nextStatus, setNextStatus] = useState<TenantStatus>("ACTIVE")
+    const [tenantForm, setTenantForm] = useState<TenantFormState>(EMPTY_TENANT_FORM)
     const [tenantDetail, setTenantDetail] = useState<ITenant | null>(tenant)
     const [activeForm, setActiveForm] = useState<DirectoryForm>(null)
     const [editingUserID, setEditingUserID] = useState("")
@@ -195,7 +211,7 @@ export default function TenantManagementDialog({
             setPlanType(response.subscription.planType)
             setExpiration(toDateTimeLocal(response.subscription.expiresAt))
             setAutoRenew(response.subscription.autoRenew)
-            if (response.status !== "PROVISIONING") setNextStatus(response.status)
+            setNextStatus(response.status)
         } catch (loadError) {
             setError(loadError instanceof Error ? loadError.message : "No se pudieron cargar las métricas")
         } finally {
@@ -208,6 +224,13 @@ export default function TenantManagementDialog({
 
         const response = await getTenant(tenant.tenantID)
         setTenantDetail(response)
+        setTenantForm({
+            name: response.name,
+            maxStores: response.maxStores,
+            maxUsers: response.maxUsers,
+            timeZone: response.timeZone,
+            locale: response.locale,
+        })
     }, [tenant])
 
     useEffect(() => {
@@ -220,10 +243,21 @@ export default function TenantManagementDialog({
         setEditingStoreID("")
         setUserForm(EMPTY_USER_FORM)
         setStoreForm(EMPTY_STORE_FORM)
+        setTenantForm(
+            tenant
+                ? {
+                      name: tenant.name,
+                      maxStores: tenant.maxStores,
+                      maxUsers: tenant.maxUsers,
+                      timeZone: tenant.timeZone,
+                      locale: tenant.locale,
+                  }
+                : EMPTY_TENANT_FORM,
+        )
         setPlanType(tenant?.planType ?? "STANDARD")
         setExpiration(toDateTimeLocal(tenant?.subscriptionExpiresAt ?? null))
         setAutoRenew(tenant?.autoRenew ?? true)
-        if (tenant?.status && tenant.status !== "PROVISIONING") setNextStatus(tenant.status)
+        if (tenant?.status) setNextStatus(tenant.status)
         void loadMetrics()
         void loadTenantDetail().catch(() => null)
     }, [open, tenant, loadMetrics, loadTenantDetail])
@@ -244,6 +278,7 @@ export default function TenantManagementDialog({
             email: user.email,
             name: user.name,
             role: user.role,
+            roleID: user.roleID ?? "",
             status: user.status ?? "ACTIVE",
             userImg: user.userImg ?? "",
             password: "",
@@ -285,17 +320,18 @@ export default function TenantManagementDialog({
         const name = userForm.name.trim()
         const email = userForm.email.trim()
         const userImg = userForm.userImg?.trim()
+        const roleID = userForm.roleID?.trim()
 
         if (!name || !email) {
             toast.error("Completa nombre y correo del usuario")
             return
         }
         if (!editingUserID && userForm.password.length < 8) {
-            toast.error("La contraseÃ±a debe tener al menos 8 caracteres")
+            toast.error("La contraseña debe tener al menos 8 caracteres")
             return
         }
         if (editingUserID && userForm.password && userForm.password.length < 6) {
-            toast.error("La nueva contraseÃ±a debe tener al menos 6 caracteres")
+            toast.error("La nueva contraseña debe tener al menos 6 caracteres")
             return
         }
 
@@ -305,6 +341,7 @@ export default function TenantManagementDialog({
                 const payload: IUpdateTenantUser = {
                     name,
                     role: userForm.role,
+                    ...(roleID ? { roleID } : {}),
                     status: userForm.status,
                     ...(userImg ? { userImg } : {}),
                     ...(userForm.password ? { password: userForm.password } : {}),
@@ -316,6 +353,7 @@ export default function TenantManagementDialog({
                     email,
                     name,
                     role: userForm.role,
+                    ...(roleID ? { roleID } : {}),
                     status: userForm.status,
                     ...(userImg ? { userImg } : {}),
                     password: userForm.password,
@@ -387,6 +425,40 @@ export default function TenantManagementDialog({
             toast.error(saveError instanceof Error ? saveError.message : "No se pudo guardar la tienda")
         } finally {
             setIsSavingDirectory(false)
+        }
+    }
+
+    const handleUpdateTenant = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault()
+        if (!currentTenant) return
+
+        const payload: IUpdateTenant = {
+            name: tenantForm.name.trim(),
+            maxStores: Number(tenantForm.maxStores),
+            maxUsers: Number(tenantForm.maxUsers),
+            timeZone: tenantForm.timeZone.trim(),
+            locale: tenantForm.locale.trim(),
+        }
+
+        if (!payload.name || !payload.timeZone || !payload.locale) {
+            toast.error("Completa los datos generales del tenant")
+            return
+        }
+        if ((payload.maxStores ?? 0) < 1 || (payload.maxUsers ?? 0) < 1) {
+            toast.error("Los límites de tiendas y usuarios deben ser mayores a cero")
+            return
+        }
+
+        try {
+            setIsSavingTenant(true)
+            const updated = await updateTenant(currentTenant.tenantID, payload)
+            setTenantDetail((existing) => ({ ...(existing ?? updated), ...updated }))
+            toast.success("Datos del tenant actualizados correctamente")
+            await refreshTenantData()
+        } catch (saveError) {
+            toast.error(saveError instanceof Error ? saveError.message : "No se pudo actualizar el tenant")
+        } finally {
+            setIsSavingTenant(false)
         }
     }
 
@@ -474,7 +546,7 @@ export default function TenantManagementDialog({
         }
     }
 
-    const isBusy = isSavingSubscription || isSavingStatus || isExporting || isSavingDirectory
+    const isBusy = isSavingTenant || isSavingSubscription || isSavingStatus || isExporting || isSavingDirectory
     const currentStatus = metrics?.status ?? tenant?.status
 
     return (
@@ -483,7 +555,7 @@ export default function TenantManagementDialog({
                 <DialogHeader className="border-b border-[#e5e7eb] px-6 py-5">
                     <DialogTitle>Gestión del tenant</DialogTitle>
                     <DialogDescription>
-                        {tenant?.name ?? "Tenant"} · {tenant?.slug}
+                        {currentTenant?.name ?? "Tenant"} · {currentTenant?.slug}
                     </DialogDescription>
                     {tenant && <p className="break-all font-mono text-[9px] text-[#8994a3]">{tenant.tenantID}</p>}
                 </DialogHeader>
@@ -555,6 +627,101 @@ export default function TenantManagementDialog({
                                     </article>
                                 </div>
                             </section>
+
+                            <form
+                                onSubmit={handleUpdateTenant}
+                                className="rounded-lg border border-[#dfe2e7] bg-white p-4"
+                            >
+                                <div>
+                                    <h3 className="text-xs font-extrabold text-[#122238]">Configuración del tenant</h3>
+                                    <p className="mt-1 text-[10px] text-[#758296]">
+                                        Datos generales y límites operativos de la cuenta.
+                                    </p>
+                                </div>
+                                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                                    <div className="space-y-2 sm:col-span-2">
+                                        <Label htmlFor="tenant-general-name">Nombre</Label>
+                                        <Input
+                                            id="tenant-general-name"
+                                            value={tenantForm.name}
+                                            onChange={(event) =>
+                                                setTenantForm((current) => ({ ...current, name: event.target.value }))
+                                            }
+                                            minLength={2}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="tenant-general-max-stores">Máximo de tiendas</Label>
+                                        <Input
+                                            id="tenant-general-max-stores"
+                                            type="number"
+                                            min={1}
+                                            value={tenantForm.maxStores}
+                                            onChange={(event) =>
+                                                setTenantForm((current) => ({
+                                                    ...current,
+                                                    maxStores: Number(event.target.value),
+                                                }))
+                                            }
+                                            required
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="tenant-general-max-users">Máximo de usuarios</Label>
+                                        <Input
+                                            id="tenant-general-max-users"
+                                            type="number"
+                                            min={1}
+                                            value={tenantForm.maxUsers}
+                                            onChange={(event) =>
+                                                setTenantForm((current) => ({
+                                                    ...current,
+                                                    maxUsers: Number(event.target.value),
+                                                }))
+                                            }
+                                            required
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="tenant-general-timezone">Zona horaria</Label>
+                                        <Input
+                                            id="tenant-general-timezone"
+                                            value={tenantForm.timeZone}
+                                            onChange={(event) =>
+                                                setTenantForm((current) => ({
+                                                    ...current,
+                                                    timeZone: event.target.value,
+                                                }))
+                                            }
+                                            placeholder="America/Santiago"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="tenant-general-locale">Locale</Label>
+                                        <Input
+                                            id="tenant-general-locale"
+                                            value={tenantForm.locale}
+                                            onChange={(event) =>
+                                                setTenantForm((current) => ({ ...current, locale: event.target.value }))
+                                            }
+                                            placeholder="es-CL"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                <div className="mt-4 flex justify-end">
+                                    <button
+                                        type="submit"
+                                        disabled={isSavingTenant}
+                                        className="inline-flex items-center gap-2 rounded-md bg-[#0e5c3b] px-4 py-2 text-xs font-semibold text-white disabled:opacity-60"
+                                    >
+                                        {isSavingTenant && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                                        Guardar configuración
+                                    </button>
+                                </div>
+                            </form>
 
                             <section className="grid gap-4 lg:grid-cols-2">
                                 <article className="rounded-lg border border-[#dfe2e7] bg-white p-4">
@@ -653,6 +820,23 @@ export default function TenantManagementDialog({
                                                     </select>
                                                 </div>
                                                 <div className="space-y-1 sm:col-span-2">
+                                                    <Label htmlFor="tenant-user-role-id">Role ID del tenant (opcional)</Label>
+                                                    <Input
+                                                        id="tenant-user-role-id"
+                                                        value={userForm.roleID ?? ""}
+                                                        onChange={(event) =>
+                                                            setUserForm((current) => ({
+                                                                ...current,
+                                                                roleID: event.target.value,
+                                                            }))
+                                                        }
+                                                        placeholder="UUID del rol personalizado"
+                                                    />
+                                                    <p className="text-[10px] text-[#758296]">
+                                                        Úsalo únicamente cuando el tenant tenga un rol personalizado.
+                                                    </p>
+                                                </div>
+                                                <div className="space-y-1 sm:col-span-2">
                                                     <Label htmlFor="tenant-user-img">Imagen</Label>
                                                     <Input
                                                         id="tenant-user-img"
@@ -668,7 +852,7 @@ export default function TenantManagementDialog({
                                                 </div>
                                                 <div className="space-y-1 sm:col-span-2">
                                                     <Label htmlFor="tenant-user-password">
-                                                        {editingUserID ? "Nueva contraseÃ±a" : "ContraseÃ±a"}
+                                                        {editingUserID ? "Nueva contraseña" : "Contraseña"}
                                                     </Label>
                                                     <Input
                                                         id="tenant-user-password"
@@ -681,7 +865,7 @@ export default function TenantManagementDialog({
                                                                 password: event.target.value,
                                                             }))
                                                         }
-                                                        placeholder={editingUserID ? "Opcional" : "MÃ­nimo 8 caracteres"}
+                                                        placeholder={editingUserID ? "Opcional" : "Mínimo 8 caracteres"}
                                                         required={!editingUserID}
                                                     />
                                                 </div>
@@ -722,7 +906,7 @@ export default function TenantManagementDialog({
                                                     <div className="min-w-0">
                                                         <p className="truncate text-xs font-bold text-[#122238]">{user.name}</p>
                                                         <p className="truncate text-[10px] text-[#758296]">
-                                                            {user.email} Â· {user.role}
+                                                            {user.email} · {user.role}
                                                         </p>
                                                     </div>
                                                     <button
@@ -812,7 +996,7 @@ export default function TenantManagementDialog({
                                                     />
                                                 </div>
                                                 <div className="space-y-1">
-                                                    <Label htmlFor="tenant-store-phone">TelÃ©fono</Label>
+                                                    <Label htmlFor="tenant-store-phone">Teléfono</Label>
                                                     <Input
                                                         id="tenant-store-phone"
                                                         value={storeForm.phone}
@@ -854,7 +1038,7 @@ export default function TenantManagementDialog({
                                                     />
                                                 </div>
                                                 <div className="space-y-1 sm:col-span-2">
-                                                    <Label htmlFor="tenant-store-address">DirecciÃ³n</Label>
+                                                    <Label htmlFor="tenant-store-address">Dirección</Label>
                                                     <Input
                                                         id="tenant-store-address"
                                                         value={storeForm.address}
@@ -916,7 +1100,7 @@ export default function TenantManagementDialog({
                                                     />
                                                 </div>
                                                 <div className="space-y-1 sm:col-span-2">
-                                                    <Label htmlFor="tenant-store-business-name">RazÃ³n social</Label>
+                                                    <Label htmlFor="tenant-store-business-name">Razón social</Label>
                                                     <Input
                                                         id="tenant-store-business-name"
                                                         value={storeForm.businessName ?? ""}
@@ -955,7 +1139,7 @@ export default function TenantManagementDialog({
                                                     />
                                                 </div>
                                                 <div className="space-y-1">
-                                                    <Label htmlFor="tenant-store-sii-code">CÃ³digo SII</Label>
+                                                    <Label htmlFor="tenant-store-sii-code">Código SII</Label>
                                                     <Input
                                                         id="tenant-store-sii-code"
                                                         value={storeForm.cdgSIISucur ?? ""}
@@ -1004,7 +1188,7 @@ export default function TenantManagementDialog({
                                                     <div className="min-w-0">
                                                         <p className="truncate text-xs font-bold text-[#122238]">{store.name}</p>
                                                         <p className="truncate text-[10px] text-[#758296]">
-                                                            {store.email} Â· {store.type ?? "sin tipo"}
+                                                            {store.email} · {store.type ?? "sin tipo"}
                                                         </p>
                                                     </div>
                                                     <button
@@ -1104,12 +1288,11 @@ export default function TenantManagementDialog({
                                     <select
                                         value={nextStatus}
                                         onChange={(event) =>
-                                            setNextStatus(
-                                                event.target.value as Exclude<TenantStatus, "PROVISIONING">,
-                                            )
+                                            setNextStatus(event.target.value as TenantStatus)
                                         }
                                         className="mt-4 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none"
                                     >
+                                        <option value="PROVISIONING">Provisionando</option>
                                         <option value="ACTIVE">Activo</option>
                                         <option value="SUSPENDED">Suspendido</option>
                                         <option value="ARCHIVED">Archivado</option>

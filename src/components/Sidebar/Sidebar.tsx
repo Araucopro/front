@@ -17,20 +17,18 @@ import useQueryParams from "@/hooks/useQueryParams"
 import { Role } from "@/lib/userRoles"
 import { useTienda } from "@/stores/tienda.store"
 import { useAuth } from "@/stores/user.store"
-import { navItems } from "@/utils/navItems"
+import { navItems, type NavigationItem, type NavigationItemStatus } from "@/utils/navItems"
 
-type SidebarSubItem = {
-    label: string
-    route?: string
-    icon?: React.ComponentType<{ className?: string }>
+const statusLabels: Record<NavigationItemStatus, string> = {
+    "in-development": "En desarrollo",
+    "coming-soon": "Próximamente",
 }
 
-type SidebarItem = {
-    label: string
-    route?: string
-    icon: React.ComponentType<{ className?: string }>
-    subItems?: SidebarSubItem[]
-}
+const renameNavigationItem = (item: NavigationItem, targetID: string, label: string): NavigationItem => ({
+    ...item,
+    ...(item.id === targetID ? { label } : {}),
+    subItems: item.subItems?.map((subItem) => renameNavigationItem(subItem, targetID, label)),
+})
 
 const splitRoute = (route: string) => {
     const [path, query = ""] = route.split("?")
@@ -63,43 +61,24 @@ export default function Sidebar() {
         }
     }, [createQueryParam, pathname, router, searchParams, storeSelected])
 
-    const filteredNavItems = useMemo<SidebarItem[]>(() => {
+    const filteredNavItems = useMemo<NavigationItem[]>(() => {
         if (!user) return []
 
-        const items = navItems as SidebarItem[]
-
         if (user.role === Role.Vendedor) {
-            return items.filter(
-                (item) =>
-                    item.label !== "UTI" && item.label !== "Estado de Resultados" && item.label !== "Control de Mando",
-            )
+            return navItems.filter((item) => ["cash", "inventory", "commercial"].includes(item.id))
         }
 
         if (user.role === Role.Consignado) {
-            return items.filter(
-                (item) =>
-                    item.label !== "Caja" &&
-                    item.label !== "Inventario" &&
-                    item.label !== "UTI" &&
-                    item.label !== "Control de Mando" &&
-                    item.label !== "Estado de Resultados",
-            )
+            return navItems.filter((item) => item.id === "commercial")
         }
 
         if (user.role === Role.Tercero) {
-            const renamedItems = items.map((item) => {
-                if (item.label !== "Comercial" || !item.subItems) return item
-
-                return {
-                    ...item,
-                    subItems: item.subItems.map((sub) => (sub.label === "Crear OC" ? { ...sub, label: "Comprar" } : sub)),
-                }
-            })
-
-            return renamedItems.filter((item) => item.label === "Inventario" || item.label === "Comercial")
+            return navItems
+                .filter((item) => item.id === "inventory" || item.id === "commercial")
+                .map((item) => renameNavigationItem(item, "create-purchase-order", "Comprar"))
         }
 
-        return items
+        return navItems
     }, [user])
 
     const shouldShowCollapsed = !isMobile && isCollapsed
@@ -177,34 +156,67 @@ export default function Sidebar() {
         </button>
     )
 
-    const renderSubItem = (sub: SidebarSubItem) => {
+    const hasActiveDescendant = (item: NavigationItem): boolean =>
+        Boolean(item.subItems?.some((child) => isRouteActive(child.route) || hasActiveDescendant(child)))
+
+    const renderStatusBadge = (status?: NavigationItemStatus) =>
+        status ? (
+            <span className="relative z-10 shrink-0 rounded-full border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-amber-700 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                {statusLabels[status]}
+            </span>
+        ) : null
+
+    const renderSubItem = (sub: NavigationItem): React.ReactNode => {
         const Icon = sub.icon
         const isSubActive = isRouteActive(sub.route)
         const isSubPending = pendingRoute === sub.route
+        const hasSubItems = Boolean(sub.subItems?.length)
+        const hasActiveChild = hasActiveDescendant(sub)
+        const isOpen = openSections[sub.id] ?? hasActiveChild
+        const isUnavailable = !sub.route && !hasSubItems
 
         return (
-            <button
-                key={sub.label}
-                onClick={() => handleNavClick(sub.route)}
-                disabled={isSubPending}
-                className={`relative flex h-10 w-full items-center gap-3 overflow-hidden px-6 pl-12 text-left text-[13px] transition-colors ${
-                    isSubPending
-                        ? "cursor-progress bg-[#dcecfb] text-[#12395a] dark:bg-slate-800 dark:text-white"
-                        : isSubActive
-                          ? "bg-[#e8f2fc] font-semibold text-[#0f2a43] dark:bg-slate-800 dark:text-white"
-                          : "text-[#344154] hover:bg-[#f1f5f9] dark:text-slate-300 dark:hover:bg-slate-800"
-                }`}
-            >
-                {isSubPending && <PendingOverlay />}
-                <span className="relative z-10 flex h-4 w-4 items-center justify-center text-[#64748b]">
-                    {isSubPending ? (
-                        <LoaderCircle className="h-4 w-4 animate-spin" />
-                    ) : Icon ? (
-                        <Icon className="h-3.5 w-3.5" />
-                    ) : null}
-                </span>
-                <span className="relative z-10 truncate">{isSubPending ? "Cargando..." : sub.label}</span>
-            </button>
+            <div key={sub.id}>
+                <button
+                    onClick={() => (hasSubItems ? toggleSection(sub.id) : handleNavClick(sub.route))}
+                    disabled={isSubPending}
+                    aria-disabled={isUnavailable}
+                    className={`relative flex min-h-10 w-full items-center gap-2 overflow-hidden py-2 pl-12 pr-3 text-left text-[13px] transition-colors ${
+                        isSubPending
+                            ? "cursor-progress bg-[#dcecfb] text-[#12395a] dark:bg-slate-800 dark:text-white"
+                            : isSubActive || hasActiveChild
+                              ? "bg-[#e8f2fc] font-semibold text-[#0f2a43] dark:bg-slate-800 dark:text-white"
+                              : isUnavailable
+                                ? "cursor-default text-[#64748b] dark:text-slate-400"
+                                : "text-[#344154] hover:bg-[#f1f5f9] dark:text-slate-300 dark:hover:bg-slate-800"
+                    }`}
+                >
+                    {isSubPending && <PendingOverlay />}
+                    <span className={`relative z-10 flex h-4 w-4 shrink-0 items-center justify-center ${sub.iconClassName ?? "text-[#64748b]"}`}>
+                        {isSubPending ? (
+                            <LoaderCircle className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <Icon className="h-3.5 w-3.5" />
+                        )}
+                    </span>
+                    <span className="relative z-10 min-w-0 flex-1 leading-4">
+                        {isSubPending ? "Cargando..." : sub.label}
+                    </span>
+                    {renderStatusBadge(sub.status)}
+                    {hasSubItems && (
+                        <ChevronDown
+                            className={`relative z-10 h-3 w-3 shrink-0 text-[#94a3b8] transition-transform ${isOpen ? "rotate-180" : ""}`}
+                        />
+                    )}
+                </button>
+                {hasSubItems && (
+                    <Collapsible isOpen={isOpen}>
+                        <div className="bg-[#f3f5f8] dark:bg-slate-950">
+                            {sub.subItems?.map(renderSubItem)}
+                        </div>
+                    </Collapsible>
+                )}
+            </div>
         )
     }
 
@@ -265,15 +277,16 @@ export default function Sidebar() {
                             <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3">
                                 {filteredNavItems.map((item, index) => {
                                     const Icon = item.icon
-                                    const sectionId = item.label.toLowerCase().replace(/\s+/g, "")
+                                    const sectionId = item.id
                                     const hasSubItems = Boolean(item.subItems?.length)
-                                    const hasActiveChild = Boolean(item.subItems?.some((sub) => isRouteActive(sub.route)))
+                                    const hasActiveChild = hasActiveDescendant(item)
                                     const isActive = isRouteActive(item.route)
                                     const isPending = pendingRoute === item.route
                                     const isOpen = openSections[sectionId] ?? hasActiveChild
+                                    const isUnavailable = !item.route && !hasSubItems
 
                                     return (
-                                        <MotionItem key={item.label} delay={index}>
+                                        <MotionItem key={item.id} delay={index}>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <button
@@ -286,11 +299,14 @@ export default function Sidebar() {
                                                                 ? "cursor-progress border-[#2d7fb8] bg-[#dcecfb] text-[#0f2a43] dark:bg-slate-800 dark:text-white"
                                                                 : isActive || hasActiveChild
                                                                   ? "border-[#2d7fb8] bg-[#e8f2fc] font-semibold text-[#0f2a43] dark:bg-slate-800 dark:text-white"
-                                                                  : "border-transparent text-[#1f2937] hover:bg-[#f1f5f9] dark:text-slate-300 dark:hover:bg-slate-800"
+                                                                  : isUnavailable
+                                                                    ? "cursor-default border-transparent text-[#64748b] dark:text-slate-400"
+                                                                    : "border-transparent text-[#1f2937] hover:bg-[#f1f5f9] dark:text-slate-300 dark:hover:bg-slate-800"
                                                         }`}
+                                                        aria-disabled={isUnavailable}
                                                     >
                                                         {isPending && <PendingOverlay />}
-                                                        <span className="relative z-10 flex h-5 w-5 flex-shrink-0 items-center justify-center text-[#64748b]">
+                                                        <span className={`relative z-10 flex h-5 w-5 flex-shrink-0 items-center justify-center ${item.iconClassName ?? "text-[#64748b]"}`}>
                                                             {isPending ? (
                                                                 <LoaderCircle className="h-4 w-4 animate-spin" />
                                                             ) : (
@@ -302,6 +318,7 @@ export default function Sidebar() {
                                                                 <span className="relative z-10 min-w-0 flex-1 truncate">
                                                                     {isPending ? "Cargando..." : item.label}
                                                                 </span>
+                                                                {renderStatusBadge(item.status)}
                                                                 {hasSubItems && (
                                                                     <ChevronDown
                                                                         className={`relative z-10 h-3.5 w-3.5 text-[#94a3b8] transition-transform ${

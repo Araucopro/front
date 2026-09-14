@@ -22,6 +22,7 @@ import type {
     ITenantListParams,
     ITenantListResponse,
     ITenantMetrics,
+    IUpdateTenant,
     IUpdateTenantStore,
     IUpdateTenantSubscription,
     IUpdateTenantUser,
@@ -74,6 +75,17 @@ export async function createTenant(payload: ICreateTenant): Promise<ITenant> {
 
     const tenant = await fetcher<ITenant>(`${API_URL}/master/tenants`, {
         method: "POST",
+        body: JSON.stringify(payload),
+    })
+
+    return normalizeTenant(tenant)
+}
+
+export async function updateTenant(tenantId: string, payload: IUpdateTenant): Promise<ITenant> {
+    await assertMasterSession()
+
+    const tenant = await fetcher<ITenant>(tenantPath(tenantId), {
+        method: "PATCH",
         body: JSON.stringify(payload),
     })
 

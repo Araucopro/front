@@ -2,6 +2,7 @@ import { getAllProducts } from "@/actions/products/getAllProducts"
 import { getStoreStockSaleProducts } from "@/actions/inventory/getStoreStock"
 import { getAllPurchaseOrders } from "@/actions/purchase-orders/getAllPurchaseOrders"
 import { getSales } from "@/actions/sales/getSales"
+import { getReturns } from "@/actions/returns/returnActions"
 import { getAllStores } from "@/actions/stores/getAllStores"
 import { getResume } from "@/actions/totals/getResume"
 import { IStore } from "@/interfaces/stores/IStore"
@@ -140,6 +141,24 @@ const enrichSalesProductNames = (sales: ISaleResponse[], products: IProduct[]): 
     }))
 }
 
+const attachReturnsToSales = async (storeID: string): Promise<ISaleResponse[]> => {
+    const [sales, returnOperations] = await Promise.all([
+        getSales(storeID),
+        getReturns(storeID).catch((error) => {
+            console.warn("buildHomeViewModel: no fue posible cargar devoluciones:", error)
+            return []
+        }),
+    ])
+    const returnsBySale = new Map<string, ISaleResponse["Returns"]>()
+    for (const { ret } of returnOperations) {
+        returnsBySale.set(ret.saleID, [...(returnsBySale.get(ret.saleID) ?? []), ret])
+    }
+    return sales.map((sale) => ({
+        ...sale,
+        Returns: returnsBySale.get(sale.saleID) ?? sale.Returns,
+    }))
+}
+
 export type HomeViewModel = {
     stores: IStore[]
     storeID: string
@@ -177,7 +196,9 @@ export const buildHomeViewModel = async (rawStoreID: string, rawDate: string): P
     const storeIndex = buildStoreIndex(stores)
     const chartStoreID = specialFilter ? (stores[0]?.storeID ?? storeID) : storeID
     const salesStores = stores.filter((store) => matchesStoreScope(storeID, store))
-    const salesPromise = Promise.all(salesStores.map((store) => getSales(store.storeID))).then((pages) => pages.flat())
+    const salesPromise = Promise.all(salesStores.map((store) => attachReturnsToSales(store.storeID))).then((pages) =>
+        pages.flat(),
+    )
 
     const [salesSource, resume, allOrders, allProducts, productCatalog] = await Promise.all([
         salesPromise,
