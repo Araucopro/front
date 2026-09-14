@@ -24,13 +24,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import type { IReturn, ReturnType } from "@/interfaces/returns/IReturn"
-import type { ISaleProduct, ISaleResponse } from "@/interfaces/sales/ISale"
+import type { IReturn, IReturnOperationResponse, ReturnType } from "@/interfaces/returns/IReturn"
+import type { ISaleDte, ISaleProduct, ISaleResponse } from "@/interfaces/sales/ISale"
 import { Role } from "@/lib/userRoles"
 import { useAuth } from "@/stores/user.store"
 import { getChileYYYYMMDD } from "@/utils/chile-date"
 import { toPrice } from "@/utils/priceFormat"
-import { LoaderCircle, RotateCcw } from "lucide-react"
+import { FileText, LoaderCircle, RotateCcw } from "lucide-react"
 import { toast } from "sonner"
 
 interface Props {
@@ -77,6 +77,19 @@ const createIdempotencyKey = () => {
     return `return-${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
+const getDocumentUrl = (document: string) =>
+    /^(https?:|data:|blob:)/i.test(document) ? document : `data:application/pdf;base64,${document}`
+
+const openCreditNote = (dte: ISaleDte | null) => {
+    if (!dte?.PDF || typeof window === "undefined") return false
+    const openedWindow = window.open(getDocumentUrl(dte.PDF), "_blank")
+    if (openedWindow) openedWindow.opener = null
+    return openedWindow !== null
+}
+
+const initialReturnOperations = (returns: IReturn[]): IReturnOperationResponse[] =>
+    returns.map((ret) => ({ ret, dte: null }))
+
 export function AnularVentaModal({ isOpen, setIsOpen, sale }: Props) {
     const router = useRouter()
     const { user } = useAuth()
@@ -85,19 +98,22 @@ export function AnularVentaModal({ isOpen, setIsOpen, sale }: Props) {
     const [issueDate, setIssueDate] = useState(() => getChileYYYYMMDD(new Date()))
     const [discountAmount, setDiscountAmount] = useState("")
     const [quantities, setQuantities] = useState<QuantityState>({})
-    const [returns, setReturns] = useState<IReturn[]>(sale.Returns ?? [])
+    const [returnOperations, setReturnOperations] = useState<IReturnOperationResponse[]>(() =>
+        initialReturnOperations(sale.Returns ?? []),
+    )
     const [isLoadingReturns, setIsLoadingReturns] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [activeActionID, setActiveActionID] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
     const isAdmin = user?.role === Role.Admin
+    const returns = useMemo(() => returnOperations.map((operation) => operation.ret), [returnOperations])
 
     const loadReturns = useCallback(async () => {
         if (!sale.storeID || !sale.saleID) return
         setIsLoadingReturns(true)
         try {
             const response = await getReturns(sale.storeID, { saleID: sale.saleID })
-            setReturns(response.map((operation) => operation.ret))
+            setReturnOperations(response)
         } catch (loadError) {
             toast.error(loadError instanceof Error ? loadError.message : "No fue posible cargar las devoluciones.")
         } finally {
@@ -112,7 +128,7 @@ export function AnularVentaModal({ isOpen, setIsOpen, sale }: Props) {
         setIssueDate(getChileYYYYMMDD(new Date()))
         setDiscountAmount("")
         setQuantities({})
-        setReturns(sale.Returns ?? [])
+        setReturnOperations(initialReturnOperations(sale.Returns ?? []))
         setError(null)
         void loadReturns()
     }, [isOpen, loadReturns, sale.Returns])
@@ -201,11 +217,20 @@ export function AnularVentaModal({ isOpen, setIsOpen, sale }: Props) {
                 },
                 createIdempotencyKey(),
             )
-            setReturns((current) => [operation.ret, ...current.filter((ret) => ret.returnID !== operation.ret.returnID)])
+            setReturnOperations((current) => [
+                operation,
+                ...current.filter(({ ret }) => ret.returnID !== operation.ret.returnID),
+            ])
             setQuantities({})
             setDiscountAmount("")
             setReason("")
-            toast.success("Devolución registrada y enviada a aprobación.")
+            const openedCreditNote = openCreditNote(operation.dte)
+            const folio = operation.dte?.FOLIO ? ` Folio ${operation.dte.FOLIO}.` : ""
+            toast.success(
+                operation.dte
+                    ? `Devolución registrada. Nota de crédito emitida.${folio}${openedCreditNote ? "" : " Puedes abrirla desde la solicitud."}`
+                    : "Devolución registrada y enviada a aprobación.",
+            )
             router.refresh()
         } catch (submitError) {
             const message = submitError instanceof Error ? submitError.message : "No fue posible registrar la devolución."
@@ -227,12 +252,20 @@ export function AnularVentaModal({ isOpen, setIsOpen, sale }: Props) {
                       : transition === "cancel"
                         ? await cancelReturn(ret.returnID, sale.storeID)
                         : await reconcileReturn(ret.returnID, sale.storeID)
-            setReturns((current) =>
-                current.map((item) => (item.returnID === operation.ret.returnID ? operation.ret : item)),
+            setReturnOperations((current) =>
+                current.map((item) =>
+                    item.ret.returnID === operation.ret.returnID
+                        ? { ...operation, dte: operation.dte ?? item.dte }
+                        : item,
+                ),
             )
+            const openedCreditNote = openCreditNote(operation.dte)
+            const folio = operation.dte?.FOLIO ? ` Folio ${operation.dte.FOLIO}.` : ""
             toast.success(
                 transition === "approve"
-                    ? "Devolución aprobada."
+                    ? operation.dte
+                        ? `Devolución aprobada. Nota de crédito emitida.${folio}${openedCreditNote ? "" : " Puedes abrirla desde la solicitud."}`
+                        : "Devolución aprobada."
                     : transition === "reject"
                       ? "Devolución rechazada."
                       : transition === "cancel"
@@ -269,7 +302,7 @@ export function AnularVentaModal({ isOpen, setIsOpen, sale }: Props) {
                                 {isLoadingReturns && <LoaderCircle className="h-4 w-4 animate-spin" />}
                             </div>
                             <div className="space-y-2">
-                                {returns.map((ret) => (
+                                {returnOperations.map(({ ret, dte }) => (
                                     <div key={ret.returnID} className="flex flex-col gap-3 rounded-md border bg-white p-3 dark:bg-slate-800 sm:flex-row sm:items-center sm:justify-between">
                                         <div>
                                             <p className="text-sm font-semibold">
@@ -283,6 +316,13 @@ export function AnularVentaModal({ isOpen, setIsOpen, sale }: Props) {
                                             </p>
                                         </div>
                                         <div className="flex flex-wrap gap-2">
+                                            {dte?.PDF && (
+                                                <Button type="button" size="sm" variant="outline" asChild>
+                                                    <a href={getDocumentUrl(dte.PDF)} target="_blank" rel="noreferrer">
+                                                        <FileText /> Nota de crédito
+                                                    </a>
+                                                </Button>
+                                            )}
                                             {ret.status === "PENDIENTE" && isAdmin && (
                                                 <>
                                                     <Button type="button" size="sm" onClick={() => void runTransition(ret, "approve")} disabled={activeActionID !== null}>Aprobar</Button>
