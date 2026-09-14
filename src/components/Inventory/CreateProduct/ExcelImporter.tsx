@@ -15,7 +15,6 @@ const REQUIRED_COLUMNS = [
     "Producto",
     "Género",
     "Marca",
-    "Categoría",
     "Talla",
     "Precio Costo Neto",
     "Precio Plaza",
@@ -31,7 +30,11 @@ function validateExcelRows(rows: any[]): string | null {
     for (const col of REQUIRED_COLUMNS) {
         if (!cols.includes(col)) return `Falta la columna obligatoria: ${col}`
     }
-    const ALLOW_EMPTY = ["Género", "Marca", "Categoría", "Talla", "Código EAN"]
+    if (!cols.includes("Categoría") && !cols.includes("Categoría padre")) {
+        return 'Falta la columna obligatoria: "Categoría" o "Categoría padre"'
+    }
+
+    const ALLOW_EMPTY = ["Género", "Marca", "Talla", "Código EAN"]
     const skuRows = new Map<string, number>()
 
     for (let i = 0; i < rows.length; i++) {
@@ -86,7 +89,11 @@ export function ExcelImporter({ categories, disabled = false }: { categories: IC
                 for (const row of json) {
                     const genre = (normalizeExcelText(row["Género"]) || "Unisex") as Genre
                     const brand = (normalizeExcelText(row["Marca"]) || "Otro") as Brand
-                    const categoryName = normalizeExcelText(row["Categoría"]) || "Otro"
+                    const categoryName =
+                        normalizeExcelText(row["Subcategoría"]) ||
+                        normalizeExcelText(row["Categoría padre"]) ||
+                        normalizeExcelText(row["Categoría"]) ||
+                        "Otro"
                     const catId = findCategoryIdByName(categories, categoryName)
 
                     const defaultImage = ""

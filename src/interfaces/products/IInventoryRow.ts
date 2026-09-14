@@ -3,7 +3,8 @@ export interface InventoryRow {
     Imagen: string
     Género: string
     Marca: string
-    Categoría: string
+    "Categoría padre": string
+    Subcategoría: string
     Talla: string | number | null
     Cantidad: number
     "Precio Costo Neto": string | number
