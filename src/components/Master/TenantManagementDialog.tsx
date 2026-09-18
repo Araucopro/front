@@ -74,7 +74,6 @@ const USER_ROLE_OPTIONS: Array<{ value: UserRole; label: string }> = [
     { value: "store_manager", label: "Vendedor" },
     { value: "consignado", label: "Consignado" },
     { value: "tercero", label: "Tercero" },
-    { value: "system", label: "Sistema" },
 ]
 
 type DirectoryForm = "user" | "store" | null
