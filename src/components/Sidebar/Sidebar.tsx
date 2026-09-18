@@ -65,7 +65,7 @@ export default function Sidebar() {
         if (!user) return []
 
         if (user.role === Role.Vendedor) {
-            return navItems.filter((item) => ["cash", "inventory", "commercial"].includes(item.id))
+            return navItems.filter((item) => ["cash", "cash-registers", "inventory", "commercial"].includes(item.id))
         }
 
         if (user.role === Role.Consignado) {

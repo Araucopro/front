@@ -7,6 +7,7 @@ import {
     FaBuilding,
     FaChartBar,
     FaChartLine,
+    FaCashRegister,
     FaCog,
     FaExchangeAlt,
     FaFileAlt,
@@ -42,6 +43,13 @@ export const navItems: NavigationItem[] = [
         route: "/home",
         icon: FaHome,
         iconClassName: "text-[#ef6b5b]",
+    },
+    {
+        id: "cash-registers",
+        label: "Cajas",
+        route: "/home/cajas",
+        icon: FaCashRegister,
+        iconClassName: "text-[#0f766e]",
     },
     {
         id: "inventory",
