@@ -95,22 +95,14 @@ export default function LoginScreen() {
                 transition={{ duration: 0.4, ease: "easeOut" }}
                 className="relative z-10 w-full max-w-[420px] rounded-[20px] border border-white/70 bg-[#fbfbfb]/95 px-7 py-10 shadow-[0_24px_70px_rgba(22,69,49,0.18)] backdrop-blur-xl transition-colors dark:border-white/10 dark:bg-[#101f20]/95 dark:shadow-[0_24px_70px_rgba(0,0,0,0.42)] sm:px-11 sm:py-11"
             >
-                <div className="relative mx-auto mb-5 h-32 w-32" aria-label="AraucoPro Software Retail">
+                <div className="relative mx-auto mb-5 h-32 w-32 overflow-hidden rounded-full" aria-label="AraucoPro CRM">
                     <Image
-                        src="/brand/araucoPro.png"
-                        alt="AraucoPro Software Retail"
+                        src="/brand/ARAUCOLOGO.jpeg"
+                        alt="AraucoPro CRM"
                         fill
                         priority
                         sizes="128px"
-                        className="object-contain dark:hidden"
-                    />
-                    <Image
-                        src="/brand/araucoProDark.png"
-                        alt="AraucoPro Software Retail"
-                        fill
-                        priority
-                        sizes="128px"
-                        className="hidden object-contain dark:block"
+                        className="object-cover"
                     />
                 </div>
 

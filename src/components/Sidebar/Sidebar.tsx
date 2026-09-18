@@ -231,19 +231,19 @@ export default function Sidebar() {
                     }`}
                 >
                     <SidebarTransition isCollapsed={shouldShowCollapsed}>
-                        <div className="flex h-screen flex-col overflow-hidden border-r border-[#dde3ea] bg-[#fbfbfd] text-[#263447] shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
+                        <div className="flex h-svh flex-col overflow-hidden border-r border-[#dde3ea] bg-[#fbfbfd] text-[#263447] shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
                             <header className="border-b border-[#e2e8f0] px-5 pb-3 pt-4 dark:border-slate-800">
                                 <div className="flex items-start justify-between gap-2">
                                     {!shouldShowCollapsed && (
                                         <div className="flex min-w-0 items-center gap-3">
-                                            <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-[10px] bg-[#0f2f22]">
+                                            <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-[#0f2f22]">
                                                 <Image
-                                                    src="/brand/araucoPro.png"
-                                                    alt="AraucoPro"
+                                                    src="/brand/ARAUCOLOGO.jpeg"
+                                                    alt="ARAUCOPRO"
                                                     fill
                                                     priority
                                                     sizes="40px"
-                                                    className="object-contain p-1"
+                                                    className="object-cover"
                                                 />
                                             </div>
                                             <div className="min-w-0">

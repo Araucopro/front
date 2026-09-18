@@ -77,14 +77,14 @@ type HistoryEvent = {
     date: string
 }
 
-const tabs: Array<{ id: WorkerDetailTab; label: string; icon: ComponentType<{ className?: string }> }> = [
+const tabs: Array<{ id: WorkerDetailTab; label: string; icon: ComponentType<{ className?: string }>; development?: boolean }> = [
     { id: "personal", label: "Personal", icon: User },
-    { id: "contract", label: "Contrato", icon: ClipboardList },
+    { id: "contract", label: "Contrato", icon: ClipboardList, development: true },
     { id: "access", label: "Acceso", icon: LockKeyhole },
-    { id: "permissions", label: "Permisos", icon: CheckSquare },
-    { id: "discounts", label: "Descuentos", icon: BadgePercent },
-    { id: "history", label: "Historial", icon: Folder },
-    { id: "hr", label: "RRHH", icon: BriefcaseBusiness },
+    { id: "permissions", label: "Permisos", icon: CheckSquare, development: true },
+    { id: "discounts", label: "Descuentos", icon: BadgePercent, development: true },
+    { id: "history", label: "Historial", icon: Folder, development: true },
+    { id: "hr", label: "RRHH", icon: BriefcaseBusiness, development: true },
 ]
 
 const moduleOptions: ModuleOption[] = [
@@ -378,7 +378,7 @@ export default function HumanResourcesWorkerDetailDialog({
             },
         ])
         setHistoryDraft({ type: historyDraft.type, title: "", detail: "" })
-        toast.info("Evento agregado en mock hasta conectar historial RH")
+        toast.info("Historial: En desarrollo. Este evento aún no se guarda en el API")
     }
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -405,7 +405,7 @@ export default function HumanResourcesWorkerDetailDialog({
                 ...(accessData.password.trim() ? { password: accessData.password.trim() } : {}),
             })
             toast.success("Trabajador actualizado")
-            toast.info("Los datos laborales/RH siguen como mock hasta conectar los endpoints del ticket 2")
+            toast.info("Las secciones marcadas En desarrollo no se guardan todavía")
             await onSaved()
             onOpenChange(false)
         } catch (error) {
@@ -449,6 +449,11 @@ export default function HumanResourcesWorkerDetailDialog({
                                     >
                                         <Icon className="h-4 w-4 text-violet-600" />
                                         {tab.label}
+                                        {tab.development && (
+                                            <span className="rounded-full border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[8px] font-bold uppercase text-amber-700">
+                                                En desarrollo
+                                            </span>
+                                        )}
                                     </button>
                                 )
                             })}
@@ -458,19 +463,22 @@ export default function HumanResourcesWorkerDetailDialog({
                     <div className="flex-1 overflow-y-auto px-6 py-6">
                         {activeTab === "personal" && (
                             <div className="space-y-8">
+                                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+                                    Solo el nombre se guarda actualmente. RUT, nacimiento y contacto están <strong>En desarrollo</strong> hasta que el API los admita.
+                                </div>
                                 <SectionTitle>Identificacion</SectionTitle>
                                 <div className="grid gap-5 md:grid-cols-2">
                                     <Field label="Nombre completo">
                                         <Input value={personalData.name} onChange={(event) => updatePersonalData("name", event.target.value)} />
                                     </Field>
                                     <Field label="RUT">
-                                        <Input value={personalData.rut} onChange={(event) => updatePersonalData("rut", event.target.value)} />
+                                        <Input value={personalData.rut} onChange={(event) => updatePersonalData("rut", event.target.value)} disabled title="En desarrollo" />
                                     </Field>
                                     <Field label="Fecha de nacimiento">
-                                        <Input type="date" value={personalData.birthDate} onChange={(event) => updatePersonalData("birthDate", event.target.value)} />
+                                        <Input type="date" value={personalData.birthDate} onChange={(event) => updatePersonalData("birthDate", event.target.value)} disabled title="En desarrollo" />
                                     </Field>
                                     <Field label="Telefono">
-                                        <Input value={personalData.phone} onChange={(event) => updatePersonalData("phone", event.target.value)} />
+                                        <Input value={personalData.phone} onChange={(event) => updatePersonalData("phone", event.target.value)} disabled title="En desarrollo" />
                                     </Field>
                                 </div>
 
@@ -478,10 +486,10 @@ export default function HumanResourcesWorkerDetailDialog({
                                 <SectionTitle>Contacto</SectionTitle>
                                 <div className="space-y-5">
                                     <Field label="Email">
-                                        <Input type="email" value={personalData.email} onChange={(event) => updatePersonalData("email", event.target.value)} />
+                                        <Input type="email" value={personalData.email} onChange={(event) => updatePersonalData("email", event.target.value)} disabled title="En desarrollo" />
                                     </Field>
                                     <Field label="Domicilio personal">
-                                        <Input value={personalData.address} onChange={(event) => updatePersonalData("address", event.target.value)} />
+                                        <Input value={personalData.address} onChange={(event) => updatePersonalData("address", event.target.value)} disabled title="En desarrollo" />
                                     </Field>
                                 </div>
                             </div>
@@ -556,7 +564,10 @@ export default function HumanResourcesWorkerDetailDialog({
                                 </Field>
 
                                 <div>
-                                    <SectionTitle>Modulos accesibles</SectionTitle>
+                                    <div className="flex items-center gap-2">
+                                        <SectionTitle>Modulos accesibles</SectionTitle>
+                                        <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">En desarrollo</Badge>
+                                    </div>
                                     <p className="mt-2 text-sm text-slate-500 dark:text-slate-300">
                                         Los modulos del rol base estan marcados. Puedes agregar modulos extra para este usuario especifico.
                                     </p>
