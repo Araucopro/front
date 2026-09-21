@@ -52,7 +52,7 @@ export default function AccessSelector({ initialTenants, initialError }: AccessS
     const [isEntering, setIsEntering] = useState(false)
     const [isLoggingOut, setIsLoggingOut] = useState(false)
 
-    const tenants = initialTenants?.items ?? []
+    const tenants = useMemo(() => initialTenants?.items ?? [], [initialTenants?.items])
     const filteredTenants = useMemo(() => {
         const query = normalizeSearch(search)
         if (!query) return tenants

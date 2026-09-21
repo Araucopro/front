@@ -11,7 +11,7 @@ import { useAuth } from "@/stores/user.store"
 import { Role } from "@/lib/userRoles"
 import { inventoryStore } from "@/stores/inventory.store"
 import { useTienda } from "@/stores/tienda.store"
-import Image from "next/image"
+import { SafeImage as Image } from "@/components/ui/safe-image"
 import useQueryParams from "@/hooks/useQueryParams"
 import { findProductBySku } from "@/utils/findProductBySku"
 import { toPrice } from "@/utils/priceFormat"
@@ -25,6 +25,7 @@ import type { IProduct } from "@/interfaces/products/IProduct"
 import type { IStoreProduct } from "@/interfaces/products/IProductVariation"
 import type { IUpdatePriceResponse } from "@/interfaces/pricing/IPricing"
 import { PricingModal } from "./PricingModal"
+import { getProductCategoryName } from "@/utils/categoryName"
 
 interface InventoryTableProps {
     currentItems: FlattenedItem[]
@@ -43,40 +44,6 @@ const calculateMarkup = (priceCost: number, priceList: number): string => {
     if (priceCost === 0) return "N/A"
     const markup = priceList / priceCost
     return markup.toFixed(2)
-}
-
-const getCategoryChildren = (category: ICategory): ICategory[] => {
-    const categoryWithChildren = category as ICategory & { children?: ICategory[] }
-    return category.subcategories ?? categoryWithChildren.children ?? []
-}
-
-const findCategoryById = (
-    categories: ICategory[],
-    categoryID: string,
-    parent: ICategory | null = null,
-): { category: ICategory; parent: ICategory | null } | null => {
-    for (const category of categories) {
-        if (category.categoryID === categoryID) {
-            return { category, parent }
-        }
-
-        const childMatch = findCategoryById(getCategoryChildren(category), categoryID, category)
-        if (childMatch) return childMatch
-    }
-
-    return null
-}
-
-const getCategoryFullNameFromProduct = (product: IRawProduct, categories: ICategory[]): string => {
-    const categoryID = product.category?.categoryID || product.categoryID
-    if (!categoryID) return "-"
-
-    const match = findCategoryById(categories, categoryID)
-    const category = match?.category ?? product.category
-    if (!category?.name) return "-"
-
-    const parent = match?.parent ?? categories.find((c) => c.categoryID === category.parentID)
-    return parent?.name ? `${parent.name} / ${category.name}` : category.name
 }
 
 export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProduct, categories }: InventoryTableProps) {
@@ -173,7 +140,7 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                                         <div className="relative">
                                                             <div className="relative group transition-transform transform hover:scale-105">
                                                                 <Image
-                                                                    src={product.image || "/placeholder.svg"}
+                                                                    src={product.image}
                                                                     alt={product.name}
                                                                     width={200}
                                                                     height={200}
@@ -273,7 +240,7 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
 
                                         {/* Columna CATEGORIA */}
                                         <TableCell className="text-center dark:hover:bg-gray-900 hover:bg-gray-100 py-2">
-                                            {getCategoryFullNameFromProduct(product, categories)}
+                                            {getProductCategoryName(product, categories, "-")}
                                         </TableCell>
 
                                         {/* Columna PRECIO COSTO se muestra solo si es admin */}

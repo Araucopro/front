@@ -27,10 +27,10 @@ type HumanResourcesWorkersProps = {
     loadError?: string
 }
 
-const tabs: Array<{ id: WorkersTab; label: string }> = [
+const tabs: Array<{ id: WorkersTab; label: string; development?: boolean }> = [
     { id: "workers", label: "Trabajadores" },
-    { id: "requests", label: "Solicitudes" },
-    { id: "vacations", label: "Vacaciones" },
+    { id: "requests", label: "Solicitudes", development: true },
+    { id: "vacations", label: "Vacaciones", development: true },
 ]
 
 const ALL_ROLES_VALUE = "ALL"
@@ -271,6 +271,11 @@ export default function HumanResourcesWorkers({ initialData, roles, stores, load
                             )}
                         >
                             {tab.label}
+                            {tab.development && (
+                                <span className="ml-2 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[9px] font-bold uppercase text-amber-700">
+                                    En desarrollo
+                                </span>
+                            )}
                         </button>
                     ))}
                 </div>
@@ -371,7 +376,7 @@ export default function HumanResourcesWorkers({ initialData, roles, stores, load
                     </div>
                     <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
                         <p className="text-sm text-slate-600 dark:text-slate-300">
-                            Las solicitudes siguen como mock hasta conectar el endpoint de permisos.
+                            El API actual permite registrar permisos como una excepción de asistencia, pero todavía no incluye un flujo de solicitud y aprobación.
                         </p>
                     </div>
                 </div>
@@ -379,7 +384,7 @@ export default function HumanResourcesWorkers({ initialData, roles, stores, load
 
             {activeTab === "vacations" && (
                 <div className="rounded-lg border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                    No hay vacaciones programadas en el mock actual.
+                    La planificación y aprobación de vacaciones está en desarrollo. Las vacaciones registradas ya se visualizan en el calendario de asistencia.
                 </div>
             )}
 
@@ -455,8 +460,9 @@ function WorkerRow({ user, pendingCount, onOpen }: { user: IUser; pendingCount: 
                 </div>
 
                 <div className="flex items-center justify-end gap-3">
-                    <div onClick={(event) => event.stopPropagation()}>
-                        <Switch checked={active} className="data-[state=checked]:bg-slate-700" />
+                    <div className="flex flex-col items-end gap-1" onClick={(event) => event.stopPropagation()} title="Cambio de estado en desarrollo">
+                        <Switch checked={active} disabled className="data-[state=checked]:bg-slate-700" />
+                        <span className="text-[9px] font-bold uppercase text-amber-600">En desarrollo</span>
                     </div>
                     {pendingCount > 0 && (
                         <div className="rounded-lg bg-amber-100 px-4 py-2 text-center text-xs font-bold text-amber-800">

@@ -74,12 +74,12 @@ type PermissionOption = {
     authorizer?: string
 }
 
-const tabs: Array<{ id: NewUserTab; label: string; icon: React.ComponentType<{ className?: string }> }> = [
+const tabs: Array<{ id: NewUserTab; label: string; icon: React.ComponentType<{ className?: string }>; development?: boolean }> = [
     { id: "personal", label: "Datos personales", icon: User },
     { id: "access", label: "Acceso y modulos", icon: LockKeyhole },
-    { id: "permissions", label: "Permisos", icon: CheckSquare },
-    { id: "discounts", label: "Descuentos", icon: BadgePercent },
-    { id: "history", label: "Historial", icon: ClipboardList },
+    { id: "permissions", label: "Permisos", icon: CheckSquare, development: true },
+    { id: "discounts", label: "Descuentos", icon: BadgePercent, development: true },
+    { id: "history", label: "Historial", icon: ClipboardList, development: true },
 ]
 
 const moduleOptions: ModuleOption[] = [
@@ -284,9 +284,9 @@ export default function NewHumanResourcesUserDialog({
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault()
 
-        if (!personalData.name.trim() || !personalData.rut.trim() || !personalData.email.trim() || !personalData.startDate) {
+        if (!personalData.name.trim() || !personalData.email.trim()) {
             setActiveTab("personal")
-            toast.error("Completa los datos personales obligatorios")
+            toast.error("Completa el nombre y el correo")
             return
         }
 
@@ -311,16 +311,6 @@ export default function NewHumanResourcesUserDialog({
             }
 
             toast.success("Usuario creado exitosamente")
-            if (
-                personalData.rut ||
-                personalData.address ||
-                personalData.birthDate ||
-                selectedPermissions.length > 0 ||
-                discountPercent > 0 ||
-                historyNote.trim()
-            ) {
-                toast.info("Los datos propios de RRHH quedaron como mock hasta tener contrato de backend")
-            }
             resetForm()
             onOpenChange(false)
             await onCreated()
@@ -361,6 +351,11 @@ export default function NewHumanResourcesUserDialog({
                                     >
                                         <Icon className="h-4 w-4 text-violet-600" />
                                         {tab.label}
+                                        {tab.development && (
+                                            <span className="rounded-full border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[8px] font-bold uppercase text-amber-700">
+                                                En desarrollo
+                                            </span>
+                                        )}
                                     </button>
                                 )
                             })}
@@ -370,6 +365,9 @@ export default function NewHumanResourcesUserDialog({
                     <div className="max-h-[62vh] overflow-y-auto px-6 py-5">
                         {activeTab === "personal" && (
                             <div className="grid gap-5 md:grid-cols-2">
+                                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 md:col-span-2">
+                                    El API actual guarda nombre y correo. Los datos laborales adicionales están <strong>En desarrollo</strong>.
+                                </div>
                                 <Field label="Nombre completo *">
                                     <Input
                                         value={personalData.name}
@@ -377,11 +375,12 @@ export default function NewHumanResourcesUserDialog({
                                         placeholder="Nombre y apellido"
                                     />
                                 </Field>
-                                <Field label="RUT *">
+                                <Field label="RUT · En desarrollo">
                                     <Input
                                         value={personalData.rut}
                                         onChange={(event) => updatePersonalData("rut", event.target.value)}
                                         placeholder="12.345.678-9"
+                                        disabled
                                     />
                                 </Field>
                                 <Field label="Domicilio personal" className="md:col-span-2">
@@ -389,6 +388,7 @@ export default function NewHumanResourcesUserDialog({
                                         value={personalData.address}
                                         onChange={(event) => updatePersonalData("address", event.target.value)}
                                         placeholder="Calle, numero, ciudad"
+                                        disabled
                                     />
                                 </Field>
                                 <Field label="Email *">
@@ -404,13 +404,15 @@ export default function NewHumanResourcesUserDialog({
                                         value={personalData.phone}
                                         onChange={(event) => updatePersonalData("phone", event.target.value)}
                                         placeholder="+56 9 XXXX XXXX"
+                                        disabled
                                     />
                                 </Field>
-                                <Field label="Fecha de inicio *">
+                                <Field label="Fecha de inicio · En desarrollo">
                                     <Input
                                         type="date"
                                         value={personalData.startDate}
                                         onChange={(event) => updatePersonalData("startDate", event.target.value)}
+                                        disabled
                                     />
                                 </Field>
                                 <Field label="Fecha de nacimiento">
@@ -418,11 +420,12 @@ export default function NewHumanResourcesUserDialog({
                                         type="date"
                                         value={personalData.birthDate}
                                         onChange={(event) => updatePersonalData("birthDate", event.target.value)}
+                                        disabled
                                     />
                                 </Field>
                                 <Field label="Tipo de contrato">
-                                    <Select value={personalData.contractType} onValueChange={(value) => updatePersonalData("contractType", value)}>
-                                        <SelectTrigger>
+                                    <Select value={personalData.contractType} onValueChange={(value) => updatePersonalData("contractType", value)} disabled>
+                                        <SelectTrigger title="En desarrollo">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -435,8 +438,8 @@ export default function NewHumanResourcesUserDialog({
                                     </Select>
                                 </Field>
                                 <Field label="Jornada laboral">
-                                    <Select value={personalData.workdayType} onValueChange={(value) => updatePersonalData("workdayType", value)}>
-                                        <SelectTrigger>
+                                    <Select value={personalData.workdayType} onValueChange={(value) => updatePersonalData("workdayType", value)} disabled>
+                                        <SelectTrigger title="En desarrollo">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -456,6 +459,7 @@ export default function NewHumanResourcesUserDialog({
                                         value={personalData.weeklyHours}
                                         onChange={(event) => updatePersonalData("weeklyHours", event.target.value)}
                                         placeholder="42"
+                                        disabled
                                     />
                                     <p className="mt-2 text-xs text-slate-500">Ordinaria max. 42 h. Con HH.EE.: tope 56 h.</p>
                                 </Field>
@@ -524,7 +528,10 @@ export default function NewHumanResourcesUserDialog({
                                 </div>
 
                                 <div>
-                                    <SectionLabel>Modulos accesibles</SectionLabel>
+                                    <div className="flex items-center gap-2">
+                                        <SectionLabel>Modulos accesibles</SectionLabel>
+                                        <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">En desarrollo</Badge>
+                                    </div>
                                     <p className="mt-2 text-sm text-slate-500 dark:text-slate-300">
                                         Los modulos del rol base estan marcados en violeta. Puedes agregar extras en verde.
                                     </p>
@@ -538,6 +545,8 @@ export default function NewHumanResourcesUserDialog({
                                                     key={module.key}
                                                     type="button"
                                                     onClick={() => toggleExtraModule(module.key)}
+                                                    disabled
+                                                    title="En desarrollo"
                                                     className={cn(
                                                         "flex min-h-10 items-center gap-2 rounded-lg border px-4 py-2 text-left text-sm font-semibold transition-colors",
                                                         isBase

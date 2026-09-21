@@ -9,10 +9,11 @@ import { Role } from "@/lib/userRoles"
 import type { IStore } from "@/interfaces/stores/IStore"
 import type { IRawProduct } from "@/interfaces/products/IRawProduct"
 import type { FlattenedItem } from "@/interfaces/products/IFlatternProduct"
+import type { ICategory } from "@/interfaces/categories/ICategory"
 
 const ITEMS_PER_PAGE = 20
 
-export function useInventory(initialProducts: IRawProduct[], stores: IStore[]) {
+export function useInventory(initialProducts: IRawProduct[], stores: IStore[], categories: ICategory[]) {
     const { user } = useAuth()
     const { storeSelected } = useTienda()
     const { rawProducts, setRawProducts, columnFilters, currentPage, setCurrentPage } = inventoryStore()
@@ -36,8 +37,8 @@ export function useInventory(initialProducts: IRawProduct[], stores: IStore[]) {
     const adminStoreIDs = useMemo(() => stores.filter((s) => s.isAdminStore).map((s) => s.storeID), [stores])
 
     const result = useMemo(() => {
-        return applyColumnFilters(rawProducts, columnFilters)
-    }, [rawProducts, columnFilters])
+        return applyColumnFilters(rawProducts, columnFilters, categories)
+    }, [rawProducts, columnFilters, categories])
 
     const filteredProducts = result.filteredProducts
     const totalStock = result.totalStock

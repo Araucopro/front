@@ -4,6 +4,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Search, X, ChevronUp, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import type { ICategory } from "@/interfaces/categories/ICategory"
+import { getProductCategoryName } from "@/utils/categoryName"
 
 interface ColumnFiltersProps {
     filters: {
@@ -183,7 +185,7 @@ export function ColumnFilters({ filters, onFilterChange, onClearFilters }: Colum
 }
 
 // Helper function to apply filters - ACTUALIZADA para búsqueda exacta en campos numéricos
-export function applyColumnFilters(products: any[], filters: any) {
+export function applyColumnFilters(products: any[], filters: any, categories: ICategory[] = []) {
     const filteredProducts = products.filter((product) => {
         // PRODUCTO filter (name, sku, genre)
         if (filters.producto.trim()) {
@@ -206,7 +208,7 @@ export function applyColumnFilters(products: any[], filters: any) {
 
         // CATEGORÍA filter
         if (filters.categoria.trim()) {
-            const categoryName = product.category?.name || ""
+            const categoryName = getProductCategoryName(product, categories)
             if (!matchesAllTokens(categoryName, getSearchTokens(filters.categoria))) return false
         }
 

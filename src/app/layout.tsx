@@ -3,8 +3,12 @@ import { Toaster } from "sonner"
 import "../styles/globals.css"
 
 export const metadata: Metadata = {
-    title: "D3SI App ERP",
-    description: "Sistema gestión de inventario, ventas y usuarios",
+    title: "ARAUCOPRO",
+    description: "ARAUCOPRO - Sistema de gestión de inventario, ventas y usuarios",
+    icons: {
+        icon: [{ url: "/brand/ARAUCOLOGO.jpeg", type: "image/jpeg" }],
+        apple: [{ url: "/brand/ARAUCOLOGO.jpeg", type: "image/jpeg" }],
+    },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
