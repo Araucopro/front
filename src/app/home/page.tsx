@@ -1,5 +1,5 @@
 import { checkStatus } from "@/actions/auth/authActions"
-import { getUserStores } from "@/actions/users/getUserStores"
+import { getAllStores } from "@/actions/stores/getAllStores"
 import HomeDashboard from "../../components/Home/HomeDashboard"
 import { buildHomeViewModel } from "../../components/Home/home-view-model"
 
@@ -15,8 +15,8 @@ export default async function HomePage({ searchParams }: SearchParams) {
     let effectiveStoreID = storeID
     if (!effectiveStoreID) {
         const auth = await checkStatus().catch(() => null)
-        const userStores = auth?.user?.userID ? await getUserStores(auth.user.userID) : []
-        effectiveStoreID = userStores[0]?.storeID ?? ""
+        const stores = auth?.user ? await getAllStores() : []
+        effectiveStoreID = stores[0]?.storeID ?? ""
     }
 
     const viewModel = await buildHomeViewModel(effectiveStoreID, date)
