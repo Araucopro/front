@@ -1,7 +1,7 @@
 "use client"
 
 import { ChangeEvent, KeyboardEvent, useEffect, useMemo, useState } from "react"
-import Image from "next/image"
+import { SafeImage as Image } from "@/components/ui/safe-image"
 import { useRouter } from "next/navigation"
 import {
     AlertCircle,
@@ -1363,15 +1363,13 @@ export default function DispatchGuidesClient({
                                                 <TableRow key={item.storeProductID}>
                                                     <TableCell>
                                                         <div className="flex items-center gap-3">
-                                                            {item.productImage && (
-                                                                <Image
-                                                                    src={item.productImage}
-                                                                    alt={item.productName}
-                                                                    width={40}
-                                                                    height={40}
-                                                                    className="h-10 w-10 rounded object-cover"
-                                                                />
-                                                            )}
+                                                            <Image
+                                                                src={item.productImage}
+                                                                alt={item.productName}
+                                                                width={40}
+                                                                height={40}
+                                                                className="h-10 w-10 rounded object-cover"
+                                                            />
                                                             <div>
                                                                 <p className="font-medium">{item.productName} - {item.sizeNumber}</p>
                                                                 <p className="text-xs text-slate-500">SKU {item.sku}</p>
