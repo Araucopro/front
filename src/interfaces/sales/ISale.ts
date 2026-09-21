@@ -20,6 +20,14 @@ export interface ISaleItemRequest {
     quantity: number
 }
 
+export interface ISalePaymentRequest {
+    paymentMethodID: string
+    amount: number
+    authorizationCode?: string
+    transactionID?: string
+    reference?: string
+}
+
 export interface ISaleReceiver {
     rut: string
     name: string
@@ -35,6 +43,8 @@ export interface ISaleRequest {
     issueDate?: string
     receiver?: ISaleReceiver
     items: ISaleItemRequest[]
+    cashRegisterID?: string
+    payments?: ISalePaymentRequest[]
 }
 
 export interface ISaleDte {

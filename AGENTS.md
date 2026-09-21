@@ -10,7 +10,8 @@ Este proyecto es un frontend Next.js App Router para un ERP retail: caja/ventas,
 - Peticiones: funciones de dominio en `src/actions/**` que llaman al backend con `src/lib/fetcher.ts`.
 - Alias: usar `@/` para importar desde `src`.
 - Estilos globales: `src/styles/globals.css`, `theme.css`, `tailwind-theme.css`, `fonts.css`.
-- Contratos disponibles: `swagger.json` y `backend-json/routes/**`, `backend-json/dtos/**`.
+- Fuente de verdad de contratos: Scalar publicado por el backend en `https://araucopro-back-multitenant.up.railway.app/docs`.
+- Antes de crear o modificar acciones, interfaces, payloads o rutas, consultar el contrato remoto actualizado en esa misma tarea. No usar recuerdos ni snapshots locales como contrato vigente.
 
 ## Estructura actual
 
@@ -22,7 +23,7 @@ Este proyecto es un frontend Next.js App Router para un ERP retail: caja/ventas,
 - `src/interfaces`: tipos TypeScript que representan contratos consumidos por el frontend.
 - `src/lib`: utilidades de infraestructura: `fetcher`, normalizadores, roles, environment, auth/session.
 - `src/utils`: mappers y funciones puras de transformacion, fechas, precios, busqueda, exportacion.
-- `backend-json`: referencia local de rutas y DTOs del backend. Consultar antes de inventar payloads.
+- `backend-json`: referencia histórica del backend. Puede ayudar a entender estructura previa, pero nunca reemplaza ni contradice el contrato vigente de Scalar.
 
 ## Flujo de datos recomendado
 
@@ -39,8 +40,9 @@ Este proyecto es un frontend Next.js App Router para un ERP retail: caja/ventas,
 - `fetcher` agrega `Authorization: Bearer <auth_token>` desde cookie servidor o cliente.
 - `fetcher` soporta respuestas directas y respuestas envueltas como `{ statusCode, data }`; devuelve `data` si existe.
 - Usar `URLSearchParams` para query params.
-- Para payloads nuevos, revisar primero `backend-json/dtos` y `backend-json/routes`; si no existe contrato, proponerlo claramente.
-- Mantener nombres compatibles con backend actual: por ejemplo `storeID`, `productID`, `variationID`, `storeProductID`, `paymentType`, `items`, `unitPrice`.
+- Para payloads nuevos, revisar primero Scalar. Si la documentación remota no está accesible o no define el contrato, indicarlo claramente y no inventar campos.
+- No agregar ni mantener copias de OpenAPI/Swagger en el repositorio. Scalar remoto debe consultarse de nuevo para obtener siempre la versión publicada más reciente.
+- Mantener los nombres publicados por Scalar, por ejemplo `storeID`, `productID`, `variationID`, `storeProductID`, `cashRegisterID`, `paymentMethodID`, `payments`, `items` y `unitPrice` cuando correspondan al DTO vigente.
 - Si el backend devuelve nombres inconsistentes (`store` vs `Store`, `variations` vs `ProductVariations`, `StoreProducts` vs `storeProducts`), crear o extender normalizadores en `src/lib/normalize-*.ts`. No llenar componentes con defensas repetidas.
 
 ## Que logica vive en frontend
@@ -109,7 +111,7 @@ Ejemplos existentes:
 Antes de implementar:
 
 1. Ubicar dominio existente en `src/actions`, `src/interfaces`, `src/components`.
-2. Revisar `backend-json/routes` y `backend-json/dtos` del dominio.
+2. Consultar en Scalar las rutas y DTOs vigentes del dominio. Usar `backend-json` solo como contexto histórico secundario.
 3. Decidir que es dato remoto, que es estado de UI y que es calculo derivado.
 4. Reutilizar acciones, stores, normalizadores y componentes UI cercanos.
 
@@ -190,7 +192,7 @@ Reglas:
 ## Ventas e inventario: reglas sensibles
 
 - El carrito (`useSaleStore`) solo prepara la venta. El backend debe validar stock/precio/descuento.
-- `createNewSale` envia `{ storeID, paymentType, items: [{ variationID, quantity, unitPrice }] }`.
+- El payload de `createNewSale` debe mantenerse sincronizado con `CreateSaleDto` de Scalar. Para ventas vinculadas a caja, usar `cashRegisterID` y `payments: [{ paymentMethodID, amount }]` según el contrato vigente; no conservar `paymentType` por compatibilidad sin verificarlo primero.
 - Despues de crear venta, el flujo actual actualiza estado a `Pagado` con `updateSaleStatus`.
 - Inventario usa datos iniciales y filtros locales; la edicion inline llama acciones de producto y registra movimiento con `createInventoryMovement` cuando cambia stock.
 - No crear logica nueva de descuento, stock o total final solo en UI. Si afecta dinero o stock, pedir/crear contrato backend.

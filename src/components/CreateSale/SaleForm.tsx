@@ -11,11 +11,16 @@ import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { useTienda } from "@/stores/tienda.store"
 import { createNewSale } from "@/actions/sales/postSale"
+import { getPaymentMethods } from "@/actions/cash-registers/cashCatalogs"
+import { getActiveCashSession, getCashRegisters } from "@/actions/cash-registers/cashRegisters"
 import { toast } from "sonner"
 import { DiscountModal, DiscountStoreProductOption } from "@/components/Discounts/DiscountModal"
 import { getPriceCheck } from "@/actions/pricing/getPriceCheck"
 import { getChileYYYYMMDD } from "@/utils/chile-date"
 import { Banknote, Building2, CreditCard, FileText, Receipt, UserPlus, WalletCards, X } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import type { IPaymentMethod, PaymentMethodType } from "@/interfaces/cash-registers/ICashCatalogs"
+import type { ICashRegister, ICashSession } from "@/interfaces/cash-registers/ICashRegister"
 
 const DEFAULT_RECEIVER_EMAIL = "soporte@araucopro.com"
 const EMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
@@ -50,35 +55,19 @@ const saleTypeOptions: Array<{
         selectedClassName: "border-emerald-500 bg-emerald-50 text-emerald-900 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200",
     },
 ]
-const paymentTypeOptions: Array<{
-    value: PaymentType
-    label: string
-    description: string
-    icon: typeof Banknote
-    selectedClassName: string
-}> = [
-    {
-        value: "Efectivo",
-        label: "Efectivo",
-        description: "Pago en caja",
-        icon: Banknote,
-        selectedClassName: "border-amber-500 bg-amber-50 text-amber-900 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-200",
-    },
-    {
-        value: "Debito",
-        label: "Débito",
-        description: "Tarjeta de débito",
-        icon: CreditCard,
-        selectedClassName: "border-blue-500 bg-blue-50 text-blue-800 ring-blue-200 dark:bg-blue-950/40 dark:text-blue-200",
-    },
-    {
-        value: "Credito",
-        label: "Crédito",
-        description: "Tarjeta de crédito",
-        icon: WalletCards,
-        selectedClassName: "border-violet-500 bg-violet-50 text-violet-900 ring-violet-200 dark:bg-violet-950/40 dark:text-violet-200",
-    },
-]
+const legacyPaymentTypeByMethod: Partial<Record<PaymentMethodType, PaymentType>> = {
+    CASH: "Efectivo",
+    DEBIT_CARD: "Debito",
+    CREDIT_CARD: "Credito",
+}
+
+const paymentVisuals: Record<PaymentType, { icon: typeof Banknote; selectedClassName: string }> = {
+    Efectivo: { icon: Banknote, selectedClassName: "border-amber-500 bg-amber-50 text-amber-900 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-200" },
+    Debito: { icon: CreditCard, selectedClassName: "border-blue-500 bg-blue-50 text-blue-800 ring-blue-200 dark:bg-blue-950/40 dark:text-blue-200" },
+    Credito: { icon: WalletCards, selectedClassName: "border-violet-500 bg-violet-50 text-violet-900 ring-violet-200 dark:bg-violet-950/40 dark:text-violet-200" },
+}
+
+type OpenCashRegister = { register: ICashRegister; session: ICashSession }
 const getSaleTypeFromParam = (value: string | null): SaleType =>
     value && saleTypes.has(value as SaleType) ? (value as SaleType) : "BOLETA"
 const isValidEmail = (value: string) => {
@@ -98,13 +87,20 @@ const isValidEmail = (value: string) => {
 export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) => {
     const router = useRouter()
     const searchParams = useSearchParams()
-    const { cartItems, paymentMethod, actions } = useSaleStore()
+    const { cartItems, actions } = useSaleStore()
     const { setPaymentMethod, clearCart, updateCartItemPricing } = actions
     const { storeSelected } = useTienda()
     const [loading, setLoading] = useState(false)
     const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false)
     const [saleType, setSaleType] = useState<SaleType>(() => getSaleTypeFromParam(searchParams.get("saleType")))
     const [showReceiverFields, setShowReceiverFields] = useState(() => saleType === "FACTURA")
+    const [openCashRegisters, setOpenCashRegisters] = useState<OpenCashRegister[]>([])
+    const [availablePaymentMethods, setAvailablePaymentMethods] = useState<IPaymentMethod[]>([])
+    const [cashRegisterID, setCashRegisterID] = useState("")
+    const [paymentMethodID, setPaymentMethodID] = useState("")
+    const [cashSetupLoading, setCashSetupLoading] = useState(false)
+    const [cashSetupError, setCashSetupError] = useState<string | null>(null)
+    const [cashSetupRevision, setCashSetupRevision] = useState(0)
     const [receiver, setReceiver] = useState<ISaleReceiver>({
         rut: "",
         name: "",
@@ -123,6 +119,76 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
             return acc + item.quantity * price
         }, 0)
     }, [cartItems])
+
+    useEffect(() => {
+        if (!effectiveStoreID) {
+            setOpenCashRegisters([])
+            setAvailablePaymentMethods([])
+            setCashRegisterID("")
+            setPaymentMethodID("")
+            return
+        }
+
+        let cancelled = false
+        setCashSetupLoading(true)
+        setCashSetupError(null)
+        void Promise.all([
+            getCashRegisters({ storeID: effectiveStoreID, status: "ACTIVE" }),
+            getPaymentMethods({ active: true }),
+        ]).then(async ([registers, methods]) => {
+            const sessionResults = await Promise.allSettled(
+                registers.map(async (register) => ({
+                    register,
+                    session: await getActiveCashSession(register.cashRegisterID),
+                })),
+            )
+            if (cancelled) return
+
+            const nextOpenRegisters = sessionResults.flatMap((result) =>
+                result.status === "fulfilled" && result.value.session
+                    ? [{ register: result.value.register, session: result.value.session }]
+                    : [],
+            )
+            const compatibleMethods = methods.filter((method) => Boolean(legacyPaymentTypeByMethod[method.type]))
+            const preferredMethod = compatibleMethods.find((method) => method.type === "CASH") ?? compatibleMethods[0]
+
+            setOpenCashRegisters(nextOpenRegisters)
+            setAvailablePaymentMethods(methods)
+            setCashRegisterID((current) =>
+                nextOpenRegisters.some(({ register }) => register.cashRegisterID === current)
+                    ? current
+                    : nextOpenRegisters[0]?.register.cashRegisterID ?? "",
+            )
+            setPaymentMethodID((current) =>
+                compatibleMethods.some((method) => method.paymentMethodID === current)
+                    ? current
+                    : preferredMethod?.paymentMethodID ?? "",
+            )
+            if (preferredMethod) setPaymentMethod(legacyPaymentTypeByMethod[preferredMethod.type]!)
+        }).catch((error) => {
+            if (!cancelled) {
+                setCashSetupError(error instanceof Error ? error.message : "No se pudo cargar la configuración de caja")
+            }
+        }).finally(() => {
+            if (!cancelled) setCashSetupLoading(false)
+        })
+
+        return () => {
+            cancelled = true
+        }
+    }, [cashSetupRevision, effectiveStoreID, setPaymentMethod])
+
+    const selectPaymentMethod = (method: IPaymentMethod) => {
+        const legacyType = legacyPaymentTypeByMethod[method.type]
+        if (!legacyType) return
+        setPaymentMethodID(method.paymentMethodID)
+        setPaymentMethod(legacyType)
+    }
+
+    const selectedPaymentMethod = availablePaymentMethods.find((method) => method.paymentMethodID === paymentMethodID)
+    const selectedLegacyPaymentType = selectedPaymentMethod
+        ? legacyPaymentTypeByMethod[selectedPaymentMethod.type]
+        : undefined
 
     const discountableStoreProducts = useMemo<DiscountStoreProductOption[]>(() => {
         const seen = new Set<string>()
@@ -175,6 +241,12 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
                 return toast.error("Por favor elimina los productos sin stock")
             }
             if (!effectiveStoreID) return toast.error("No hay una tienda elegida")
+            if (cashSetupLoading) return toast.error("Espera mientras se carga la configuración de caja")
+            if (cashSetupError) return toast.error(cashSetupError)
+            if (!cashRegisterID) return toast.error("Debes abrir un turno de caja antes de registrar la venta")
+            if (!selectedPaymentMethod || !selectedLegacyPaymentType) {
+                return toast.error("Selecciona un medio de pago activo")
+            }
             if (saleType === "FACTURA" && (!receiver.rut.trim() || !receiver.name.trim())) {
                 return toast.error("Para emitir una factura indica al menos el RUT y la razón social")
             }
@@ -202,8 +274,10 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
                     Boolean(receiver.rut.trim() && receiver.name.trim() && receiverEmail))
             const toSubmitSale: ISaleRequest = {
                 saleType,
-                paymentType: paymentMethod,
+                paymentType: selectedLegacyPaymentType,
                 issueDate: currentIssueDate,
+                cashRegisterID,
+                payments: [{ paymentMethodID: selectedPaymentMethod.paymentMethodID, amount: total }],
                 ...(shouldSendReceiver
                     ? {
                           receiver: {
@@ -339,42 +413,71 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
                         <div className="flex items-center gap-2">
                             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 text-xs font-bold text-white">2</span>
                             <div>
-                                <label className="text-sm font-semibold text-slate-800 dark:text-slate-100">Tipo de pago</label>
-                                <p className="text-[11px] text-slate-500 dark:text-slate-400">¿Cómo pagará el cliente?</p>
+                                <label className="text-sm font-semibold text-slate-800 dark:text-slate-100">Caja y medio de pago</label>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400">La venta quedará registrada en el turno seleccionado.</p>
                             </div>
                         </div>
-                        <div className="grid gap-2 sm:grid-cols-3" role="group" aria-label="Tipo de pago">
-                            {paymentTypeOptions.map((option) => {
-                                const Icon = option.icon
-                                const selected = paymentMethod === option.value
 
-                                return (
-                                    <button
-                                        key={option.value}
-                                        type="button"
-                                        aria-pressed={selected}
-                                        onClick={() => setPaymentMethod(option.value)}
-                                        className={`flex min-h-20 items-center gap-3 rounded-lg border px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-                                            selected
-                                                ? `${option.selectedClassName} ring-1`
-                                                : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-                                        }`}
-                                    >
-                                        <span
-                                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${
-                                                selected ? "bg-white/70 dark:bg-slate-900/50" : "bg-slate-100 dark:bg-slate-800"
-                                            }`}
-                                        >
-                                            <Icon className="h-4 w-4" />
-                                        </span>
-                                        <span className="min-w-0">
-                                            <span className="block text-sm font-semibold leading-tight">{option.label}</span>
-                                            <span className="mt-1 block text-xs opacity-70">{option.description}</span>
-                                        </span>
-                                    </button>
-                                )
-                            })}
-                        </div>
+                        {cashSetupLoading ? (
+                            <p className="rounded-lg border border-slate-200 bg-white px-3 py-4 text-center text-sm text-slate-500">Cargando cajas y medios de pago...</p>
+                        ) : cashSetupError ? (
+                            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-3 text-sm text-red-700">{cashSetupError}</p>
+                        ) : !openCashRegisters.length ? (
+                            <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-3 text-sm text-amber-900">
+                                <p className="font-semibold">No hay una caja con turno abierto.</p>
+                                <p className="mt-1 text-xs">Abre un turno antes de registrar ventas en esta tienda.</p>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    <Button type="button" variant="outline" size="sm" className="bg-white" onClick={() => window.open(`/home/cajas?storeID=${effectiveStoreID}`, "_blank", "noopener,noreferrer")}>Abrir Cajas</Button>
+                                    <Button type="button" variant="outline" size="sm" className="bg-white" onClick={() => setCashSetupRevision((value) => value + 1)}>Actualizar</Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <div>
+                                    <label className="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-300">Caja con turno abierto</label>
+                                    <Select value={cashRegisterID} onValueChange={setCashRegisterID}>
+                                        <SelectTrigger><SelectValue placeholder="Selecciona una caja" /></SelectTrigger>
+                                        <SelectContent>
+                                            {openCashRegisters.map(({ register, session }) => (
+                                                <SelectItem key={register.cashRegisterID} value={register.cashRegisterID}>{register.name} · {register.code} · {session.businessDate}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {availablePaymentMethods.length ? (
+                                    <div className="grid gap-2 sm:grid-cols-3" role="group" aria-label="Medio de pago">
+                                        {availablePaymentMethods.map((method) => {
+                                            const legacyType = legacyPaymentTypeByMethod[method.type]
+                                            const visual = legacyType ? paymentVisuals[legacyType] : null
+                                            const Icon = visual?.icon ?? CreditCard
+                                            const selected = paymentMethodID === method.paymentMethodID
+                                            return (
+                                                <button
+                                                    key={method.paymentMethodID}
+                                                    type="button"
+                                                    aria-pressed={selected}
+                                                    disabled={!legacyType}
+                                                    onClick={() => selectPaymentMethod(method)}
+                                                    className={`flex min-h-20 items-center gap-3 rounded-lg border px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60 ${selected && visual ? `${visual.selectedClassName} ring-1` : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"}`}
+                                                >
+                                                    <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${selected ? "bg-white/70 dark:bg-slate-900/50" : "bg-slate-100 dark:bg-slate-800"}`}><Icon className="h-4 w-4" /></span>
+                                                    <span className="min-w-0"><span className="block text-sm font-semibold leading-tight">{method.name}</span><span className="mt-1 block text-xs opacity-70">{!legacyType ? "En desarrollo" : legacyType === "Efectivo" ? "Efectivo" : legacyType === "Debito" ? "Tarjeta de débito" : "Tarjeta de crédito"}</span></span>
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                ) : (
+                                    <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-3 text-sm text-amber-900">No hay medios de pago activos compatibles con ventas. Configúralos en la sección Cajas.</p>
+                                )}
+                                {availablePaymentMethods.some((method) => legacyPaymentTypeByMethod[method.type]) && (
+                                    <p className="text-xs text-slate-500">Pago dividido entre varios medios: <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 font-semibold text-amber-700">En desarrollo</span></p>
+                                )}
+                                {availablePaymentMethods.length > 0 && !availablePaymentMethods.some((method) => legacyPaymentTypeByMethod[method.type]) && (
+                                    <p className="text-xs text-amber-800">El contrato de ventas todavía no permite usar estos tipos de pago.</p>
+                                )}
+                            </>
+                        )}
                     </div>
                     </div>
                 </div>
@@ -486,7 +589,7 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
                         </p>
                     </div>
                     <Button
-                        disabled={loading || cartItems.length === 0}
+                        disabled={loading || cashSetupLoading || cartItems.length === 0 || !cashRegisterID || !paymentMethodID}
                         onClick={handleSubmit}
                         className="px-6 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition"
                     >
