@@ -7,7 +7,7 @@ import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import FriendlyLoadingScreen from "../Animations/FriendlyLoadingScreen"
 import { login, loginMaster } from "@/actions/auth/authActions"
-import { getUserStores } from "@/actions/users/getUserStores"
+import { getAllStores } from "@/actions/stores/getAllStores"
 import { useAuth } from "@/stores/user.store"
 import { toast } from "sonner"
 import { useTienda } from "@/stores/tienda.store"
@@ -66,13 +66,13 @@ export default function LoginForm() {
             setUser(data.user, data.accessToken)
             setLoadingMessage("Buscando tus tiendas...")
 
-            const userStores = await getUserStores(data.user.userID)
-            setStoresUser(userStores)
+            const stores = await getAllStores()
+            setStoresUser(stores)
 
             let destination = "/home?storeID=all"
 
-            if (userStores.length > 0) {
-                const selectedStore = userStores[0]
+            if (stores.length > 0) {
+                const selectedStore = stores[0]
                 setStoreSelected(selectedStore)
 
                 const storeID = selectedStore.storeID
