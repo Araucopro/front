@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import Image from "next/image"
+import { SafeImage as Image } from "@/components/ui/safe-image"
 import { useAuth } from "@/stores/user.store"
 import { Role } from "@/lib/userRoles"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -212,14 +212,14 @@ export function PurchaseOrderTable({ currentItems }: { currentItems: PurchaseOrd
                                                             <div
                                                                 onClick={() =>
                                                                     setSelectedImage({
-                                                                        url: product.image || "/placeholder.svg",
+                                                                        url: product.image || "/NoImage.jpg",
                                                                         name: product.name,
                                                                     })
                                                                 }
                                                                 className="relative group cursor-pointer transition-transform transform hover:scale-105"
                                                             >
                                                                 <Image
-                                                                    src={product.image || "/placeholder.svg"}
+                                                                    src={product.image}
                                                                     alt={product.name}
                                                                     width={200}
                                                                     height={200}

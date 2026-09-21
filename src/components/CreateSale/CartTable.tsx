@@ -1,6 +1,6 @@
 import { useSaleStore } from "@/stores/sale.store"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import Image from "next/image"
+import { SafeImage as Image } from "@/components/ui/safe-image"
 import { Input } from "../ui/input"
 import { toPrice } from "@/utils/priceFormat"
 import { ShoppingCart, Trash2 } from "lucide-react"
@@ -36,15 +36,13 @@ export const CartTable = () => {
                     {cartItems.map((item) => (
                         <TableRow className="hover:bg-muted/50 dark:hover:bg-gray-700/50" key={item.storeProductID}>
                             <TableCell className="flex items-center gap-3 p-2">
-                                {item.productImage && (
-                                    <Image
-                                        width={100}
-                                        height={100}
-                                        src={item.productImage}
-                                        alt={item.productName}
-                                        className="h-10 w-10 rounded object-cover"
-                                    />
-                                )}
+                                <Image
+                                    width={100}
+                                    height={100}
+                                    src={item.productImage}
+                                    alt={item.productName}
+                                    className="h-10 w-10 rounded object-cover"
+                                />
                                 <span>
                                     {item.productName} - {item.sizeNumber}
                                 </span>

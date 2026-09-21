@@ -1,7 +1,7 @@
 "use client"
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import Image from "next/image"
+import { SafeImage as Image } from "@/components/ui/safe-image"
 import { X } from "lucide-react"
 
 interface ImagePreviewModalProps {

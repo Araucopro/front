@@ -38,20 +38,13 @@ export default function FriendlyLoadingScreen({
 
             <div className="relative w-full max-w-md rounded-3xl border border-white/80 bg-white/90 p-8 text-center shadow-[0_24px_70px_rgba(15,35,60,0.18)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/90">
                 <Image
-                    src="/brand/araucoPro.png"
-                    alt="AraucoPro Software Retail"
-                    width={180}
-                    height={120}
+                    src="/brand/ARAUCOLOGO.jpeg"
+                    alt="ARAUCOPRO"
+                    width={1254}
+                    height={1254}
                     priority
-                    className="mx-auto h-24 w-44 object-contain dark:hidden"
-                />
-                <Image
-                    src="/brand/araucoProDark.png"
-                    alt="AraucoPro Software Retail"
-                    width={180}
-                    height={120}
-                    priority
-                    className="mx-auto hidden h-24 w-44 object-contain dark:block"
+                    sizes="96px"
+                    className="mx-auto h-24 w-24 rounded-full object-cover"
                 />
 
                 <div className="relative mx-auto mt-3 flex h-16 w-16 items-center justify-center">

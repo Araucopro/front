@@ -54,7 +54,7 @@ export default function UnifiedInventoryClientWrapper({ initialProducts, categor
         getVisiblePages,
         setCurrentPage,
         filteredStockTotal,
-    } = useInventory(initialProducts, stores)
+    } = useInventory(initialProducts, stores, categories)
 
     useEffect(() => {
         setCategories(cats)

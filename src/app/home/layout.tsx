@@ -38,11 +38,11 @@ export default async function HomeLayout({ children }: { children: React.ReactNo
     }
 
     return (
-        <div className="flex h-screen dark:bg-gray-900 bg-gray-100">
+        <div className="flex h-svh overflow-hidden bg-gray-100 dark:bg-gray-900">
             <Suspense fallback={"...cargando"}>
                 <Sidebar />
             </Suspense>
-            <section className="flex-1 pl-2 lg:p-6 overflow-auto">
+            <section className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto pl-2 lg:p-6">
                 {impersonationInfo && <ImpersonationBanner info={impersonationInfo} />}
                 <Navbar />
                 {children}

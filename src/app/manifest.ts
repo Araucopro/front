@@ -2,20 +2,20 @@ import type { MetadataRoute } from "next"
 
 export default function manifest(): MetadataRoute.Manifest {
     return {
-        name: "D3SI - App",
-        short_name: "Sistema de Ventas",
+        name: "ARAUCOPRO",
+        short_name: "ARAUCOPRO",
         start_url: "/",
         scope: "/",
-        description: "D3SI - Sistema gestión de Ventas",
-        theme_color: "#2d51e1",
-        background_color: "#2EC6FE",
+        description: "ARAUCOPRO - Sistema de gestión de ventas",
+        theme_color: "#003c32",
+        background_color: "#eaf1ec",
         orientation: "portrait",
         display: "standalone",
         dir: "auto",
         lang: "es",
         icons: [
-            { purpose: "maskable", sizes: "512x512", src: "icon512_maskable.png", type: "image/png" },
-            { purpose: "any", sizes: "512x512", src: "icon512_rounded.png", type: "image/png" },
+            { purpose: "maskable", sizes: "1254x1254", src: "/brand/ARAUCOLOGO.jpeg", type: "image/jpeg" },
+            { purpose: "any", sizes: "1254x1254", src: "/brand/ARAUCOLOGO.jpeg", type: "image/jpeg" },
         ],
     }
 }
