@@ -31,6 +31,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { RutInput } from "@/components/ui/rut-input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { getAllUsers } from "@/actions/users/getAllUsers"
 import { getValidStoreType, STORE_TYPE_OPTIONS, StoreType } from "@/lib/storeTypes"
@@ -238,9 +239,8 @@ export default function GestionStoreForm({
                                 <Hash className="w-4 h-4" />
                                 Rut
                             </Label>
-                            <Input
+                            <RutInput
                                 id="rut"
-                                type="text"
                                 value={rut}
                                 placeholder="Rut de la tienda"
                                 disabled

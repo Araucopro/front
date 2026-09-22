@@ -2,6 +2,7 @@
 
 import React, { useState } from "react"
 import { Input } from "@/components/ui/input"
+import { CurrencyInput } from "@/components/ui/currency-input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -133,15 +134,25 @@ export function DiscountsSection({ discounts, montoNeto, onDiscountsChange }: Di
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-slate-700 dark:text-slate-200">{valueLabel}</label>
                         <div className="flex items-center gap-1">
-                            <Input
-                                placeholder={valuePlaceholder}
-                                className="bg-white dark:bg-slate-700"
-                                type="number"
-                                min={0}
-                                max={isCargoType ? undefined : 100}
-                                value={discountValue}
-                                onChange={(e) => setDiscountValue(e.target.value)}
-                            />
+                            {isCargoType ? (
+                                <CurrencyInput
+                                    placeholder="$ 0"
+                                    className="bg-white dark:bg-slate-700"
+                                    value={discountValue}
+                                    onValueChange={setDiscountValue}
+                                    allowDecimals
+                                />
+                            ) : (
+                                <Input
+                                    placeholder={valuePlaceholder}
+                                    className="bg-white dark:bg-slate-700"
+                                    type="number"
+                                    min={0}
+                                    max={100}
+                                    value={discountValue}
+                                    onChange={(event) => setDiscountValue(event.target.value)}
+                                />
+                            )}
                             {React.createElement(valueIcon, {
                                 size: 16,
                                 className: "text-muted-foreground",

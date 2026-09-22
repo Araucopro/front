@@ -27,6 +27,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { CurrencyInput } from "@/components/ui/currency-input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -308,7 +309,7 @@ export default function CashSessionDialog({ open, onOpenChange, register, active
                                 </div>
                                 <div>
                                     <Label htmlFor="opening-balance" className="mb-2 block">Fondo inicial</Label>
-                                    <Input id="opening-balance" type="number" min={0} step={1} value={openingBalance} onChange={(event) => setOpeningBalance(event.target.value)} placeholder="0" required />
+                                    <CurrencyInput id="opening-balance" value={openingBalance} onValueChange={setOpeningBalance} placeholder="$ 0" required />
                                 </div>
                             </div>
                             <div>
@@ -335,7 +336,7 @@ export default function CashSessionDialog({ open, onOpenChange, register, active
                                 </div>
                                 <div>
                                     <Label htmlFor="movement-amount" className="mb-2 block">Monto</Label>
-                                    <Input id="movement-amount" type="number" min={1} step={1} value={movementAmount} onChange={(event) => setMovementAmount(event.target.value)} required />
+                                    <CurrencyInput id="movement-amount" value={movementAmount} onValueChange={setMovementAmount} required />
                                 </div>
                             </div>
                             <div>
@@ -417,7 +418,7 @@ export default function CashSessionDialog({ open, onOpenChange, register, active
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <div>
                                         <Label htmlFor="counted-cash" className="mb-2 block">Efectivo contado</Label>
-                                        <Input id="counted-cash" type="number" min={0} step={1} value={countedCashBalance} onChange={(event) => setCountedCashBalance(event.target.value)} placeholder="0" required />
+                                        <CurrencyInput id="counted-cash" value={countedCashBalance} onValueChange={setCountedCashBalance} placeholder="$ 0" required />
                                     </div>
                                     <div>
                                         <Label htmlFor="closing-notes" className="mb-2 block">Notas de cierre</Label>

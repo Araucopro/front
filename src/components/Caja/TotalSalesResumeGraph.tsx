@@ -1,7 +1,7 @@
 "use client"
 import { updateMeta } from "@/actions/totals/updateMeta"
 import { getMetaMensual } from "@/actions/totals/getMetaMensual"
-import { Input } from "@/components/ui/input"
+import { CurrencyInput } from "@/components/ui/currency-input"
 import { toast } from "sonner"
 import { useEffect, useState } from "react"
 import { RadialBarChart, RadialBar, PolarAngleAxis } from "recharts"
@@ -134,13 +134,9 @@ export default function TotalSalesResumeGraph({ resume, date }: { resume: IResum
                 ${toPrice(resume?.periodSummary.month.total ?? 0)}
             </p>
             {editingMeta ? (
-                <Input
-                    type="number"
+                <CurrencyInput
                     value={metaInput}
-                    onWheel={(e) => {
-                        e.currentTarget.blur()
-                    }}
-                    onChange={(e) => setMetaInput(e.target.value)}
+                    onValueChange={setMetaInput}
                     onBlur={handleMetaSave}
                     onKeyDown={(e) => {
                         if (e.key === "Enter") {

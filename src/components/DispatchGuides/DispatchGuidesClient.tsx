@@ -35,6 +35,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { RutInput } from "@/components/ui/rut-input"
 import { Label } from "@/components/ui/label"
 import {
     Select,
@@ -45,6 +46,7 @@ import {
 } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import type { IClient } from "@/interfaces/clients/IClient"
+import { normalizeRutValue } from "@/utils/rut"
 import type {
     DispatchGuideStatus,
     DispatchGuideTransferIndicator,
@@ -199,11 +201,11 @@ const buildReferenceSearchText = (sale: ISaleResponse) =>
             .join(" "),
     )
 
-const normalizeRut = (value?: string) => value?.replace(/[.\s]/g, "").toLowerCase() ?? ""
+const normalizeComparableRut = (value?: string) => normalizeRutValue(value ?? "").toLowerCase()
 
 const receiversMatch = (receiver: IDispatchGuideReceiver, referencedReceiver?: ISaleReceiver | null) => {
     if (!referencedReceiver?.rut) return false
-    return normalizeRut(receiver.rut) === normalizeRut(referencedReceiver.rut)
+    return normalizeComparableRut(receiver.rut) === normalizeComparableRut(referencedReceiver.rut)
 }
 
 const getReferenceLabel = (sale: ISaleResponse) => {
@@ -632,7 +634,7 @@ export default function DispatchGuidesClient({
         const trimmedTransport = Object.fromEntries(
             Object.entries({
                 patente: transport.patente?.trim(),
-                rutConductor: transport.rutConductor?.trim(),
+                rutConductor: transport.rutConductor ? normalizeRutValue(transport.rutConductor) : undefined,
                 nombreConductor: transport.nombreConductor?.trim(),
                 fechaTraslado: transport.fechaTraslado?.trim(),
             }).filter(([, value]) => Boolean(value)),
@@ -646,7 +648,7 @@ export default function DispatchGuidesClient({
                 quantity: item.quantity,
             })),
             receiver: {
-                rut: receiver.rut.trim(),
+                rut: normalizeRutValue(receiver.rut),
                 name: receiver.name.trim(),
                 address: receiver.address.trim(),
                 city: receiver.city.trim(),
@@ -1135,9 +1137,9 @@ export default function DispatchGuidesClient({
                         <section className="grid gap-4 rounded-lg border border-slate-200 p-4 dark:border-slate-700 lg:grid-cols-3">
                             <div className="space-y-2">
                                 <Label>RUT receptor</Label>
-                                <Input
+                                <RutInput
                                     value={receiver.rut}
-                                    onChange={(event) => setReceiverField("rut", event)}
+                                    onValueChange={(rut) => setReceiver((current) => ({ ...current, rut }))}
                                     readOnly={isReceiverLocked}
                                     className={isReceiverLocked ? "bg-slate-50 text-slate-600" : undefined}
                                 />
@@ -1268,9 +1270,11 @@ export default function DispatchGuidesClient({
                             </div>
                             <div className="space-y-2">
                                 <Label>RUT conductor</Label>
-                                <Input
+                                <RutInput
                                     value={transport.rutConductor ?? ""}
-                                    onChange={(event) => setTransportField("rutConductor", event)}
+                                    onValueChange={(rutConductor) =>
+                                        setTransport((current) => ({ ...current, rutConductor }))
+                                    }
                                 />
                             </div>
                             <div className="space-y-2">

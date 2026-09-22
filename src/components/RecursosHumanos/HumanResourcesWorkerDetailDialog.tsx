@@ -15,6 +15,8 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { RutInput } from "@/components/ui/rut-input"
+import { CurrencyInput } from "@/components/ui/currency-input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
@@ -472,7 +474,7 @@ export default function HumanResourcesWorkerDetailDialog({
                                         <Input value={personalData.name} onChange={(event) => updatePersonalData("name", event.target.value)} />
                                     </Field>
                                     <Field label="RUT">
-                                        <Input value={personalData.rut} onChange={(event) => updatePersonalData("rut", event.target.value)} disabled title="En desarrollo" />
+                                        <RutInput value={personalData.rut} onValueChange={(rut) => updatePersonalData("rut", rut)} disabled title="En desarrollo" />
                                     </Field>
                                     <Field label="Fecha de nacimiento">
                                         <Input type="date" value={personalData.birthDate} onChange={(event) => updatePersonalData("birthDate", event.target.value)} disabled title="En desarrollo" />
@@ -663,7 +665,7 @@ export default function HumanResourcesWorkerDetailDialog({
                                 </div>
 
                                 <Field label="Tope en monto fijo">
-                                    <Input value={discountLimit} onChange={(event) => setDiscountLimit(event.target.value)} />
+                                    <CurrencyInput value={discountLimit} onValueChange={setDiscountLimit} />
                                 </Field>
                                 <div className="flex gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-100">
                                     <CheckCircle2 className="mt-0.5 h-4 w-4" />

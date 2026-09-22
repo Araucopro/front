@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { CurrencyInput } from "@/components/ui/currency-input"
 import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
@@ -699,31 +700,38 @@ export function DiscountModal({
                         <section className="grid gap-4 sm:grid-cols-2">
                             <div className="space-y-2">
                                 <Label className="text-xs font-bold uppercase tracking-wide text-slate-500">Valor</Label>
-                                <Input
-                                    type="number"
-                                    min={1}
-                                    max={form.discountType === "PERCENTAGE" ? 100 : undefined}
-                                    value={form.value}
-                                    onChange={(event) => {
-                                        let value = event.target.value
-                                        if (value.includes("-")) return
-                                        if (form.discountType === "PERCENTAGE" && parseFloat(value) > 100) value = "100"
-                                        setForm((prev) => ({ ...prev, value }))
-                                    }}
-                                    onKeyDown={(event) => {
-                                        if (event.key === "-" || event.key === "e" || event.key === "+") {
-                                            event.preventDefault()
+                                {form.discountType === "FIXED_AMOUNT" || form.discountType === "FIXED_PRICE" ? (
+                                    <CurrencyInput
+                                        value={form.value}
+                                        onValueChange={(value) => setForm((current) => ({ ...current, value }))}
+                                        placeholder="$ 3.000"
+                                        className="h-10 rounded-xl border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950"
+                                    />
+                                ) : (
+                                    <Input
+                                        type="number"
+                                        min={1}
+                                        max={form.discountType === "PERCENTAGE" ? 100 : undefined}
+                                        value={form.value}
+                                        onChange={(event) => {
+                                            let value = event.target.value
+                                            if (value.includes("-")) return
+                                            if (form.discountType === "PERCENTAGE" && parseFloat(value) > 100) value = "100"
+                                            setForm((prev) => ({ ...prev, value }))
+                                        }}
+                                        onKeyDown={(event) => {
+                                            if (event.key === "-" || event.key === "e" || event.key === "+") {
+                                                event.preventDefault()
+                                            }
+                                        }}
+                                        placeholder={
+                                            form.discountType === "BUY_X_GET_Y" || form.discountType === "BUNDLE"
+                                                ? "Opcional"
+                                                : "Ej: 15"
                                         }
-                                    }}
-                                    placeholder={
-                                        form.discountType === "BUY_X_GET_Y" || form.discountType === "BUNDLE"
-                                            ? "Opcional"
-                                            : form.discountType === "PERCENTAGE"
-                                              ? "Ej: 15"
-                                              : "Ej: 3000"
-                                    }
-                                    className="h-10 rounded-xl border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950"
-                                />
+                                        className="h-10 rounded-xl border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950"
+                                    />
+                                )}
                                 {(form.discountType === "BUY_X_GET_Y" || form.discountType === "BUNDLE") && (
                                     <p className="text-xs text-slate-500">
                                         Para 2x1/combo el contrato usa cantidades; el valor puede quedar vacio.

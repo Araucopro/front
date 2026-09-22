@@ -3,6 +3,7 @@
 
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { CurrencyInput } from "@/components/ui/currency-input"
 import { Label } from "@/components/ui/label"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -102,11 +103,19 @@ export function AddSizeModal({ open, onOpenChange, name, image, genre, onAddSize
                     </div>
                     <div>
                         <Label className="text-black">Precio Costo</Label>
-                        <Input name="priceCost" value={form.priceCost} onChange={handleChange} />
+                        <CurrencyInput
+                            value={form.priceCost}
+                            onValueChange={(priceCost) => setForm((current) => ({ ...current, priceCost }))}
+                            allowDecimals
+                        />
                     </div>
                     <div>
                         <Label className="text-black">Precio Lista</Label>
-                        <Input name="priceList" value={form.priceList} onChange={handleChange} />
+                        <CurrencyInput
+                            value={form.priceList}
+                            onValueChange={(priceList) => setForm((current) => ({ ...current, priceList }))}
+                            allowDecimals
+                        />
                     </div>
 
                     <div>

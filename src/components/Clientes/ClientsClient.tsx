@@ -15,6 +15,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { RutInput } from "@/components/ui/rut-input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -22,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea"
 import type { ClientSegment, IClient, IClientPayload, IClientsResponse } from "@/interfaces/clients/IClient"
 import { Building2, Edit, Plus, Search, Trash2, Users } from "lucide-react"
 import { toast } from "sonner"
+import { normalizeRutValue } from "@/utils/rut"
 
 type SegmentFilter = ClientSegment | "ALL"
 
@@ -78,7 +80,7 @@ const toFormState = (client: IClient): ClientFormState => ({
 })
 
 const buildCreatePayload = (form: ClientFormState): IClientPayload => ({
-    rut: form.rut.trim(),
+    rut: normalizeRutValue(form.rut),
     name: form.name.trim(),
     giro: form.giro.trim() || undefined,
     address: form.address.trim() || undefined,
@@ -90,7 +92,7 @@ const buildCreatePayload = (form: ClientFormState): IClientPayload => ({
 })
 
 const buildUpdatePayload = (form: ClientFormState): IClientPayload => ({
-    rut: form.rut.trim(),
+    rut: normalizeRutValue(form.rut),
     name: form.name.trim(),
     giro: form.giro.trim(),
     address: form.address.trim(),
@@ -415,11 +417,11 @@ export default function ClientsClient({ initialData, loadError }: ClientsClientP
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div>
                                 <Label htmlFor="client-rut">RUT *</Label>
-                                <Input
+                                <RutInput
                                     id="client-rut"
                                     value={form.rut}
-                                    onChange={(event) => updateField("rut", event.target.value)}
-                                    placeholder="76234556-6"
+                                    onValueChange={(rut) => updateField("rut", rut)}
+                                    placeholder="76.234.556-6"
                                     required
                                     className="mt-2"
                                 />
