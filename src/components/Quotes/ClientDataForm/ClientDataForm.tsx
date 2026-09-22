@@ -2,6 +2,7 @@
 
 import React from "react"
 import { Input } from "@/components/ui/input"
+import { RutInput } from "@/components/ui/rut-input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { FileTextIcon } from "lucide-react"
 
@@ -37,10 +38,10 @@ export function ClientDataForm({ clientData, onClientDataChange }: ClientDataFor
             </CardHeader>
             <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <Input
+                    <RutInput
                         placeholder="RUT"
                         value={clientData.rut}
-                        onChange={(e) => handleInputChange("rut", e.target.value)}
+                        onValueChange={(rut) => handleInputChange("rut", rut)}
                         className="bg-white dark:bg-slate-700"
                     />
                     <Input

@@ -34,6 +34,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { RutInput } from "@/components/ui/rut-input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { Switch } from "@/components/ui/switch"
@@ -54,6 +55,7 @@ import type { IUser } from "@/interfaces/users/IUser"
 import { STORE_TYPE_OPTIONS, type StoreTypeValue } from "@/lib/storeTypes"
 import type { UserRole } from "@/lib/userRoles"
 import { toast } from "sonner"
+import { normalizeRutValue } from "@/utils/rut"
 
 interface TenantManagementDialogProps {
     open: boolean
@@ -376,7 +378,7 @@ export default function TenantManagementDialog({
 
         const requiredFields = {
             location: storeForm.location.trim(),
-            rut: storeForm.rut.trim(),
+            rut: normalizeRutValue(storeForm.rut),
             address: storeForm.address.trim(),
             phone: storeForm.phone.trim(),
             city: storeForm.city.trim(),
@@ -982,14 +984,11 @@ export default function TenantManagementDialog({
                                                 </div>
                                                 <div className="space-y-1">
                                                     <Label htmlFor="tenant-store-rut">RUT</Label>
-                                                    <Input
+                                                    <RutInput
                                                         id="tenant-store-rut"
                                                         value={storeForm.rut}
-                                                        onChange={(event) =>
-                                                            setStoreForm((current) => ({
-                                                                ...current,
-                                                                rut: event.target.value,
-                                                            }))
+                                                        onValueChange={(rut) =>
+                                                            setStoreForm((current) => ({ ...current, rut }))
                                                         }
                                                         required
                                                     />

@@ -16,6 +16,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { RutInput } from "@/components/ui/rut-input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
@@ -376,9 +377,9 @@ export default function NewHumanResourcesUserDialog({
                                     />
                                 </Field>
                                 <Field label="RUT · En desarrollo">
-                                    <Input
+                                    <RutInput
                                         value={personalData.rut}
-                                        onChange={(event) => updatePersonalData("rut", event.target.value)}
+                                        onValueChange={(rut) => updatePersonalData("rut", rut)}
                                         placeholder="12.345.678-9"
                                         disabled
                                     />

@@ -9,6 +9,7 @@ import { IProduct } from "@/interfaces/products/IProduct"
 import { toPrice } from "@/utils/priceFormat"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
+import { RutInput } from "../ui/rut-input"
 import { useTienda } from "@/stores/tienda.store"
 import { createNewSale } from "@/actions/sales/postSale"
 import { getPaymentMethods } from "@/actions/cash-registers/cashCatalogs"
@@ -17,6 +18,7 @@ import { toast } from "sonner"
 import { DiscountModal, DiscountStoreProductOption } from "@/components/Discounts/DiscountModal"
 import { getPriceCheck } from "@/actions/pricing/getPriceCheck"
 import { getChileYYYYMMDD } from "@/utils/chile-date"
+import { normalizeRutValue } from "@/utils/rut"
 import { Banknote, Building2, CreditCard, FileText, Receipt, UserPlus, WalletCards, X } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { IPaymentMethod, PaymentMethodType } from "@/interfaces/cash-registers/ICashCatalogs"
@@ -281,7 +283,7 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
                 ...(shouldSendReceiver
                     ? {
                           receiver: {
-                              rut: receiver.rut.trim(),
+                              rut: normalizeRutValue(receiver.rut),
                               name: receiver.name.trim(),
                               email: receiverEmail,
                               address: receiver.address.trim(),
@@ -531,9 +533,9 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
                             )}
                         </div>
                         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                            <Input
+                            <RutInput
                                 value={receiver.rut}
-                                onChange={(event) => setReceiver((current) => ({ ...current, rut: event.target.value }))}
+                                onValueChange={(rut) => setReceiver((current) => ({ ...current, rut }))}
                                 placeholder="RUT"
                             />
                             <Input

@@ -15,6 +15,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { RutInput } from "@/components/ui/rut-input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
@@ -472,7 +473,7 @@ export default function HumanResourcesWorkerDetailDialog({
                                         <Input value={personalData.name} onChange={(event) => updatePersonalData("name", event.target.value)} />
                                     </Field>
                                     <Field label="RUT">
-                                        <Input value={personalData.rut} onChange={(event) => updatePersonalData("rut", event.target.value)} disabled title="En desarrollo" />
+                                        <RutInput value={personalData.rut} onValueChange={(rut) => updatePersonalData("rut", rut)} disabled title="En desarrollo" />
                                     </Field>
                                     <Field label="Fecha de nacimiento">
                                         <Input type="date" value={personalData.birthDate} onChange={(event) => updatePersonalData("birthDate", event.target.value)} disabled title="En desarrollo" />

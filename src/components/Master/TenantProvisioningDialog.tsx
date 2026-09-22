@@ -12,6 +12,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { RutInput } from "@/components/ui/rut-input"
 import { Label } from "@/components/ui/label"
 import type {
     ICreateTenant,
@@ -21,6 +22,7 @@ import type {
     ITenant,
 } from "@/interfaces/master/ITenant"
 import { toast } from "sonner"
+import { normalizeRutValue } from "@/utils/rut"
 
 type TenantReference = Pick<ITenant, "tenantID" | "name">
 type WizardStep = 1 | 2 | 3
@@ -189,7 +191,7 @@ export default function TenantProvisioningDialog({
 
         const store: IProvisionTenantStore = {
             location: storeForm.location.trim(),
-            rut: storeForm.rut.trim(),
+            rut: normalizeRutValue(storeForm.rut),
             address: storeForm.address.trim(),
             phone: storeForm.phone.trim(),
             city: storeForm.city.trim(),
@@ -488,13 +490,11 @@ export default function TenantProvisioningDialog({
 
                                 <div className="space-y-2">
                                     <Label htmlFor="store-rut">RUT</Label>
-                                    <Input
+                                    <RutInput
                                         id="store-rut"
                                         value={storeForm.rut}
-                                        onChange={(event) =>
-                                            setStoreForm((current) => ({ ...current, rut: event.target.value }))
-                                        }
-                                        placeholder="76283592-1"
+                                        onValueChange={(rut) => setStoreForm((current) => ({ ...current, rut }))}
+                                        placeholder="76.283.592-1"
                                         required
                                     />
                                 </div>
