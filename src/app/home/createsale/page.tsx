@@ -1,6 +1,10 @@
 import { getAllProducts } from "@/actions/products/getAllProducts"
 import { getStoreStockSaleProducts } from "@/actions/inventory/getStoreStock"
+import { checkStatus } from "@/actions/auth/authActions"
+import { getMyStores } from "@/actions/stores/getAllStores"
 import { SaleForm } from "@/components/CreateSale/SaleForm"
+import { resolveAccessibleStoreID } from "@/lib/store-access"
+import { Role } from "@/lib/userRoles"
 
 import { Suspense } from "react"
 export const revalidate = 0
@@ -27,8 +31,10 @@ const getProductsForSale = async (storeID?: string) => {
 
 const CreateSale = async ({ searchParams }: CreateSaleProps) => {
     const resolvedSearchParams = await searchParams
-    const storeID = parseParam(resolvedSearchParams?.storeID)
-    const [productsData] = await Promise.all([getProductsForSale(storeID)])
+    const requestedStoreID = parseParam(resolvedSearchParams?.storeID)
+    const [auth, stores] = await Promise.all([checkStatus().catch(() => null), getMyStores()])
+    const storeID = resolveAccessibleStoreID(requestedStoreID, stores, auth?.user?.role === Role.Admin)
+    const productsData = await getProductsForSale(storeID)
 
     return (
         <main className="min-h-screen p-4">

@@ -58,7 +58,7 @@ const statusStyles: Record<CashRegisterStatus, string> = {
 export default function CashRegistersClient() {
     const searchParams = useSearchParams()
     const storeSelected = useTienda((state) => state.storeSelected)
-    const storeID = searchParams.get("storeID") || storeSelected?.storeID || ""
+    const storeID = storeSelected?.storeID || searchParams.get("storeID") || ""
     const [registers, setRegisters] = useState<ICashRegister[]>([])
     const [activeSessions, setActiveSessions] = useState<Record<string, ICashSession | null>>({})
     const [summary, setSummary] = useState<IStoreCashSummary | null>(null)

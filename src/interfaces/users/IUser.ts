@@ -4,6 +4,16 @@ import type { IUserStoreRelation } from "@/interfaces/common/IUserStoreRelation"
 
 export type UserStatus = "ACTIVE" | "INACTIVE" | "TERMINATED" | (string & {})
 
+export interface ICreateUser {
+    email: string
+    name: string
+    password: string
+    role?: UserRole
+    roleID?: string
+    status?: "ACTIVE" | "INACTIVE"
+    userImg?: string
+}
+
 export interface IUser {
     userID: string
     tenantID?: string

@@ -1,7 +1,11 @@
 import { getAllProducts } from "@/actions/products/getAllProducts"
 import { getStoreStockSaleProducts } from "@/actions/inventory/getStoreStock"
 import { getOffers } from "@/actions/pricing/getOffers"
+import { checkStatus } from "@/actions/auth/authActions"
+import { getMyStores } from "@/actions/stores/getAllStores"
 import { DiscountManagementPanel } from "@/components/Discounts/DiscountManagementPanel"
+import { resolveAccessibleStoreID } from "@/lib/store-access"
+import { Role } from "@/lib/userRoles"
 
 type InventoryDiscountsPageProps = {
     searchParams?: Promise<{ storeID?: string | string[] }>
@@ -25,7 +29,9 @@ const getDiscountProducts = async (storeID?: string) => {
 
 const InventoryDiscountsPage = async ({ searchParams }: InventoryDiscountsPageProps) => {
     const resolvedSearchParams = await searchParams
-    const storeID = parseParam(resolvedSearchParams?.storeID)
+    const requestedStoreID = parseParam(resolvedSearchParams?.storeID)
+    const [auth, stores] = await Promise.all([checkStatus().catch(() => null), getMyStores()])
+    const storeID = resolveAccessibleStoreID(requestedStoreID, stores, auth?.user?.role === Role.Admin)
     const [products, offers] = await Promise.all([getDiscountProducts(storeID), getOffers()])
 
     return (

@@ -1,5 +1,5 @@
 import { getAllTransfers } from "@/actions/transfers/getAllTransfers"
-import { getAllStores } from "@/actions/stores/getAllStores"
+import { getMyStores } from "@/actions/stores/getAllStores"
 import TransfersClientWrapper from "@/components/Transfers/TransfersClientWrapper"
 import { parseTransferListFilters, transferListDefaults } from "@/lib/transfers-query"
 
@@ -9,9 +9,22 @@ interface TransfersPageProps {
 
 export default async function TransfersPage({ searchParams }: TransfersPageProps) {
     const resolvedSearchParams = await searchParams
-    const filters = parseTransferListFilters(resolvedSearchParams)
+    const requestedFilters = parseTransferListFilters(resolvedSearchParams)
+    const stores = await getMyStores()
+    const accessibleStoreIDs = new Set(stores.map((store) => store.storeID))
+    const filters = {
+        ...requestedFilters,
+        originStoreID:
+            requestedFilters.originStoreID && accessibleStoreIDs.has(requestedFilters.originStoreID)
+                ? requestedFilters.originStoreID
+                : undefined,
+        destinationStoreID:
+            requestedFilters.destinationStoreID && accessibleStoreIDs.has(requestedFilters.destinationStoreID)
+                ? requestedFilters.destinationStoreID
+                : undefined,
+    }
 
-    const [transferResult, stores] = await Promise.all([getAllTransfers(filters), getAllStores()])
+    const transferResult = await getAllTransfers(filters)
 
     const filterKey = [
         filters.originStoreID ?? "",
