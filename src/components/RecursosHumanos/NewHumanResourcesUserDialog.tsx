@@ -16,6 +16,8 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { RutInput } from "@/components/ui/rut-input"
+import { CurrencyInput } from "@/components/ui/currency-input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
@@ -376,9 +378,9 @@ export default function NewHumanResourcesUserDialog({
                                     />
                                 </Field>
                                 <Field label="RUT · En desarrollo">
-                                    <Input
+                                    <RutInput
                                         value={personalData.rut}
-                                        onChange={(event) => updatePersonalData("rut", event.target.value)}
+                                        onValueChange={(rut) => updatePersonalData("rut", rut)}
                                         placeholder="12.345.678-9"
                                         disabled
                                     />
@@ -633,11 +635,10 @@ export default function NewHumanResourcesUserDialog({
                                 </div>
 
                                 <Field label="Tope en monto fijo (opcional)">
-                                    <Input
-                                        inputMode="numeric"
+                                    <CurrencyInput
                                         value={discountLimit}
-                                        onChange={(event) => setDiscountLimit(event.target.value)}
-                                        placeholder="Ej: 10000 (deja en 0 para usar solo el %)"
+                                        onValueChange={setDiscountLimit}
+                                        placeholder="$ 10.000 (deja en 0 para usar solo el %)"
                                     />
                                 </Field>
                             </div>

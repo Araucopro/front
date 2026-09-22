@@ -21,6 +21,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { CurrencyInput } from "@/components/ui/currency-input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
@@ -438,7 +439,7 @@ export function AnularVentaModal({ isOpen, setIsOpen, sale }: Props) {
                         {returnType === "DESCUENTO" ? (
                             <div className="space-y-1.5">
                                 <Label htmlFor="discountAmount">Monto del descuento (CLP)</Label>
-                                <Input id="discountAmount" type="number" min="1" step="1" value={discountAmount} onChange={(event) => setDiscountAmount(event.target.value)} placeholder="Ej: 5000" required />
+                                <CurrencyInput id="discountAmount" value={discountAmount} onValueChange={setDiscountAmount} placeholder="$ 5.000" required />
                             </div>
                         ) : (
                             <div className="space-y-2">

@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { CurrencyInput } from "@/components/ui/currency-input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
@@ -232,7 +233,7 @@ export default function CashCatalogsDialog({ open, onOpenChange }: Props) {
 
                     {showForm && tab === "denominations" && (
                         <form onSubmit={submitDenomination} className="mb-5 grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900 sm:grid-cols-2">
-                            <Field label="Valor"><Input type="number" min={1} step={1} value={denominationForm.value} onChange={(event) => setDenominationForm((form) => ({ ...form, value: event.target.value }))} disabled={Boolean(editingID)} required={!editingID} /></Field>
+                            <Field label="Valor"><CurrencyInput value={denominationForm.value} onValueChange={(value) => setDenominationForm((form) => ({ ...form, value }))} disabled={Boolean(editingID)} required={!editingID} /></Field>
                             <Field label="Tipo"><Select value={denominationForm.type} disabled={Boolean(editingID)} onValueChange={(value: CashDenominationType) => setDenominationForm((form) => ({ ...form, type: value }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="BANKNOTE">Billete</SelectItem><SelectItem value="COIN">Moneda</SelectItem></SelectContent></Select></Field>
                             <Field label="Etiqueta"><Input value={denominationForm.label} onChange={(event) => setDenominationForm((form) => ({ ...form, label: event.target.value }))} placeholder="Se genera automáticamente" /></Field>
                             <Field label="Orden"><Input type="number" min={0} max={1000} value={denominationForm.sortOrder} onChange={(event) => setDenominationForm((form) => ({ ...form, sortOrder: event.target.value }))} /></Field>

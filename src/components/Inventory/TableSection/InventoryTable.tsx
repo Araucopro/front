@@ -3,6 +3,7 @@
 import { Tag, Trash2 } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
+import { CurrencyInput } from "@/components/ui/currency-input"
 import { Badge } from "@/components/ui/badge"
 import { MotionItem } from "@/components/Animations/motionItem"
 import type { IRawProduct, IProductVariationRaw } from "@/interfaces/products/IRawProduct"
@@ -265,13 +266,9 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                                         className="flex justify-center"
                                                         onClick={(e) => e.stopPropagation()}
                                                     >
-                                                        <Input
-                                                            type="number"
+                                                        <CurrencyInput
                                                             value={editValue}
-                                                            onWheel={(e) => {
-                                                                e.currentTarget.blur()
-                                                            }}
-                                                            onChange={(e) => setEditValue(e.target.value)}
+                                                            onValueChange={setEditValue}
                                                             onBlur={() =>
                                                                 handleSaveEdit(product, variation.variationID)
                                                             }
@@ -310,14 +307,10 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                                     className="flex justify-center"
                                                     onClick={(e) => e.stopPropagation()}
                                                 >
-                                                    <Input
-                                                        type="number"
+                                                    <CurrencyInput
                                                         value={editValue}
-                                                        onChange={(e) => setEditValue(e.target.value)}
+                                                        onValueChange={setEditValue}
                                                         onBlur={() => handleSaveEdit(product, variation.variationID)}
-                                                        onWheel={(e) => {
-                                                            e.currentTarget.blur()
-                                                        }}
                                                         className="w-20 h-8 px-2 py-1 text-center text-xs"
                                                         autoFocus
                                                     />

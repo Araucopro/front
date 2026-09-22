@@ -7,10 +7,12 @@ import { IUser } from "@/interfaces/users/IUser"
 import { useTienda } from "@/stores/tienda.store"
 import { createStore } from "@/actions/stores/createStore"
 import { Input } from "@/components/ui/input"
+import { RutInput } from "@/components/ui/rut-input"
 import { getAllStores } from "@/actions/stores/getAllStores"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { useAuth } from "@/stores/user.store"
 import { STORE_TYPE_OPTIONS, StoreType } from "@/lib/storeTypes"
+import { normalizeRutValue } from "@/utils/rut"
 
 export default function TiendasForm() {
     const { users } = useAuth()
@@ -42,7 +44,7 @@ export default function TiendasForm() {
             await createStore({
                 name: nombre,
                 location: sucursal,
-                rut: rut,
+                rut: normalizeRutValue(rut),
                 phone: telefono,
                 address: direccion,
                 city: ciudad,
@@ -85,11 +87,10 @@ export default function TiendasForm() {
                         >
                             RUT
                         </label>
-                        <input
+                        <RutInput
                             id="rut"
-                            type="text"
                             value={rut}
-                            onChange={(e) => setRut(e.target.value)}
+                            onValueChange={setRut}
                             placeholder="76.600.001-2"
                             className="w-full px-3 py-2 border bg-transparent border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             required
