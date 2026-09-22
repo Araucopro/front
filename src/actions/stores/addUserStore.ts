@@ -5,9 +5,9 @@ import type { StoreUserRoleValue } from "@/lib/storeUserRoles"
 /**
  * @deprecated Use addUserToStore from "@/actions/userstores/addUserToStore"
  */
-export const addUserStore = async (userID: string, storeID: string, role?: StoreUserRoleValue): Promise<void> => {
+export const addUserStore = async (userID: string, storeID: string, _legacyRole?: StoreUserRoleValue): Promise<void> => {
     await fetcher<void>(`${API_URL}/userstores`, {
         method: "POST",
-        body: JSON.stringify({ userID, storeID, role }),
+        body: JSON.stringify({ userID, storeID }),
     })
 }

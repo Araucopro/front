@@ -1,6 +1,7 @@
 import { getSingleSale } from "@/actions/sales/getSales"
 import { getReturns } from "@/actions/returns/returnActions"
 import { getStoreById } from "@/actions/stores/getStoreById"
+import { getMyStores } from "@/actions/stores/getAllStores"
 import AnularVentaControl from "@/components/Caja/AnularVentaControl"
 import ConvertSaleButton from "@/components/Caja/ConvertSaleButton"
 import PrintSaleButton from "@/components/Caja/PrintSaleButton"
@@ -22,13 +23,17 @@ export default async function SingleSalePage({ params, searchParams }: PropsSale
     const { saleID } = await params
     const resolvedSearchParams = await searchParams
     const rawStoreID = resolvedSearchParams?.storeID
-    const storeID = Array.isArray(rawStoreID) ? rawStoreID[0] : rawStoreID
+    const requestedStoreID = Array.isArray(rawStoreID) ? rawStoreID[0] : rawStoreID
+    const accessibleStores = await getMyStores()
+    const storeID = accessibleStores.some((store) => store.storeID === requestedStoreID)
+        ? requestedStoreID
+        : undefined
 
     if (!storeID) {
         return (
             <div className="mx-auto mt-12 max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-6 text-center text-amber-950">
-                <h1 className="text-lg font-bold">Selecciona una tienda para consultar la venta</h1>
-                <p className="mt-2 text-sm">El backend requiere el contexto de tienda para mostrar este detalle.</p>
+                <h1 className="text-lg font-bold">No tienes acceso a la tienda de esta venta</h1>
+                <p className="mt-2 text-sm">Selecciona una de las tiendas asignadas a tu usuario.</p>
                 <Link href="/home" className="mt-4 inline-block font-semibold text-blue-700 hover:underline">
                     Regresar a ventas
                 </Link>

@@ -7,7 +7,7 @@ import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import FriendlyLoadingScreen from "../Animations/FriendlyLoadingScreen"
 import { login, loginMaster } from "@/actions/auth/authActions"
-import { getAllStores } from "@/actions/stores/getAllStores"
+import { getMyStores } from "@/actions/stores/getAllStores"
 import { useAuth } from "@/stores/user.store"
 import { toast } from "sonner"
 import { useTienda } from "@/stores/tienda.store"
@@ -21,7 +21,7 @@ export default function LoginForm() {
     const [loadingMessage, setLoadingMessage] = useState("Verificando tus datos...")
     const router = useRouter()
     const { setUser, logout: clearTenantSession } = useAuth()
-    const { setStoreSelected, setStoresUser } = useTienda()
+    const { setStores, setStoreSelected, setStoresUser } = useTienda()
     const { setMasterUser, clearMasterUser } = useMasterAuth()
 
     const handleSubmit = async (event: React.FormEvent) => {
@@ -66,8 +66,10 @@ export default function LoginForm() {
             setUser(data.user, data.accessToken)
             setLoadingMessage("Buscando tus tiendas...")
 
-            const stores = await getAllStores()
+            const stores = await getMyStores()
+            setStores(stores)
             setStoresUser(stores)
+            setStoreSelected(null)
 
             let destination = "/home?storeID=all"
 

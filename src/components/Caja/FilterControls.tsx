@@ -10,17 +10,20 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { es } from "react-day-picker/locale"
 import { IStore } from "@/interfaces/stores/IStore"
 import { Building2 } from "lucide-react"
+import { useAuth } from "@/stores/user.store"
+import { Role } from "@/lib/userRoles"
+import { isSpecialStoreFilter } from "@/lib/store-access"
 
 interface FilterControlsProps {
     stores?: IStore[]
     variant?: "default" | "channel"
 }
 
-const specialStoreFilters = new Set(["all", "propias", "consignadas"])
-
 const FilterControls = ({ stores: storesProp, variant = "default" }: FilterControlsProps) => {
     const { stores: storesFromZustand, storeSelected, setStoreSelected } = useTienda()
+    const user = useAuth((state) => state.user)
     const stores = storesProp ?? storesFromZustand
+    const isAdmin = user?.role === Role.Admin
 
     const path = usePathname()
     const params = useSearchParams()
@@ -28,6 +31,12 @@ const FilterControls = ({ stores: storesProp, variant = "default" }: FilterContr
 
     const dateParam = params.get("date")
     const storeIDParam = params.get("storeID")
+    const selectedStoreFromParam = stores.find((store) => store.storeID === storeIDParam)
+    const selectedStoreFromState = stores.find((store) => store.storeID === storeSelected?.storeID)
+    const safeStoreID =
+        isAdmin && isSpecialStoreFilter(storeIDParam)
+            ? (storeIDParam ?? "all")
+            : (selectedStoreFromParam?.storeID ?? selectedStoreFromState?.storeID ?? stores[0]?.storeID ?? "")
 
     const [year, month, day] = dateParam
         ? dateParam.split("-").map(Number)
@@ -37,22 +46,33 @@ const FilterControls = ({ stores: storesProp, variant = "default" }: FilterContr
     const [date, setDate] = useState<Date>(dateObj)
 
     useEffect(() => {
-        if (!storeIDParam) return
+        if (stores.length === 0) return
 
-        if (specialStoreFilters.has(storeIDParam)) {
+        if (isAdmin && isSpecialStoreFilter(storeIDParam)) {
             if (storeSelected) setStoreSelected(null)
             return
         }
 
         const selectedStore = stores.find((store) => store.storeID === storeIDParam)
-        if (selectedStore && storeSelected?.storeID !== selectedStore.storeID) {
-            setStoreSelected(selectedStore)
+        if (selectedStore) {
+            if (storeSelected?.storeID !== selectedStore.storeID) setStoreSelected(selectedStore)
+            return
         }
-    }, [storeIDParam, storeSelected, stores, setStoreSelected])
+
+        const fallbackStore = selectedStoreFromState ?? stores[0]
+        if (fallbackStore) {
+            if (storeSelected?.storeID !== fallbackStore.storeID) {
+                setStoreSelected(fallbackStore)
+            }
+            const nextParams = new URLSearchParams(params.toString())
+            nextParams.set("storeID", fallbackStore.storeID)
+            router.replace(`${path}?${nextParams.toString()}`)
+        }
+    }, [isAdmin, params, path, router, selectedStoreFromState, storeIDParam, storeSelected, stores, setStoreSelected])
 
     const handleDateChange = (date: Date | undefined) => {
         const newDate = date ?? new Date()
-        const params = new URLSearchParams({ storeID: storeIDParam ?? "", date: format(newDate, "yyyy-MM-dd") })
+        const params = new URLSearchParams({ storeID: safeStoreID, date: format(newDate, "yyyy-MM-dd") })
         router.push(`${path}?${params.toString()}`)
         setDate(date ? date : new Date())
     }
@@ -66,7 +86,7 @@ const FilterControls = ({ stores: storesProp, variant = "default" }: FilterContr
     }
 
     const storeSelect = (
-        <Select value={storeIDParam || "all"} onValueChange={handleStoreChange}>
+        <Select value={safeStoreID} onValueChange={handleStoreChange}>
             <SelectTrigger
                 className={
                     variant === "channel"
@@ -80,10 +100,14 @@ const FilterControls = ({ stores: storesProp, variant = "default" }: FilterContr
                 </span>
             </SelectTrigger>
             <SelectContent>
-                <SelectItem value="all">Todos los canales de venta</SelectItem>
-                <SelectItem value="propias">Tiendas propias</SelectItem>
-                <SelectItem value="consignadas">Tiendas consignadas</SelectItem>
-                <hr className="my-2 border-gray-100 dark:border-gray-800" />
+                {isAdmin && (
+                    <>
+                        <SelectItem value="all">Todos los canales de venta</SelectItem>
+                        <SelectItem value="propias">Tiendas propias</SelectItem>
+                        <SelectItem value="consignadas">Tiendas consignadas</SelectItem>
+                        <hr className="my-2 border-gray-100 dark:border-gray-800" />
+                    </>
+                )}
                 {stores.map((store) => (
                     <SelectItem key={store.storeID} value={store.storeID}>
                         {store.name}

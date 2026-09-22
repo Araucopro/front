@@ -1,5 +1,6 @@
 import Navbar from "@/components/Navbar/Navbar"
 import Sidebar from "@/components/Sidebar/Sidebar"
+import InitialCashOpeningDialog from "@/components/CashRegisters/InitialCashOpeningDialog"
 import ImpersonationBanner from "@/components/Master/ImpersonationBanner"
 import type { MasterImpersonationInfo } from "@/actions/master/impersonationActions"
 import {
@@ -45,6 +46,7 @@ export default async function HomeLayout({ children }: { children: React.ReactNo
             <section className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto pl-2 lg:p-6">
                 {impersonationInfo && <ImpersonationBanner info={impersonationInfo} />}
                 <Navbar />
+                <InitialCashOpeningDialog />
                 {children}
             </section>
         </div>

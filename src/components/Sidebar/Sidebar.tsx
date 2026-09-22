@@ -15,6 +15,7 @@ import useDarkMode from "@/hooks/useDarkMode"
 import useMobileScreen from "@/hooks/useMobileScreen"
 import useQueryParams from "@/hooks/useQueryParams"
 import { Role } from "@/lib/userRoles"
+import { isSpecialStoreFilter } from "@/lib/store-access"
 import { useTienda } from "@/stores/tienda.store"
 import { useAuth } from "@/stores/user.store"
 import { navItems, type NavigationItem, type NavigationItemStatus } from "@/utils/navItems"
@@ -42,7 +43,7 @@ export default function Sidebar() {
     const searchParamsKey = searchParams.toString()
 
     const { user } = useAuth()
-    const { storeSelected } = useTienda()
+    const { storeSelected, storesFromUser, setStoreSelected } = useTienda()
     const { isMobile, isMobileOpen, setIsMobileOpen } = useMobileScreen()
     const { isDarkMode, setIsDarkMode } = useDarkMode()
 
@@ -57,15 +58,32 @@ export default function Sidebar() {
     useEffect(() => {
         const storeID = searchParams.get("storeID")
         if (!storeID && storeSelected) {
-            router.push(`${pathname}?${createQueryParam("storeID", storeSelected.storeID)}`)
+            router.replace(`${pathname}?${createQueryParam("storeID", storeSelected.storeID)}`)
+            return
         }
-    }, [createQueryParam, pathname, router, searchParams, storeSelected])
+
+        if (!storeID || storesFromUser.length === 0) return
+        if (user?.role === Role.Admin && isSpecialStoreFilter(storeID)) return
+
+        const allowedStore = storesFromUser.find((store) => store.storeID === storeID)
+        if (!allowedStore) {
+            const fallbackStore = storesFromUser[0]
+            setStoreSelected(fallbackStore)
+            router.replace(`${pathname}?${createQueryParam("storeID", fallbackStore.storeID)}`)
+        }
+    }, [createQueryParam, pathname, router, searchParams, setStoreSelected, storeSelected, storesFromUser, user?.role])
 
     const filteredNavItems = useMemo<NavigationItem[]>(() => {
         if (!user) return []
 
         if (user.role === Role.Vendedor) {
-            return navItems.filter((item) => ["cash", "cash-registers", "inventory", "commercial"].includes(item.id))
+            return navItems.flatMap((item) => {
+                if (["cash", "inventory", "commercial"].includes(item.id)) return [item]
+                if (item.id !== "configuration") return []
+
+                const cashRegisterItems = item.subItems?.filter((subItem) => subItem.id === "cash-registers") ?? []
+                return cashRegisterItems.length > 0 ? [{ ...item, subItems: cashRegisterItems }] : []
+            })
         }
 
         if (user.role === Role.Consignado) {

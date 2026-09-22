@@ -1,7 +1,9 @@
 import { checkStatus } from "@/actions/auth/authActions"
-import { getAllStores } from "@/actions/stores/getAllStores"
+import { getMyStores } from "@/actions/stores/getAllStores"
 import HomeDashboard from "../../components/Home/HomeDashboard"
 import { buildHomeViewModel } from "../../components/Home/home-view-model"
+import { resolveAccessibleStoreID } from "@/lib/store-access"
+import { Role } from "@/lib/userRoles"
 
 interface SearchParams {
     searchParams: Promise<{
@@ -12,14 +14,10 @@ interface SearchParams {
 
 export default async function HomePage({ searchParams }: SearchParams) {
     const { storeID = "", date = "" } = await searchParams
-    let effectiveStoreID = storeID
-    if (!effectiveStoreID) {
-        const auth = await checkStatus().catch(() => null)
-        const stores = auth?.user ? await getAllStores() : []
-        effectiveStoreID = stores[0]?.storeID ?? ""
-    }
+    const [auth, stores] = await Promise.all([checkStatus().catch(() => null), getMyStores().catch(() => [])])
+    const effectiveStoreID = resolveAccessibleStoreID(storeID, stores, auth?.user?.role === Role.Admin)
 
-    const viewModel = await buildHomeViewModel(effectiveStoreID, date)
+    const viewModel = await buildHomeViewModel(effectiveStoreID, date, stores)
 
     if (!viewModel) {
         return (
