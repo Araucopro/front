@@ -27,23 +27,11 @@ import { reconcileDispatchGuide } from "@/actions/dispatch-guides/reconcileDispa
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { RutInput } from "@/components/ui/rut-input"
 import { Label } from "@/components/ui/label"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import type { IClient } from "@/interfaces/clients/IClient"
 import { normalizeRutValue } from "@/utils/rut"
@@ -146,8 +134,7 @@ const toNumber = (value: unknown) => {
     return Number.isFinite(parsed) ? parsed : 0
 }
 
-const resolveStoreProductStoreId = (storeProduct: IStoreProduct) =>
-    storeProduct.storeID || storeProduct.Store?.storeID
+const resolveStoreProductStoreId = (storeProduct: IStoreProduct) => storeProduct.storeID || storeProduct.Store?.storeID
 
 const findStoreProductForStore = (variation: IProductVariation, storeID: string) => {
     if (!storeID) return undefined
@@ -331,9 +318,7 @@ export default function DispatchGuidesClient({
         if (normalizedQuery.length < 2) return []
 
         const tokens = normalizedQuery.split(" ").filter(Boolean)
-        return storeOptions
-            .filter((option) => tokens.every((token) => option.searchText.includes(token)))
-            .slice(0, 20)
+        return storeOptions.filter((option) => tokens.every((token) => option.searchText.includes(token))).slice(0, 20)
     }, [normalizedQuery, storeOptions])
 
     const clientSearchResults = useMemo(() => {
@@ -440,8 +425,8 @@ export default function DispatchGuidesClient({
             return
         }
 
-        const referencedItems = sale.SaleProducts.map(saleProductToCartItem).filter(
-            (item): item is GuideCartItem => Boolean(item),
+        const referencedItems = sale.SaleProducts.map(saleProductToCartItem).filter((item): item is GuideCartItem =>
+            Boolean(item),
         )
 
         setSelectedReferenceSale(sale)
@@ -531,9 +516,7 @@ export default function DispatchGuidesClient({
                 }
 
                 return current.map((item) =>
-                    item.storeProductID === existing.storeProductID
-                        ? { ...item, quantity: item.quantity + 1 }
-                        : item,
+                    item.storeProductID === existing.storeProductID ? { ...item, quantity: item.quantity + 1 } : item,
                 )
             }
 
@@ -680,9 +663,7 @@ export default function DispatchGuidesClient({
             setCreating(true)
             const response = await createDispatchGuide(effectiveStoreID, buildCreatePayload())
             toast.success(
-                response.dte?.STATUS === "EMITIDO"
-                    ? "Guia de despacho emitida"
-                    : "Guia creada y pendiente de emision",
+                response.dte?.STATUS === "EMITIDO" ? "Guia de despacho emitida" : "Guia creada y pendiente de emision",
             )
             setOpenCreate(false)
             resetCreateForm()
@@ -701,11 +682,7 @@ export default function DispatchGuidesClient({
         try {
             setPendingActionID(id)
             const response = await reconcileDispatchGuide(id, effectiveStoreID)
-            setGuides((current) =>
-                current.map((item) =>
-                    item.dispatchGuide.dispatchGuideID === id ? response : item,
-                ),
-            )
+            setGuides((current) => current.map((item) => (item.dispatchGuide.dispatchGuideID === id ? response : item)))
             toast.success("Guia reconciliada")
             router.refresh()
         } catch (error) {
@@ -718,17 +695,15 @@ export default function DispatchGuidesClient({
 
     const handleAnular = async (guide: IDispatchGuideOperationResponse) => {
         const id = guide.dispatchGuide.dispatchGuideID
-        const confirmed = window.confirm("Anular esta guia de despacho? Esta accion revertira el stock reservado si el backend confirma la anulacion.")
+        const confirmed = window.confirm(
+            "Anular esta guia de despacho? Esta accion revertira el stock reservado si el backend confirma la anulacion.",
+        )
         if (!confirmed) return
 
         try {
             setPendingActionID(id)
             const response = await anularDispatchGuide(id, effectiveStoreID)
-            setGuides((current) =>
-                current.map((item) =>
-                    item.dispatchGuide.dispatchGuideID === id ? response : item,
-                ),
-            )
+            setGuides((current) => current.map((item) => (item.dispatchGuide.dispatchGuideID === id ? response : item)))
             toast.success("Solicitud de anulacion procesada")
             router.refresh()
         } catch (error) {
@@ -855,16 +830,15 @@ export default function DispatchGuidesClient({
                     </p>
                 </div>
                 <div className="flex flex-col gap-2 sm:flex-row">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => loadGuides()}
-                        disabled={loadingList}
-                    >
+                    <Button type="button" variant="outline" onClick={() => loadGuides()} disabled={loadingList}>
                         {loadingList ? <LoaderCircle className="animate-spin" /> : <RefreshCw />}
                         Actualizar
                     </Button>
-                    <Button type="button" onClick={() => handleCreateDialogOpenChange(true)} disabled={!effectiveStoreID}>
+                    <Button
+                        type="button"
+                        onClick={() => handleCreateDialogOpenChange(true)}
+                        disabled={!effectiveStoreID}
+                    >
                         <Plus />
                         Nueva guia
                     </Button>
@@ -942,7 +916,10 @@ export default function DispatchGuidesClient({
                                 const folio = operation.dte?.FOLIO ?? guide.folio
 
                                 return (
-                                    <TableRow key={guide.dispatchGuideID} className="hover:bg-slate-50 dark:hover:bg-slate-800/60">
+                                    <TableRow
+                                        key={guide.dispatchGuideID}
+                                        className="hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                                    >
                                         <TableCell className="font-semibold">
                                             {folio ? `#${folio}` : "Sin folio"}
                                         </TableCell>
@@ -987,7 +964,11 @@ export default function DispatchGuidesClient({
                                                         onClick={() => handleReconcile(operation)}
                                                         disabled={isPendingAction}
                                                     >
-                                                        {isPendingAction ? <LoaderCircle className="animate-spin" /> : <RefreshCw />}
+                                                        {isPendingAction ? (
+                                                            <LoaderCircle className="animate-spin" />
+                                                        ) : (
+                                                            <RefreshCw />
+                                                        )}
                                                     </Button>
                                                 )}
                                                 {canAnular && (
@@ -1000,7 +981,11 @@ export default function DispatchGuidesClient({
                                                         disabled={isPendingAction}
                                                         className="text-rose-600 hover:text-rose-700"
                                                     >
-                                                        {isPendingAction ? <LoaderCircle className="animate-spin" /> : <RotateCcw />}
+                                                        {isPendingAction ? (
+                                                            <LoaderCircle className="animate-spin" />
+                                                        ) : (
+                                                            <RotateCcw />
+                                                        )}
                                                     </Button>
                                                 )}
                                             </div>
@@ -1105,10 +1090,13 @@ export default function DispatchGuidesClient({
                                                                     {getReferenceLabel(sale)}
                                                                 </span>
                                                                 <span className="block truncate text-xs text-slate-500">
-                                                                    {sale.receiver?.name} - {formatDate(sale.issueDate ?? sale.createdAt)}
+                                                                    {sale.receiver?.name} -{" "}
+                                                                    {formatDate(sale.issueDate ?? sale.createdAt)}
                                                                 </span>
                                                             </span>
-                                                            <span className="text-sm font-semibold">${toPrice(sale.total)}</span>
+                                                            <span className="text-sm font-semibold">
+                                                                ${toPrice(sale.total)}
+                                                            </span>
                                                         </button>
                                                     </li>
                                                 ))
@@ -1124,7 +1112,10 @@ export default function DispatchGuidesClient({
                                     <div className="flex flex-col gap-2 rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-800 dark:bg-blue-950/40 dark:text-blue-100 sm:flex-row sm:items-center sm:justify-between">
                                         <span>
                                             Se enviara referencia DTE{" "}
-                                            <span className="font-mono">{getSaleDteDocumentID(selectedReferenceSale)}</span>.
+                                            <span className="font-mono">
+                                                {getSaleDteDocumentID(selectedReferenceSale)}
+                                            </span>
+                                            .
                                         </span>
                                         <Button type="button" variant="ghost" size="sm" onClick={clearReferenceSale}>
                                             Quitar referencia
@@ -1221,14 +1212,18 @@ export default function DispatchGuidesClient({
                                                                 </span>
                                                             </span>
                                                             <span className="text-xs font-semibold text-slate-500">
-                                                                {client.segment === "WHOLESALE" ? "Mayorista" : "Retail"}
+                                                                {client.segment === "WHOLESALE"
+                                                                    ? "Mayorista"
+                                                                    : "Retail"}
                                                             </span>
                                                         </button>
                                                     </li>
                                                 ))
                                             ) : (
                                                 <li className="p-3 text-sm text-slate-500">
-                                                    {loadingClients ? "Buscando clientes..." : "Sin clientes para esta busqueda"}
+                                                    {loadingClients
+                                                        ? "Buscando clientes..."
+                                                        : "Sin clientes para esta busqueda"}
                                                 </li>
                                             )}
                                         </ul>
@@ -1266,7 +1261,10 @@ export default function DispatchGuidesClient({
                         <section className="grid gap-4 rounded-lg border border-slate-200 p-4 dark:border-slate-700 lg:grid-cols-4">
                             <div className="space-y-2">
                                 <Label>Patente</Label>
-                                <Input value={transport.patente ?? ""} onChange={(event) => setTransportField("patente", event)} />
+                                <Input
+                                    value={transport.patente ?? ""}
+                                    onChange={(event) => setTransportField("patente", event)}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label>RUT conductor</Label>
@@ -1328,10 +1326,13 @@ export default function DispatchGuidesClient({
                                                                 {option.product.name} - {option.variation.sizeNumber}
                                                             </span>
                                                             <span className="block text-xs text-slate-500">
-                                                                SKU {option.variation.sku} - Stock {option.stockQuantity}
+                                                                SKU {option.variation.sku} - Stock{" "}
+                                                                {option.stockQuantity}
                                                             </span>
                                                         </span>
-                                                        <span className="text-sm font-semibold">${toPrice(option.priceList)}</span>
+                                                        <span className="text-sm font-semibold">
+                                                            ${toPrice(option.priceList)}
+                                                        </span>
                                                     </button>
                                                 </li>
                                             ))
@@ -1358,7 +1359,10 @@ export default function DispatchGuidesClient({
                                     <TableBody>
                                         {cartItems.length === 0 ? (
                                             <TableRow>
-                                                <TableCell colSpan={5} className="py-8 text-center text-sm text-slate-500">
+                                                <TableCell
+                                                    colSpan={5}
+                                                    className="py-8 text-center text-sm text-slate-500"
+                                                >
                                                     Agrega productos para emitir la guia.
                                                 </TableCell>
                                             </TableRow>
@@ -1375,7 +1379,9 @@ export default function DispatchGuidesClient({
                                                                 className="h-10 w-10 rounded object-cover"
                                                             />
                                                             <div>
-                                                                <p className="font-medium">{item.productName} - {item.sizeNumber}</p>
+                                                                <p className="font-medium">
+                                                                    {item.productName} - {item.sizeNumber}
+                                                                </p>
                                                                 <p className="text-xs text-slate-500">SKU {item.sku}</p>
                                                             </div>
                                                         </div>
@@ -1388,7 +1394,10 @@ export default function DispatchGuidesClient({
                                                                 max={item.stockQuantity}
                                                                 value={item.quantity}
                                                                 onChange={(event) =>
-                                                                    updateQuantity(item.storeProductID, Number(event.target.value))
+                                                                    updateQuantity(
+                                                                        item.storeProductID,
+                                                                        Number(event.target.value),
+                                                                    )
                                                                 }
                                                                 className="w-20 text-center"
                                                             />
@@ -1401,7 +1410,9 @@ export default function DispatchGuidesClient({
                                                         {includePrices ? `$${toPrice(item.priceList)}` : "-"}
                                                     </TableCell>
                                                     <TableCell className="text-right font-semibold">
-                                                        {includePrices ? `$${toPrice(item.priceList * item.quantity)}` : "-"}
+                                                        {includePrices
+                                                            ? `$${toPrice(item.priceList * item.quantity)}`
+                                                            : "-"}
                                                     </TableCell>
                                                     <TableCell>
                                                         <Button
@@ -1452,7 +1463,10 @@ export default function DispatchGuidesClient({
                                 <div className="grid gap-3 rounded-lg border border-slate-200 p-4 dark:border-slate-700 sm:grid-cols-3">
                                     <div>
                                         <p className="text-xs font-semibold uppercase text-slate-500">Estado</p>
-                                        <Badge variant="outline" className={statusClassName(selectedGuide.dispatchGuide.status)}>
+                                        <Badge
+                                            variant="outline"
+                                            className={statusClassName(selectedGuide.dispatchGuide.status)}
+                                        >
                                             {statusLabels[selectedGuide.dispatchGuide.status]}
                                         </Badge>
                                     </div>
@@ -1473,8 +1487,12 @@ export default function DispatchGuidesClient({
                                 <div className="grid gap-3 rounded-lg border border-slate-200 p-4 dark:border-slate-700 sm:grid-cols-2">
                                     <div>
                                         <p className="text-xs font-semibold uppercase text-slate-500">Receptor</p>
-                                        <p className="text-sm font-medium">{selectedGuide.dispatchGuide.receiver?.name}</p>
-                                        <p className="text-sm text-slate-500">{selectedGuide.dispatchGuide.receiver?.rut}</p>
+                                        <p className="text-sm font-medium">
+                                            {selectedGuide.dispatchGuide.receiver?.name}
+                                        </p>
+                                        <p className="text-sm text-slate-500">
+                                            {selectedGuide.dispatchGuide.receiver?.rut}
+                                        </p>
                                         <p className="text-sm text-slate-500">
                                             {selectedGuide.dispatchGuide.receiver?.address},{" "}
                                             {selectedGuide.dispatchGuide.receiver?.city}
@@ -1482,8 +1500,12 @@ export default function DispatchGuidesClient({
                                     </div>
                                     <div>
                                         <p className="text-xs font-semibold uppercase text-slate-500">Destino</p>
-                                        <p className="text-sm font-medium">{selectedGuide.dispatchGuide.destination.address}</p>
-                                        <p className="text-sm text-slate-500">{selectedGuide.dispatchGuide.destination.city}</p>
+                                        <p className="text-sm font-medium">
+                                            {selectedGuide.dispatchGuide.destination.address}
+                                        </p>
+                                        <p className="text-sm text-slate-500">
+                                            {selectedGuide.dispatchGuide.destination.city}
+                                        </p>
                                     </div>
                                 </div>
 
@@ -1543,7 +1565,8 @@ export default function DispatchGuidesClient({
                                                 Convertir a factura electronica
                                             </p>
                                             <p className="text-sm text-emerald-700 dark:text-emerald-300">
-                                                Emite una Factura Electronica 33 referenciando esta guia. No descuenta stock nuevamente.
+                                                Emite una Factura Electronica 33 referenciando esta guia. No descuenta
+                                                stock nuevamente.
                                             </p>
                                         </div>
 
@@ -1591,7 +1614,10 @@ export default function DispatchGuidesClient({
                                                                 className="flex cursor-pointer items-center justify-between gap-3 rounded-md border border-slate-200 px-3 py-2 text-sm dark:border-slate-700"
                                                             >
                                                                 <span>
-                                                                    Guia {guide.dte?.FOLIO ?? guide.dispatchGuide.folio ?? id.slice(0, 8)}
+                                                                    Guia{" "}
+                                                                    {guide.dte?.FOLIO ??
+                                                                        guide.dispatchGuide.folio ??
+                                                                        id.slice(0, 8)}
                                                                     <span className="ml-2 text-slate-500">
                                                                         {formatDate(guide.dispatchGuide.issueDate)}
                                                                     </span>
@@ -1599,7 +1625,10 @@ export default function DispatchGuidesClient({
                                                                 <Checkbox
                                                                     checked={additionalInvoiceGuideIDs.includes(id)}
                                                                     onCheckedChange={(checked) =>
-                                                                        toggleAdditionalInvoiceGuide(id, checked === true)
+                                                                        toggleAdditionalInvoiceGuide(
+                                                                            id,
+                                                                            checked === true,
+                                                                        )
                                                                     }
                                                                 />
                                                             </label>
@@ -1638,5 +1667,4 @@ export default function DispatchGuidesClient({
             </Dialog>
         </div>
     )
-
 }

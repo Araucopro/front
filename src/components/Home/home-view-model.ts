@@ -3,7 +3,7 @@ import { getStoreStockSaleProducts } from "@/actions/inventory/getStoreStock"
 import { getAllPurchaseOrders } from "@/actions/purchase-orders/getAllPurchaseOrders"
 import { getSales } from "@/actions/sales/getSales"
 import { getReturns } from "@/actions/returns/returnActions"
-import { getAllStores } from "@/actions/stores/getAllStores"
+import { getMyStores } from "@/actions/stores/getAllStores"
 import { getResume } from "@/actions/totals/getResume"
 import { IStore } from "@/interfaces/stores/IStore"
 import { IPurchaseOrder } from "@/interfaces/orders/IPurchaseOrder"
@@ -173,7 +173,11 @@ export type HomeViewModel = {
     dateRef: Date
 }
 
-export const buildHomeViewModel = async (rawStoreID: string, rawDate: string): Promise<HomeViewModel | null> => {
+export const buildHomeViewModel = async (
+    rawStoreID: string,
+    rawDate: string,
+    accessibleStores?: IStore[],
+): Promise<HomeViewModel | null> => {
     if (!rawStoreID) {
         return null
     }
@@ -183,7 +187,7 @@ export const buildHomeViewModel = async (rawStoreID: string, rawDate: string): P
     const dateRef = toChileMiddayUTC(date)
     const specialFilter = isSpecialStoreFilter(storeID)
     // Estas consultas no dependen de la tienda activa y pueden iniciar en paralelo.
-    const storesPromise = getAllStores()
+    const storesPromise = accessibleStores ? Promise.resolve(accessibleStores) : getMyStores()
     const allOrdersPromise = getAllPurchaseOrders()
     const allProductsPromise = getProductsForSale(storeID)
     const productCatalogPromise = specialFilter ? allProductsPromise : getAllProducts()

@@ -52,7 +52,7 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
     const { editingField, setEditingField, editValue, setEditValue } = inventoryStore()
     const { storeSelected } = useTienda()
     const { searchParams } = useQueryParams()
-    const storeID = searchParams.get("storeID") || storeSelected?.storeID || null
+    const storeID = storeSelected?.storeID || searchParams.get("storeID") || null
     const [openSku, setOpenSku] = useState<string | null>(null)
     const [pricingVariation, setPricingVariation] = useState<PricingVariationState>(null)
     const [revealedCostSku, setRevealedCostSku] = useState<string | null>(null)

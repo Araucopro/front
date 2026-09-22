@@ -134,7 +134,7 @@ const getDayTooltip = (day?: IAttendanceCalendarDay, isFuture = false) => {
 export default function HumanResourcesOverview() {
     const searchParams = useSearchParams()
     const storeSelected = useTienda((state) => state.storeSelected)
-    const storeID = searchParams.get("storeID") || storeSelected?.storeID || ""
+    const storeID = storeSelected?.storeID || searchParams.get("storeID") || ""
     const today = useMemo(() => new Date(), [])
     const todayKey = toDateKey(today)
     const todayMonthKey = toMonthKey(today)

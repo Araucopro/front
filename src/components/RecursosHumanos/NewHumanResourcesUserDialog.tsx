@@ -1,7 +1,7 @@
 "use client"
 
 import { FormEvent, useMemo, useState } from "react"
-import { addUserStore } from "@/actions/stores/addUserStore"
+import { addUserToStore } from "@/actions/userstores/addUserToStore"
 import { createUser } from "@/actions/users/createUser"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -30,6 +30,7 @@ import {
     BadgePercent,
     BarChart3,
     BriefcaseBusiness,
+    Building2,
     CalendarDays,
     CheckSquare,
     ClipboardList,
@@ -47,6 +48,7 @@ import {
 import { toast } from "sonner"
 
 type NewUserTab = "personal" | "access" | "permissions" | "discounts" | "history"
+type CreationStep = "details" | "stores"
 
 type NewHumanResourcesUserDialogProps = {
     open: boolean
@@ -144,14 +146,6 @@ const getTodayValue = () => {
 
 const isLegacyRoleValue = (value: string) => LEGACY_ROLE_OPTIONS.some((role) => role.value === value)
 
-const getStoreRoleFromUserRole = (value: string) => {
-    if (value === Role.Admin) return "owner"
-    if (value === Role.Vendedor) return "store_manager"
-    if (value === Role.Consignado) return "consignado"
-    if (value === Role.Tercero) return "tercero"
-    return undefined
-}
-
 const unique = <T,>(items: T[]) => Array.from(new Set(items))
 
 const getRoleDetails = (subjects: string[]) => {
@@ -172,6 +166,8 @@ export default function NewHumanResourcesUserDialog({
     onCreated,
 }: NewHumanResourcesUserDialogProps) {
     const [activeTab, setActiveTab] = useState<NewUserTab>("personal")
+    const [creationStep, setCreationStep] = useState<CreationStep>("details")
+    const [createdUserID, setCreatedUserID] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [personalData, setPersonalData] = useState({
         name: "",
@@ -224,6 +220,7 @@ export default function NewHumanResourcesUserDialog({
     }, [roles])
 
     const selectedRole = roleOptions.find((role) => role.value === accessData.roleValue)
+    const requiresStoreAssignment = Boolean(accessData.roleValue) && accessData.roleValue !== Role.Admin
 
     const baseModules = useMemo(() => {
         if (!selectedRole) return []
@@ -260,8 +257,18 @@ export default function NewHumanResourcesUserDialog({
         )
     }
 
+    const refreshUsers = async () => {
+        try {
+            await onCreated()
+        } catch {
+            toast.warning("El usuario fue guardado, pero no se pudo actualizar la lista")
+        }
+    }
+
     const resetForm = () => {
         setActiveTab("personal")
+        setCreationStep("details")
+        setCreatedUserID(null)
         setPersonalData({
             name: "",
             rut: "",
@@ -292,30 +299,60 @@ export default function NewHumanResourcesUserDialog({
             return
         }
 
-        if (!accessData.roleValue || accessData.password.length < 6) {
+        if (!accessData.roleValue || accessData.password.length < 8) {
             setActiveTab("access")
-            toast.error("Selecciona un rol base y una clave de al menos 6 caracteres")
+            setCreationStep("details")
+            toast.error("Selecciona un rol base y una clave de al menos 8 caracteres")
+            return
+        }
+
+        if (requiresStoreAssignment && creationStep === "details") {
+            setCreationStep("stores")
+            return
+        }
+
+        if (requiresStoreAssignment && selectedStores.length === 0) {
+            toast.error("Selecciona al menos una tienda para que el usuario pueda acceder")
             return
         }
 
         setIsSubmitting(true)
         try {
-            const createdUser = await createUser({
-                name: personalData.name.trim(),
-                email: personalData.email.trim(),
-                password: accessData.password,
-                ...buildUserRolePayload(accessData.roleValue),
-            })
+            let userID = createdUserID
 
-            const storeRole = getStoreRoleFromUserRole(accessData.roleValue)
-            if (createdUser.userID && selectedStores.length > 0) {
-                await Promise.all(selectedStores.map((storeID) => addUserStore(createdUser.userID, storeID, storeRole)))
+            if (!userID) {
+                const createdUser = await createUser({
+                    name: personalData.name.trim(),
+                    email: personalData.email.trim(),
+                    password: accessData.password,
+                    ...buildUserRolePayload(accessData.roleValue),
+                })
+                userID = createdUser.userID
+                setCreatedUserID(userID)
+            }
+
+            if (requiresStoreAssignment) {
+                const results = await Promise.allSettled(
+                    selectedStores.map((storeID) => addUserToStore(userID, storeID)),
+                )
+                const failedStoreIDs = selectedStores.filter((_, index) => results[index].status === "rejected")
+
+                if (failedStoreIDs.length > 0) {
+                    setSelectedStores(failedStoreIDs)
+                    await refreshUsers()
+                    toast.error(
+                        failedStoreIDs.length === selectedStores.length
+                            ? "El usuario fue creado, pero no se pudo asignar a la tienda. Puedes reintentar."
+                            : "El usuario fue creado, pero algunas tiendas no pudieron asignarse. Puedes reintentar.",
+                    )
+                    return
+                }
             }
 
             toast.success("Usuario creado exitosamente")
             resetForm()
             onOpenChange(false)
-            await onCreated()
+            await refreshUsers()
         } catch (error) {
             toast.error(error instanceof Error ? error.message : "No se pudo crear el usuario")
         } finally {
@@ -336,35 +373,108 @@ export default function NewHumanResourcesUserDialog({
                     </DialogHeader>
 
                     <div className="border-b border-slate-200 dark:border-slate-700">
-                        <div className="flex overflow-x-auto px-4">
-                            {tabs.map((tab) => {
-                                const Icon = tab.icon
-                                return (
-                                    <button
-                                        key={tab.id}
-                                        type="button"
-                                        onClick={() => setActiveTab(tab.id)}
-                                        className={cn(
-                                            "flex min-w-max items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors",
-                                            activeTab === tab.id
-                                                ? "border-slate-700 text-slate-900 dark:border-white dark:text-white"
-                                                : "border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white",
-                                        )}
-                                    >
-                                        <Icon className="h-4 w-4 text-violet-600" />
-                                        {tab.label}
-                                        {tab.development && (
-                                            <span className="rounded-full border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[8px] font-bold uppercase text-amber-700">
-                                                En desarrollo
-                                            </span>
-                                        )}
-                                    </button>
-                                )
-                            })}
-                        </div>
+                        {creationStep === "details" ? (
+                            <div className="flex overflow-x-auto px-4">
+                                {tabs.map((tab) => {
+                                    const Icon = tab.icon
+                                    return (
+                                        <button
+                                            key={tab.id}
+                                            type="button"
+                                            onClick={() => setActiveTab(tab.id)}
+                                            className={cn(
+                                                "flex min-w-max items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors",
+                                                activeTab === tab.id
+                                                    ? "border-slate-700 text-slate-900 dark:border-white dark:text-white"
+                                                    : "border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white",
+                                            )}
+                                        >
+                                            <Icon className="h-4 w-4 text-violet-600" />
+                                            {tab.label}
+                                            {tab.development && (
+                                                <span className="rounded-full border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[8px] font-bold uppercase text-amber-700">
+                                                    En desarrollo
+                                                </span>
+                                            )}
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-3 px-6 py-3">
+                                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-700 text-xs font-black text-white">
+                                    2
+                                </span>
+                                <div>
+                                    <p className="text-sm font-bold text-slate-900 dark:text-white">Asignar tiendas</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-300">Paso 2 de 2</p>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="max-h-[62vh] overflow-y-auto px-6 py-5">
+                        {creationStep === "stores" ? (
+                            <div className="space-y-5">
+                                <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-100">
+                                    <div className="flex gap-3">
+                                        <Building2 className="mt-0.5 h-5 w-5 shrink-0" />
+                                        <div>
+                                            <p className="font-bold">El usuario necesita acceso a una tienda</p>
+                                            <p className="mt-1 text-xs leading-5">
+                                                Selecciona al menos una. Sin esta relación, un vendedor u otro rol operativo no podrá entrar a la tienda.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <SectionLabel>Tiendas disponibles *</SectionLabel>
+                                    {stores.length === 0 ? (
+                                        <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                                            No hay tiendas disponibles. Crea una tienda antes de dar de alta a este usuario.
+                                        </div>
+                                    ) : (
+                                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                                            {stores.map((store) => {
+                                                const selected = selectedStores.includes(store.storeID)
+                                                const checkboxID = `new-user-store-${store.storeID}`
+                                                return (
+                                                    <div
+                                                        key={store.storeID}
+                                                        className={cn(
+                                                            "flex items-center gap-3 rounded-lg border p-4 transition-colors",
+                                                            selected
+                                                                ? "border-emerald-500 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-950"
+                                                                : "border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800",
+                                                        )}
+                                                    >
+                                                        <Checkbox
+                                                            id={checkboxID}
+                                                            checked={selected}
+                                                            onCheckedChange={(checked) => toggleStore(store.storeID, checked === true)}
+                                                        />
+                                                        <Label htmlFor={checkboxID} className="min-w-0 flex-1 cursor-pointer">
+                                                            <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{store.name}</p>
+                                                            {store.address && (
+                                                                <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-300">{store.address}</p>
+                                                            )}
+                                                        </Label>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {createdUserID && (
+                                    <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+                                        La cuenta ya fue creada. Solo se reintentará la asignación de las tiendas pendientes.
+                                    </p>
+                                )}
+                            </div>
+                        ) : (
+                            <>
                         {activeTab === "personal" && (
                             <div className="grid gap-5 md:grid-cols-2">
                                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 md:col-span-2">
@@ -495,7 +605,7 @@ export default function NewHumanResourcesUserDialog({
                                     </div>
                                 </div>
 
-                                <div className="grid gap-4 md:grid-cols-2">
+                                <div>
                                     <Field label="Clave inicial *">
                                         <div className="relative">
                                             <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -503,31 +613,19 @@ export default function NewHumanResourcesUserDialog({
                                                 type="password"
                                                 value={accessData.password}
                                                 onChange={(event) => setAccessData((current) => ({ ...current, password: event.target.value }))}
-                                                placeholder="Minimo 6 caracteres"
+                                                placeholder="Mínimo 8 caracteres"
+                                                minLength={8}
                                                 className="pl-9"
                                             />
                                         </div>
                                     </Field>
-                                    <Field label="Tiendas asignadas">
-                                        <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
-                                            {stores.length === 0 ? (
-                                                <p className="text-sm text-slate-500 dark:text-slate-300">No hay tiendas disponibles.</p>
-                                            ) : (
-                                                <div className="grid max-h-32 gap-2 overflow-y-auto">
-                                                    {stores.map((store) => (
-                                                        <CheckboxRow
-                                                            key={store.storeID}
-                                                            id={`store-${store.storeID}`}
-                                                            label={store.name}
-                                                            checked={selectedStores.includes(store.storeID)}
-                                                            onCheckedChange={(checked) => toggleStore(store.storeID, checked)}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </Field>
                                 </div>
+
+                                {accessData.roleValue === Role.Admin && (
+                                    <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-100">
+                                        El rol administrador no requiere el segundo paso; el backend administra su acceso global.
+                                    </p>
+                                )}
 
                                 <div>
                                     <div className="flex items-center gap-2">
@@ -668,16 +766,38 @@ export default function NewHumanResourcesUserDialog({
                                 </div>
                             </div>
                         )}
+                            </>
+                        )}
                     </div>
 
                     <DialogFooter className="border-t border-slate-200 px-6 py-4 dark:border-slate-700">
-                        <DialogClose asChild>
-                            <Button type="button" variant="outline" disabled={isSubmitting}>
-                                Cancelar
+                        {creationStep === "stores" && !createdUserID ? (
+                            <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setCreationStep("details")}>
+                                Volver
                             </Button>
-                        </DialogClose>
-                        <Button type="submit" className="bg-slate-700 text-white hover:bg-slate-800" disabled={isSubmitting}>
-                            {isSubmitting ? "Creando..." : "Crear usuario"}
+                        ) : (
+                            <DialogClose asChild>
+                                <Button type="button" variant="outline" disabled={isSubmitting}>
+                                    Cancelar
+                                </Button>
+                            </DialogClose>
+                        )}
+                        <Button
+                            type="submit"
+                            className="bg-slate-700 text-white hover:bg-slate-800"
+                            disabled={isSubmitting || (creationStep === "stores" && stores.length === 0)}
+                        >
+                            {isSubmitting
+                                ? createdUserID
+                                    ? "Asignando..."
+                                    : "Creando..."
+                                : creationStep === "stores"
+                                  ? createdUserID
+                                      ? "Reintentar asignación"
+                                      : "Crear y asignar"
+                                  : requiresStoreAssignment
+                                    ? "Continuar a tiendas"
+                                    : "Crear usuario"}
                         </Button>
                     </DialogFooter>
                 </form>

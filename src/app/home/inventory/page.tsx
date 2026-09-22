@@ -1,8 +1,11 @@
 import { getInventoryProducts } from "@/actions/products/getInventoryProducts"
 import { getStoreStockProducts } from "@/actions/inventory/getStoreStock"
 import { getAllCategories } from "@/actions/categories/getAllCategories"
-import { getAllStores } from "@/actions/stores/getAllStores"
+import { getMyStores } from "@/actions/stores/getAllStores"
+import { checkStatus } from "@/actions/auth/authActions"
 import InventoryClientWrapper from "@/components/Inventory/InventoryClientWrapper"
+import { resolveAccessibleStoreID } from "@/lib/store-access"
+import { Role } from "@/lib/userRoles"
 
 type InventoryPageProps = {
     searchParams?: Promise<{ storeID?: string | string[] }>
@@ -26,14 +29,16 @@ const getInventoryData = async (storeID?: string) => {
 
 export default async function InventoryPage({ searchParams }: InventoryPageProps) {
     const resolvedSearchParams = await searchParams
-    const storeID = parseParam(resolvedSearchParams?.storeID)
+    const requestedStoreID = parseParam(resolvedSearchParams?.storeID)
 
     // Lógica de obtención en servidor
-    const [productsData, categoriesData, storesData] = await Promise.all([
-        getInventoryData(storeID),
+    const [auth, categoriesData, storesData] = await Promise.all([
+        checkStatus().catch(() => null),
         getAllCategories(),
-        getAllStores(),
+        getMyStores(),
     ])
+    const storeID = resolveAccessibleStoreID(requestedStoreID, storesData, auth?.user?.role === Role.Admin)
+    const productsData = await getInventoryData(storeID)
     /**
      * 1) Generar el mapper para crear productos en woo - Separar productos simples de variantes
      * 1.1) ¿Generar 2 mappers diferentes uno solo para productos y otro solo para variantes?

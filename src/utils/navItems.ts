@@ -45,13 +45,6 @@ export const navItems: NavigationItem[] = [
         iconClassName: "text-[#ef6b5b]",
     },
     {
-        id: "cash-registers",
-        label: "Cajas",
-        route: "/home/cajas",
-        icon: FaCashRegister,
-        iconClassName: "text-[#0f766e]",
-    },
-    {
         id: "inventory",
         label: "Inventario",
         icon: FaBox,
@@ -243,6 +236,13 @@ export const navItems: NavigationItem[] = [
         icon: FaCog,
         iconClassName: "text-[#b8a5d2]",
         subItems: [
+            {
+                id: "cash-registers",
+                label: "Configuración de cajas",
+                route: "/home/cajas",
+                icon: FaCashRegister,
+                iconClassName: "text-[#0f766e]",
+            },
             {
                 id: "company",
                 label: "Empresa",
