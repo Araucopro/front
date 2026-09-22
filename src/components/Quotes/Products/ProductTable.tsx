@@ -2,6 +2,7 @@
 
 import React from "react"
 import { Input } from "@/components/ui/input"
+import { CurrencyInput } from "@/components/ui/currency-input"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -81,17 +82,12 @@ export function ProductTable({
                                     <TableCell>
                                         <div className="flex items-center gap-1">
                                             <DollarSignIcon className="h-4 w-4 text-green-600" />
-                                            <Input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
+                                            <CurrencyInput
                                                 value={sp.unitPrice}
-                                                onWheel={(e) => {
-                                                    e.currentTarget.blur()
-                                                }}
-                                                onChange={(e) =>
-                                                    onUnitPriceChange(sp.product.productID, Number(e.target.value))
+                                                onValueChange={(value) =>
+                                                    onUnitPriceChange(sp.product.productID, Number(value))
                                                 }
+                                                allowDecimals
                                                 className="w-24 bg-white dark:bg-slate-700 text-sm"
                                             />
                                         </div>

@@ -2,6 +2,7 @@
 
 import React from "react"
 import { Input } from "@/components/ui/input"
+import { CurrencyInput } from "@/components/ui/currency-input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { DollarSign, Hash, Package, Minus } from "lucide-react"
@@ -62,12 +63,13 @@ export function SizeForm({ productIndex, sizeIndex, size, error, innerRef }: Siz
                         <DollarSign className="w-3 h-3" />
                         Costo Neto
                     </Label>
-                    <Input
-                        type="number"
-                        placeholder="0.00"
+                    <CurrencyInput
+                        placeholder="$ 0"
                         value={size.priceCost || ""}
-                        onWheel={(e) => e.currentTarget.blur()}
-                        onChange={(e) => handleSizeChange(productIndex, sizeIndex, "priceCost", Number(e.target.value))}
+                        onValueChange={(value) =>
+                            handleSizeChange(productIndex, sizeIndex, "priceCost", Number(value))
+                        }
+                        allowDecimals
                         className={`h-11 text-base border-2 transition-all duration-200 ${
                             error?.priceCost
                                 ? "border-red-300 focus:border-red-500"
@@ -82,12 +84,13 @@ export function SizeForm({ productIndex, sizeIndex, size, error, innerRef }: Siz
                         <DollarSign className="w-3 h-3" />
                         Precio Plaza
                     </Label>
-                    <Input
-                        type="number"
-                        placeholder="0.00"
+                    <CurrencyInput
+                        placeholder="$ 0"
                         value={size.priceList || ""}
-                        onWheel={(e) => e.currentTarget.blur()}
-                        onChange={(e) => handleSizeChange(productIndex, sizeIndex, "priceList", Number(e.target.value))}
+                        onValueChange={(value) =>
+                            handleSizeChange(productIndex, sizeIndex, "priceList", Number(value))
+                        }
+                        allowDecimals
                         className={`h-11 text-base border-2 transition-all duration-200 ${
                             error?.priceList
                                 ? "border-red-300 focus:border-red-500"

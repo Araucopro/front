@@ -3,6 +3,7 @@
 import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { CurrencyInput } from "@/components/ui/currency-input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
@@ -179,14 +180,12 @@ export default function GestionGastosForm({ isOpen, onClose, onSave }: GestionGa
                                 <DollarSign className="w-4 h-4" />
                                 Monto *
                             </Label>
-                            <Input
+                            <CurrencyInput
                                 id="monto"
-                                type="number"
                                 value={monto}
-                                onChange={(e) => setMonto(e.target.value)}
-                                placeholder="0"
-                                min="0"
-                                step="0.01"
+                                onValueChange={setMonto}
+                                placeholder="$ 0"
+                                allowDecimals
                                 required
                                 className="bg-slate-100 dark:border-sky-50 dark:bg-slate-800"
                             />

@@ -1,5 +1,6 @@
 import React from "react"
 import { Input } from "../ui/input"
+import { CurrencyInput } from "../ui/currency-input"
 import { useEditOrderStore } from "@/stores/order.store"
 import { useAuth } from "@/stores/user.store"
 import { Role } from "@/lib/userRoles"
@@ -91,12 +92,10 @@ export default function OrderMainInfo({ cantidadTotalProductos, fecha }: Props) 
                     <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
                         Descuento ($)
                     </label>
-                    <Input
-                        type="number"
-                        min={0}
+                    <CurrencyInput
                         className="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100"
                         value={editedOrder.discount ?? ""}
-                        onChange={(e) => updateOrderStringField("discount", e.target.value)}
+                        onValueChange={(discount) => updateOrderStringField("discount", discount)}
                         disabled={!isAdmin}
                     />
                 </div>

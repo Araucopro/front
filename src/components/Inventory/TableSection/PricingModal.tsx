@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { CurrencyInput } from "@/components/ui/currency-input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -414,11 +415,10 @@ export function PricingModal({
                                         </div>
                                         <div>
                                             <Label className="text-xs text-gray-500">Nuevo precio</Label>
-                                            <Input
-                                                type="number"
+                                            <CurrencyInput
                                                 value={newPrice}
-                                                onChange={(e) => setNewPrice(e.target.value)}
-                                                placeholder="Ej: 29990"
+                                                onValueChange={setNewPrice}
+                                                placeholder="$ 29.990"
                                                 className="mt-1 text-sm dark:bg-slate-800"
                                             />
                                         </div>
@@ -536,13 +536,24 @@ export function PricingModal({
                                 <Label className="text-xs text-gray-500">
                                     Valor {offerForm.discountType === "PERCENTAGE" ? "(%)" : "(precio final)"}
                                 </Label>
-                                <Input
-                                    type="number"
-                                    value={offerForm.value}
-                                    onChange={(e) => setOfferForm((f) => ({ ...f, value: e.target.value }))}
-                                    placeholder={offerForm.discountType === "PERCENTAGE" ? "Ej: 15" : "Ej: 19990"}
-                                    className="mt-1 text-sm dark:bg-slate-800"
-                                />
+                                {offerForm.discountType === "FIXED_PRICE" ? (
+                                    <CurrencyInput
+                                        value={offerForm.value}
+                                        onValueChange={(value) => setOfferForm((form) => ({ ...form, value }))}
+                                        placeholder="$ 19.990"
+                                        className="mt-1 text-sm dark:bg-slate-800"
+                                    />
+                                ) : (
+                                    <Input
+                                        type="number"
+                                        value={offerForm.value}
+                                        onChange={(event) =>
+                                            setOfferForm((form) => ({ ...form, value: event.target.value }))
+                                        }
+                                        placeholder="Ej: 15"
+                                        className="mt-1 text-sm dark:bg-slate-800"
+                                    />
+                                )}
                             </div>
                         </div>
 
