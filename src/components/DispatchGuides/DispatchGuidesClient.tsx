@@ -771,6 +771,8 @@ export default function DispatchGuidesClient({
         setTransport((current) => ({ ...current, [field]: value }))
     }
 
+    const selectedGuideID = selectedGuide?.dispatchGuide.dispatchGuideID
+
     useEffect(() => {
         const query = clientInput.trim()
         if (query.length < 2 || clientID) {
@@ -794,11 +796,11 @@ export default function DispatchGuidesClient({
     }, [clientID, clientInput])
 
     useEffect(() => {
-        if (!selectedGuide) return
+        if (!selectedGuideID) return
         setInvoicePaymentType("Efectivo")
         setInvoiceIssueDate(getChileYYYYMMDD(new Date()))
         setAdditionalInvoiceGuideIDs([])
-    }, [selectedGuide?.dispatchGuide.dispatchGuideID])
+    }, [selectedGuideID])
 
     useEffect(() => {
         if (!effectiveStoreID || effectiveStoreID === initialStoreID) return
@@ -847,7 +849,7 @@ export default function DispatchGuidesClient({
 
             {!effectiveStoreID && (
                 <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-                    <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                     Selecciona una tienda para listar y emitir guias de despacho.
                 </div>
             )}
@@ -895,7 +897,7 @@ export default function DispatchGuidesClient({
                             <TableHead className="text-right">Items</TableHead>
                             <TableHead className="text-right">Total</TableHead>
                             <TableHead>Estado</TableHead>
-                            <TableHead className="w-[168px] text-right">Acciones</TableHead>
+                            <TableHead className="w-42 text-right">Acciones</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
