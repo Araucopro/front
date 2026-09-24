@@ -81,9 +81,12 @@ export function ProductCard({ productIndex, product, categories, error }: Produc
                             URL de imagen
                         </Label>
                         <Input
+                            type="url"
+                            inputMode="url"
                             value={product.image}
                             onChange={(e) => handleProductChange(productIndex, "image", e.target.value)}
                             placeholder="https://ejemplo.com/imagen.jpg"
+                            aria-invalid={Boolean(error?.image)}
                             className={`h-12 text-base border-2 transition-all duration-200 ${
                                 error?.image
                                     ? "border-red-300 focus:border-red-500 focus:ring-red-500"

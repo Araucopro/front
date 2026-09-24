@@ -12,6 +12,7 @@ import { ProductCard } from "./ProductCard"
 import type { ICategory } from "@/interfaces/categories/ICategory"
 import { useTienda } from "@/stores/tienda.store"
 import { BULK_PRODUCT_BATCH_SIZE, type IBulkProductItem } from "@/interfaces/products/IBulkProduct"
+import type { ErrorState } from "@/interfaces/products/ICreateProductForm"
 
 type BulkProgress = {
     currentBatch: number
@@ -73,8 +74,12 @@ export default function CreateProductForm({
         setFormPage(Math.ceil(nextProductCount / PRODUCTS_PER_FORM_PAGE))
     }
 
-    const hasErrors = (errs: any[]) => {
-        return errs.some((err) => err.name || err.category || err.sizes.some((e: any) => Object.keys(e).length > 0))
+    const hasErrors = (errs: ErrorState[]) => {
+        return errs.some(
+            (error) =>
+                Boolean(error.name || error.image || error.category) ||
+                error.sizes.some((sizeError) => Object.keys(sizeError).length > 0),
+        )
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
