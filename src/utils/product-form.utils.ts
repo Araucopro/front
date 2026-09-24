@@ -1,5 +1,19 @@
 import { ICategory } from "@/interfaces/categories/ICategory";
 
+const IMAGE_FILE_EXTENSION = /\.(?:avif|gif|jpe?g|png|svg|webp)$/i;
+
+export const isValidImageUrl = (value: string): boolean => {
+    const trimmedValue = value.trim();
+    if (!trimmedValue) return true;
+
+    try {
+        const url = new URL(trimmedValue);
+        return (url.protocol === "http:" || url.protocol === "https:") && IMAGE_FILE_EXTENSION.test(url.pathname);
+    } catch {
+        return false;
+    }
+};
+
 // Normaliza texto para comparar categorías
 export const normalize = (str: string) =>
     str

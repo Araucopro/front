@@ -1,6 +1,6 @@
 import { create } from "zustand"
 import type { CreateProductFormData, ErrorState, Size } from "@/interfaces/products/ICreateProductForm"
-import { generateRandomSku } from "@/utils/product-form.utils"
+import { generateRandomSku, isValidImageUrl } from "@/utils/product-form.utils"
 
 interface ProductFormState {
     products: CreateProductFormData[]
@@ -129,6 +129,10 @@ export const useProductFormStore = create<ProductFormState>((set, get) => ({
                 category: "",
             }
             if (!product.name.trim()) productErrors.name = "Falta llenar este campo"
+            if (!isValidImageUrl(product.image)) {
+                productErrors.image =
+                    "Ingresa una URL directa a una imagen (.jpg, .jpeg, .png, .webp, .gif, .avif o .svg)"
+            }
             if (!product.categoryID.trim() && !product.categoryName?.trim()) {
                 productErrors.category = "Falta seleccionar o indicar una categoría"
             }
