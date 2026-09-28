@@ -5,7 +5,7 @@ import { getAllCategories } from "@/actions/categories/getAllCategories"
 interface CategoriesStore {
     categories: ICategory[]
     loading: boolean
-    fetchCategories: () => Promise<void>
+    fetchCategories: () => Promise<boolean>
     setCategories: (categories: ICategory[]) => void
 }
 
@@ -18,8 +18,10 @@ export const useCategories = create<CategoriesStore>((set) => ({
             set({ loading: true })
             const categories = await getAllCategories()
             set({ categories })
+            return true
         } catch (error) {
             console.error("Error fetching categories:", error)
+            return false
         } finally {
             set({ loading: false })
         }
