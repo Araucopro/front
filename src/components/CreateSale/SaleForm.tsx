@@ -564,7 +564,7 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
 
                                         {availablePaymentMethods.length ? (
                                             <div
-                                                className="grid grid-cols-2 gap-2 md:grid-cols-4"
+                                                className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-2 2xl:grid-cols-4"
                                                 role="group"
                                                 aria-label="Medio de pago"
                                             >
@@ -580,14 +580,14 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
                                                             aria-pressed={selected}
                                                             disabled={!legacyType}
                                                             onClick={() => selectPaymentMethod(method)}
-                                                            className={`flex min-h-20 items-center gap-3 rounded-lg border px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60 ${selected && visual ? `${visual.selectedClassName} ring-1` : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"}`}
+                                                            className={`flex min-h-20 min-w-0 items-center gap-3 rounded-lg border px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60 ${selected && visual ? `${visual.selectedClassName} ring-1` : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"}`}
                                                         >
                                                             <span
                                                                 className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${selected ? "bg-white/70 dark:bg-slate-900/50" : "bg-slate-100 dark:bg-slate-800"}`}
                                                             >
                                                                 <Icon className="h-4 w-4" />
                                                             </span>
-                                                            <span className="min-w-0">
+                                                            <span className="min-w-0 break-words">
                                                                 <span className="block text-sm font-semibold leading-tight">
                                                                     {method.name}
                                                                 </span>

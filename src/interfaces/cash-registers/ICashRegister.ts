@@ -1,5 +1,13 @@
 export type CashRegisterStatus = "ACTIVE" | "INACTIVE" | "MAINTENANCE"
 export type CashSessionStatus = "OPEN" | "SUSPENDED" | "CLOSED"
+export type CashSessionOperatorRole = "OPERATOR" | "SUPERVISOR"
+export type CashMovementReferenceType =
+    | "SALE"
+    | "RETURN"
+    | "EXPENSE"
+    | "CASH_TRANSFER"
+    | "CASH_MOVEMENT"
+    | "MANUAL"
 
 export interface ICashRegister {
     cashRegisterID: string
@@ -52,6 +60,32 @@ export interface IOpenCashSession {
     openingNotes?: string
 }
 
+export interface IAssignCashSessionOperator {
+    userID: string
+    role?: CashSessionOperatorRole
+    enteredAt?: string
+    notes?: string
+}
+
+export interface ICashSessionOperator {
+    sessionUserID: string
+    tenantID?: string
+    sessionID: string
+    userID: string
+    user?: {
+        userID: string
+        name: string
+        email: string
+    }
+    role: CashSessionOperatorRole
+    assignedByUserID: string
+    enteredAt: string
+    leftAt: string | null
+    notes: string | null
+    createdAt: string
+    updatedAt: string
+}
+
 export interface ICloseCashSession {
     countedCashBalance: number
     closingNotes?: string
@@ -71,7 +105,7 @@ export interface ICashMovement {
     amount: number
     status: "POSTED" | "VOIDED"
     reason: string
-    referenceType: string
+    referenceType: CashMovementReferenceType | null
     referenceID: string | null
     description: string | null
     createdByUserID: string
@@ -134,6 +168,7 @@ export interface ICashSessionSummary {
         nonCashAmount: number
         byMethod: Array<{
             paymentMethodID?: string
+            code?: string
             name: string
             type: string
             affectsCash?: boolean
@@ -156,7 +191,7 @@ export interface ICashSessionSummary {
         expectedTotalAmount: number
     }
     closing: unknown | null
-    operators: unknown[]
+    operators: ICashSessionOperator[]
     cashCount: unknown | null
 }
 

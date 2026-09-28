@@ -1,13 +1,16 @@
 import { API_URL } from "@/lib/enviroments"
 import { fetcher } from "@/lib/fetcher"
+import { normalizeCashSessionSummary } from "@/lib/normalize-cash-session-summary"
 import type {
     CashRegisterStatus,
+    IAssignCashSessionOperator,
     ICashRegister,
     ICashClosing,
     ICashCount,
     ICreateCashMovement,
     ICashMovement,
     ICashSession,
+    ICashSessionOperator,
     ICashSessionFilters,
     ICashSessionSummary,
     ICloseCashSession,
@@ -51,6 +54,35 @@ export async function openCashSession(cashRegisterID: string, payload: IOpenCash
     })
 }
 
+export function assignCashSessionOperator(
+    cashRegisterID: string,
+    sessionID: string,
+    payload: IAssignCashSessionOperator,
+): Promise<ICashSessionOperator> {
+    return fetcher<ICashSessionOperator>(
+        `${API_URL}/cash-registers/${cashRegisterID}/sessions/${sessionID}/operators`,
+        {
+            method: "POST",
+            body: JSON.stringify(payload),
+        },
+    )
+}
+
+export async function getCashSessionOperators(
+    cashRegisterID: string,
+    sessionID: string,
+    filters: { active?: boolean; role?: "OPERATOR" | "SUPERVISOR" } = {},
+): Promise<ICashSessionOperator[]> {
+    const params = new URLSearchParams()
+    if (filters.active !== undefined) params.set("active", String(filters.active))
+    if (filters.role) params.set("role", filters.role)
+    const query = params.toString()
+    const operators = await fetcher<ICashSessionOperator[]>(
+        `${API_URL}/cash-registers/${cashRegisterID}/sessions/${sessionID}/operators${query ? `?${query}` : ""}`,
+    )
+    return Array.isArray(operators) ? operators : []
+}
+
 export async function getActiveCashSession(cashRegisterID: string): Promise<ICashSession | null> {
     try {
         return await fetcher<ICashSession>(`${API_URL}/cash-registers/${cashRegisterID}/sessions/active`)
@@ -81,9 +113,10 @@ export async function getCashSessions(cashRegisterID: string, filters: ICashSess
 }
 
 export async function getCashSessionSummary(cashRegisterID: string, sessionID: string): Promise<ICashSessionSummary> {
-    return fetcher<ICashSessionSummary>(
+    const response = await fetcher<Parameters<typeof normalizeCashSessionSummary>[0]>(
         `${API_URL}/cash-registers/${cashRegisterID}/sessions/${sessionID}/summary`,
     )
+    return normalizeCashSessionSummary(response)
 }
 
 export async function getStoreCashSummary(storeID: string, from?: string, to?: string): Promise<IStoreCashSummary> {
@@ -101,8 +134,27 @@ export function createCashMovement(cashRegisterID: string, sessionID: string, pa
     })
 }
 
-export async function getCashMovements(cashRegisterID: string, sessionID: string): Promise<ICashMovement[]> {
-    const response = await fetcher<ICashMovement[]>(`${API_URL}/cash-registers/${cashRegisterID}/sessions/${sessionID}/movements`)
+export async function getCashMovements(
+    cashRegisterID: string,
+    sessionID: string,
+    filters: {
+        type?: "CASH_IN" | "CASH_OUT"
+        status?: "POSTED" | "VOIDED"
+        referenceType?: ICashMovement["referenceType"]
+        from?: string
+        to?: string
+    } = {},
+): Promise<ICashMovement[]> {
+    const params = new URLSearchParams()
+    if (filters.type) params.set("type", filters.type)
+    if (filters.status) params.set("status", filters.status)
+    if (filters.referenceType) params.set("referenceType", filters.referenceType)
+    if (filters.from) params.set("from", filters.from)
+    if (filters.to) params.set("to", filters.to)
+    const query = params.toString()
+    const response = await fetcher<ICashMovement[]>(
+        `${API_URL}/cash-registers/${cashRegisterID}/sessions/${sessionID}/movements${query ? `?${query}` : ""}`,
+    )
     return Array.isArray(response) ? response : []
 }
 
