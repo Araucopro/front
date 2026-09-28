@@ -24,11 +24,7 @@ export default function InventoryActions({ products, categories }: InventoryActi
         : "/home/inventory/create"
 
     const handleDownloadExcel = () => {
-        if (!products || products.length === 0) {
-            alert("No hay productos para exportar.")
-            return
-        }
-        exportInventoryToExcel(products, categories)
+        exportInventoryToExcel(products ?? [], categories)
     }
 
     return (
@@ -43,7 +39,7 @@ export default function InventoryActions({ products, categories }: InventoryActi
                 Crear Producto
             </Button>
             <Button onClick={handleDownloadExcel} className="bg-blue-600 text-white px-4 py-2 rounded">
-                Descargar Excel
+                {products.length > 0 ? "Descargar Excel" : "Descargar formato Excel"}
             </Button>
             <CategoryManagementModal isOpen={showCategoryModal} onClose={() => setShowCategoryModal(false)} />
         </div>

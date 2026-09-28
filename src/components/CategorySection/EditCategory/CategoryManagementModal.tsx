@@ -1,26 +1,40 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { FolderOpen, X } from "lucide-react"
 import { useCategories } from "@/stores/categories.store"
 import Modal from "./Modal" // Adjust the path as needed
 import { CategoryItem } from "./CategoryItem"
 import { NewCategoryForm } from "./NewCategoryForm"
+import type { ICategory } from "@/interfaces/categories/ICategory"
 
 interface CategoryManagementModalProps {
     isOpen: boolean
     onClose: () => void
+    onCategoriesChange?: (categories: ICategory[]) => void
 }
 
-export function CategoryManagementModal({ isOpen, onClose }: CategoryManagementModalProps) {
+export function CategoryManagementModal({ isOpen, onClose, onCategoriesChange }: CategoryManagementModalProps) {
     const { categories, fetchCategories, loading } = useCategories()
+    const hasLoadedCategories = useRef(false)
 
     useEffect(() => {
-        if (isOpen) {
-            fetchCategories()
+        if (!isOpen) {
+            hasLoadedCategories.current = false
+            return
         }
-    }, [fetchCategories, isOpen])
+
+        void fetchCategories().then((loaded) => {
+            if (!loaded) return
+            hasLoadedCategories.current = true
+            onCategoriesChange?.(useCategories.getState().categories)
+        })
+    }, [fetchCategories, isOpen, onCategoriesChange])
+
+    useEffect(() => {
+        if (isOpen && hasLoadedCategories.current) onCategoriesChange?.(categories)
+    }, [categories, isOpen, onCategoriesChange])
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Administrar Categorías" maxWidth="max-w-4xl">

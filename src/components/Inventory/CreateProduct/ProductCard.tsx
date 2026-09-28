@@ -16,10 +16,11 @@ interface ProductCardProps {
     productIndex: number
     product: CreateProductFormData
     categories: ICategory[]
+    onCategoriesChange: (categories: ICategory[]) => void
     error?: any
 }
 
-export function ProductCard({ productIndex, product, categories, error }: ProductCardProps) {
+export function ProductCard({ productIndex, product, categories, onCategoriesChange, error }: ProductCardProps) {
     const { handleProductChange, removeProduct, addSize } = useProductFormStore()
 
     return (
@@ -149,6 +150,7 @@ export function ProductCard({ productIndex, product, categories, error }: Produc
                         handleProductChange(productIndex, "categoryID", categoryID)
                         handleProductChange(productIndex, "categoryName", categoryName)
                     }}
+                    onCategoriesChange={onCategoriesChange}
                     error={error?.category}
                 />
 

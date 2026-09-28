@@ -10,6 +10,20 @@ type InventoryDataRow = InventoryRow
 type ExportableProduct = IProduct | IRawProduct
 type ExportableVariation = IProduct["ProductVariations"][number] | IRawProduct["variations"][number]
 
+const INVENTORY_EXCEL_COLUMNS: Array<keyof InventoryDataRow> = [
+    "Producto",
+    "Imagen",
+    "Género",
+    "Marca",
+    "Categoría padre",
+    "Subcategoría",
+    "Talla",
+    "Cantidad",
+    "Precio Costo Neto",
+    "Precio Plaza",
+    "Código EAN",
+]
+
 const toNumber = (value: unknown) => {
     const parsed = Number(value)
     return Number.isFinite(parsed) ? parsed : 0
@@ -137,9 +151,19 @@ export function exportInventoryToExcel(products: ExportableProduct[], categories
         })
     })
 
-    const worksheet = XLSX.utils.json_to_sheet(data, { skipHeader: false })
+    const worksheet = data.length
+        ? XLSX.utils.json_to_sheet(data, { header: INVENTORY_EXCEL_COLUMNS, skipHeader: false })
+        : XLSX.utils.aoa_to_sheet([INVENTORY_EXCEL_COLUMNS])
+    worksheet["!cols"] = INVENTORY_EXCEL_COLUMNS.map((column) => ({
+        wch:
+            column === "Producto" || column === "Imagen"
+                ? 28
+                : column === "Categoría padre" || column === "Precio Costo Neto"
+                  ? 20
+                  : 16,
+    }))
     const workbook = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario")
 
-    XLSX.writeFile(workbook, "Listado-productos-d3si.xlsx")
+    XLSX.writeFile(workbook, data.length ? "Listado-productos-d3si.xlsx" : "Plantilla-carga-inventario.xlsx")
 }

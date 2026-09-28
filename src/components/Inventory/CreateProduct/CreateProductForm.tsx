@@ -331,6 +331,7 @@ export default function CreateProductForm({
                             productIndex={productIndex}
                             product={product}
                             categories={categories}
+                            onCategoriesChange={setCategories}
                             error={errors[productIndex]}
                         />
                         )

@@ -19,6 +19,7 @@ interface CategorySelectorProps {
     selectedCategoryId: string
     selectedCategoryName?: string
     onCategorySelect: (categoryId: string, categoryName: string) => void
+    onCategoriesChange: (categories: ICategory[]) => void
     error?: string
 }
 
@@ -31,6 +32,7 @@ export function CategorySelector({
     selectedCategoryId,
     selectedCategoryName,
     onCategorySelect,
+    onCategoriesChange,
     error,
 }: CategorySelectorProps) {
     const [showModal, setShowModal] = useState(false)
@@ -108,7 +110,11 @@ export function CategorySelector({
                 >
                     <Plus className="w-4 h-4 mr-1" />
                 </Button>
-                <CategoryManagementModal isOpen={showModal} onClose={() => setShowModal(false)} />
+                <CategoryManagementModal
+                    isOpen={showModal}
+                    onClose={() => setShowModal(false)}
+                    onCategoriesChange={onCategoriesChange}
+                />
             </div>
             <div className="relative" ref={dropdownRef}>
                 <Input
@@ -125,9 +131,9 @@ export function CategorySelector({
 
                 {showDropdown && filteredOptions.length > 0 && (
                     <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                        {filteredOptions.map((option, optIndex) => (
+                        {filteredOptions.map((option) => (
                             <Button
-                                key={optIndex}
+                                key={option.id}
                                 type="button"
                                 onClick={() => handleSelect(option)}
                                 className="w-full text-left px-4 py-3 dark:bg-slate-800 bg-white hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors border-b border-gray-100 dark:border-slate-700 last:border-b-0"
