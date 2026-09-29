@@ -11,17 +11,22 @@ type ExportableProduct = IProduct | IRawProduct
 type ExportableVariation = IProduct["ProductVariations"][number] | IRawProduct["variations"][number]
 
 const INVENTORY_EXCEL_COLUMNS: Array<keyof InventoryDataRow> = [
-    "Producto",
-    "Imagen",
-    "Género",
     "Marca",
-    "Categoría padre",
+    "Producto",
+    "Descripcion del producto",
+    "Género",
+    "Categoría",
     "Subcategoría",
-    "Talla",
+    "Variante",
+    "Subvariante",
     "Cantidad",
     "Precio Costo Neto",
     "Precio Plaza",
+    "SKU Proveedor",
+    "SKU Tienda",
     "Código EAN",
+    "Imagen",
+    "Slug",
 ]
 
 const toNumber = (value: unknown) => {
@@ -125,7 +130,7 @@ const getVariationPriceList = (variation: ExportableVariation) => {
 
 const getVariationSize = (variation: ExportableVariation) => {
     if ("sizeNumber" in variation) return variation.sizeNumber
-    return variation.size
+    return variation.variation ?? variation.size
 }
 
 export function exportInventoryToExcel(products: ExportableProduct[], categories: ICategory[]) {
@@ -136,18 +141,23 @@ export function exportInventoryToExcel(products: ExportableProduct[], categories
             const categoryNames = getCategoryNames(product, categories)
 
             data.push({
-                Producto: product.name,
-                Imagen: product.image,
-                Género: product.genre,
                 Marca: product.brand,
-                "Categoría padre": categoryNames.parent,
+                Producto: product.name,
+                "Descripcion del producto": product.description ?? "",
+                Género: product.genre,
+                Categoría: categoryNames.parent,
                 Subcategoría: categoryNames.subcategory,
-                Talla: getVariationSize(variation),
+                Variante: getVariationSize(variation),
+                Subvariante: variation.subVariation ?? "",
                 Cantidad: getVariationStock(variation),
                 "Precio Costo Neto": getVariationPriceCost(variation),
                 "Precio Plaza": getVariationPriceList(variation),
-                "Código EAN": variation.sku,
-            } as InventoryDataRow)
+                "SKU Proveedor": variation.supplierSku ?? "",
+                "SKU Tienda": variation.sku,
+                "Código EAN": variation.barcode ?? "",
+                Imagen: product.image,
+                Slug: product.slug ?? "",
+            })
         })
     })
 
@@ -156,9 +166,9 @@ export function exportInventoryToExcel(products: ExportableProduct[], categories
         : XLSX.utils.aoa_to_sheet([INVENTORY_EXCEL_COLUMNS])
     worksheet["!cols"] = INVENTORY_EXCEL_COLUMNS.map((column) => ({
         wch:
-            column === "Producto" || column === "Imagen"
+            column === "Producto" || column === "Imagen" || column === "Descripcion del producto"
                 ? 28
-                : column === "Categoría padre" || column === "Precio Costo Neto"
+                : column === "Categoría" || column === "Precio Costo Neto"
                   ? 20
                   : 16,
     }))

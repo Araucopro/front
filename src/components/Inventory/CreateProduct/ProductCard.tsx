@@ -34,7 +34,7 @@ export function ProductCard({ productIndex, product, categories, onCategoriesCha
                         <div>
                             <h3 className="font-bold text-xl text-white">Producto {productIndex + 1}</h3>
                             <p className="text-blue-100">
-                                {product.sizes.length} talla{product.sizes.length !== 1 ? "s" : ""}
+                                {product.sizes.length} variante{product.sizes.length !== 1 ? "s" : ""}
                             </p>
                         </div>
                     </div>
@@ -49,6 +49,7 @@ export function ProductCard({ productIndex, product, categories, onCategoriesCha
                         </Button>
                     )}
                 </div>
+
             </div>
 
             <div className="p-8 space-y-8">
@@ -142,6 +143,26 @@ export function ProductCard({ productIndex, product, categories, onCategoriesCha
                     </div>
                 </div>
 
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    <div className="space-y-3">
+                        <Label className="text-sm font-semibold">Descripción del producto</Label>
+                        <Input
+                            value={product.description ?? ""}
+                            onChange={(e) => handleProductChange(productIndex, "description", e.target.value)}
+                            placeholder="Descripción para el catálogo"
+                        />
+                    </div>
+                    <div className="space-y-3">
+                        <Label className="text-sm font-semibold">Slug</Label>
+                        <Input
+                            value={product.slug ?? ""}
+                            onChange={(e) => handleProductChange(productIndex, "slug", e.target.value)}
+                            placeholder="identificador-estable-del-producto"
+                        />
+                        <p className="text-xs text-slate-500">Mantén este identificador al cambiar el nombre para conservar el enlace web.</p>
+                    </div>
+                </div>
+
                 <CategorySelector
                     categories={categories}
                     selectedCategoryId={product.categoryID}
@@ -160,7 +181,7 @@ export function ProductCard({ productIndex, product, categories, onCategoriesCha
                             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
                                 <Hash className="w-4 h-4 text-white" />
                             </div>
-                            Tallas y Precios
+                            Variantes y precios
                         </h4>
                     </div>
                     <div className="flex justify-end">
@@ -170,7 +191,7 @@ export function ProductCard({ productIndex, product, categories, onCategoriesCha
                             className="flex lg:mt-0 mt-3 items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                         >
                             <Plus className="w-4 h-4" />
-                            Agregar talla
+                            Agregar variante
                         </Button>
                     </div>
                     <div className="space-y-6">

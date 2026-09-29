@@ -18,6 +18,8 @@ interface ProductData {
     variationID: string
     productID: string
     sizeNumber: string
+    variation?: string
+    barcode?: string | null
     priceCost: number
     sku: string
     stockQuantity: number
@@ -67,9 +69,9 @@ export function PrintbarcodeModal({ onOpenChange, isOpen, value }: Props) {
                     <div className="grid grid-cols-1 place-content-center gap-4 py-4">
                         <div id="printBarcode" className={styles.printOnly}>
                             <p className="text-xs text-center">
-                                ${toPrice(value.priceList)} | {truncateName(value.name)} {value.sizeNumber}
+                                ${toPrice(value.priceList)} | {truncateName(value.name)} {value.variation ?? value.sizeNumber}
                             </p>
-                            <Ean13Generator value={value.sku} />
+                            <Ean13Generator value={value.barcode || value.sku} />
                         </div>
 
                         <Button variant="destructive" className="px-10 mx-auto" onClick={handlePrint}>

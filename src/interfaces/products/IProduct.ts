@@ -1,7 +1,7 @@
 import { ICategory } from "../categories/ICategory"
 import { IProductVariation } from "./IProductVariation"
 
-export type Brand = "D3SI" | "Otro"
+export type Brand = string
 export type Genre = "Hombre" | "Mujer" | "Unisex"
 
 // Se añadieron description, sku y wooID, revisar con felipe si es correcto y no interfiere ahora con el sistema
@@ -15,6 +15,7 @@ export interface IProduct {
     genre: Genre
     productID: string
     name: string
+    slug?: string
     image: string
     totalProducts: number
     createdAt: string

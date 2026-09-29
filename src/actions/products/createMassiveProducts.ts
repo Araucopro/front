@@ -103,12 +103,17 @@ export const createMassiveProducts = async (data: MassiveCreateProductData) => {
                 categoryID: product.categoryID,
                 brand: product.brand,
                 genre: product.genre,
+                ...(product.description?.trim() ? { description: product.description.trim() } : {}),
+                ...(product.slug?.trim() ? { slug: product.slug.trim() } : {}),
                 variations: product.sizes.map((size) => ({
                     sku: normalizeSku(size.sku),
                     priceCost: Number(size.priceCost),
                     priceList: Number(size.priceList),
                     stock: Number(size.stockQuantity),
-                    size: String(size.sizeNumber ?? "").trim(),
+                    variation: String(size.sizeNumber ?? "").trim(),
+                    ...(size.subVariation?.trim() ? { subVariation: size.subVariation.trim() } : {}),
+                    ...(size.supplierSku?.trim() ? { supplierSku: size.supplierSku.trim() } : {}),
+                    ...(size.barcode?.trim() ? { barcode: size.barcode.trim() } : {}),
                 })),
             }
 

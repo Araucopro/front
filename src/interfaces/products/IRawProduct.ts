@@ -18,6 +18,10 @@ export interface IProductVariationRaw {
     variationID: string
     productID: string
     sku: string
+    variation?: string
+    subVariation?: string
+    supplierSku?: string | null
+    barcode?: string | null
     size: string
     color: string | null
     createdAt: string
@@ -32,6 +36,7 @@ export interface IRawProduct {
     categoryID: string | null
     category: ICategory | null
     name: string
+    slug?: string
     brand: string
     genre: "Hombre" | "Mujer" | "Unisex"
     description: string | null

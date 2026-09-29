@@ -21,6 +21,8 @@ const getInitialProduct = (): CreateProductFormData => ({
     image: "",
     categoryID: "",
     categoryName: "",
+    description: "",
+    slug: "",
     genre: "Unisex",
     brand: "Otro",
     tempId: Math.random().toString(36).substring(7),
@@ -30,6 +32,9 @@ const getInitialProduct = (): CreateProductFormData => ({
             priceList: 0,
             priceCost: 0,
             sku: generateRandomSku(),
+            subVariation: "",
+            supplierSku: "",
+            barcode: "",
             stockQuantity: 0,
             tempId: Math.random().toString(36).substring(7),
         },
@@ -89,6 +94,9 @@ export const useProductFormStore = create<ProductFormState>((set, get) => ({
                         priceCost: basePriceCost,
                         priceList: basePriceList,
                         sku: generateRandomSku(),
+                        subVariation: "",
+                        supplierSku: "",
+                        barcode: "",
                         stockQuantity: 0,
                         tempId: Math.random().toString(36).substring(7),
                     },
@@ -139,8 +147,9 @@ export const useProductFormStore = create<ProductFormState>((set, get) => ({
 
             product.sizes.forEach((size) => {
                 const sizeErrors: Record<string, string> = {}
-                if (!size.priceList) sizeErrors.priceList = "Falta llenar este campo"
-                if (!size.priceCost) sizeErrors.priceCost = "Falta llenar este campo"
+                if (!Number.isFinite(size.priceList) || size.priceList < 0) sizeErrors.priceList = "Ingresa un precio válido"
+                if (!Number.isFinite(size.priceCost) || size.priceCost < 0) sizeErrors.priceCost = "Ingresa un costo válido"
+                if (!size.sku?.trim()) sizeErrors.sku = "El SKU es obligatorio"
                 if (size.stockQuantity === null || size.stockQuantity === undefined || isNaN(size.stockQuantity)) {
                     sizeErrors.stockQuantity = "Falta llenar este campo"
                 }

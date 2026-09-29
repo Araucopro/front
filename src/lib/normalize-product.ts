@@ -35,6 +35,10 @@ type RawVariation = {
     variationID?: string
     productID?: string
     sku?: string
+    variation?: string
+    subVariation?: string
+    supplierSku?: string | null
+    barcode?: string | null
     size?: string
     color?: string | null
     createdAt?: string
@@ -49,6 +53,7 @@ export type RawProduct = {
     categoryID?: string | null
     category?: ICategory | null
     name?: string
+    slug?: string
     brand?: string
     genre?: IProduct["genre"]
     description?: string | null
@@ -108,7 +113,11 @@ const normalizeVariation = (raw: RawVariation): IProductVariation => {
         variationID: raw.variationID ?? "",
         productID: raw.productID ?? "",
         sku: raw.sku ?? "",
-        sizeNumber: raw.size ?? "",
+        variation: raw.variation ?? raw.size ?? "",
+        subVariation: raw.subVariation ?? raw.color ?? "",
+        supplierSku: raw.supplierSku ?? null,
+        barcode: raw.barcode ?? null,
+        sizeNumber: raw.variation ?? raw.size ?? "",
         priceList: storeProducts[0] ? toNumber(storeProducts[0].priceListStore) : 0,
         priceCost: storeProducts[0] ? toNumber(storeProducts[0].priceCostStore) : 0,
         stockQuantity: storeProducts.reduce((sum, storeProduct) => sum + storeProduct.quantity, 0),
@@ -128,6 +137,7 @@ export const normalizeProduct = (raw: RawProduct): IProduct => {
         categoryID: raw.categoryID ?? null,
         Category: raw.category ?? undefined,
         name: raw.name ?? "",
+        slug: raw.slug ?? "",
         brand: (raw.brand as IProduct["brand"]) ?? "Otro",
         genre: raw.genre ?? "Unisex",
         description: raw.description ?? "",
