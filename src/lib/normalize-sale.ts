@@ -45,6 +45,8 @@ export type RawSaleProduct = {
     variation?: RawSaleVariation | null
     unitPrice?: number | string
     subtotal?: number | string
+    lineTotal?: number | string
+    sku?: string
     quantitySold?: number
     quantity?: number
     createdAt?: string
@@ -88,11 +90,15 @@ export type RawSale = {
     total?: number | string
     grandTotal?: number | string
     netTotal?: number | string
+    subtotal?: number | string
+    discount?: number | string
+    taxTotal?: number | string
     status?: ISaleResponse["status"] | string
     createdAt?: string
     updatedAt?: string
     paymentType?: ISaleResponse["paymentType"]
     saleType?: ISaleResponse["saleType"]
+    folio?: number | string | null
     issueDate?: string
     manualDiscount?: number | string
     receiver?: Partial<ISaleReceiver> | null
@@ -104,6 +110,7 @@ export type RawSale = {
     Return?: RawSaleReturn | null
     returns?: RawReturn[]
     Returns?: RawReturn[]
+    dteDocument?: RawSaleDte | null
 }
 
 export type RawSaleDte = {
@@ -115,6 +122,9 @@ export type RawSaleDte = {
     XML?: string
     WARNING?: unknown[]
     saleID?: string | null
+    token?: string
+    folio?: number | string | null
+    status?: string
 }
 
 export type RawSaleOperation = {
@@ -145,9 +155,12 @@ const normalizeSaleProduct = (raw: RawSaleProduct): ISaleProduct => ({
         raw.Product?.name ??
         raw.variation?.product?.name ??
         raw.variation?.Product?.name,
-    variation: normalizeVariation(raw.variation),
+    variation: {
+        ...normalizeVariation(raw.variation),
+        sku: raw.sku ?? raw.variation?.sku ?? "",
+    },
     unitPrice: raw.unitPrice ?? 0,
-    subtotal: raw.subtotal ?? 0,
+    subtotal: raw.subtotal ?? raw.lineTotal ?? 0,
     quantitySold: pickFirst(raw.quantitySold, raw.quantity) ?? 0,
     createdAt: raw.createdAt ?? "",
     updatedAt: raw.updatedAt ?? "",
@@ -169,14 +182,14 @@ const normalizeReceiver = (raw: Partial<ISaleReceiver> | null | undefined): ISal
 export const normalizeSaleDte = (raw: RawSaleDte | null | undefined): ISaleDte | null => {
     if (!raw) return null
 
-    const rawFolio = raw.FOLIO
+    const rawFolio = raw.FOLIO ?? raw.folio
     const folio = rawFolio === null || rawFolio === undefined || rawFolio === "" ? null : Number(rawFolio)
 
     return {
         dteDocumentID: raw.dteDocumentID ?? "",
-        TOKEN: raw.TOKEN ?? "",
+        TOKEN: raw.TOKEN ?? raw.token ?? "",
         FOLIO: folio !== null && Number.isFinite(folio) ? folio : null,
-        STATUS: raw.STATUS ?? "",
+        STATUS: raw.STATUS ?? raw.status ?? "",
         PDF: raw.PDF,
         XML: raw.XML,
         WARNING: Array.isArray(raw.WARNING) ? raw.WARNING : [],
@@ -233,19 +246,25 @@ export const normalizeSale = (raw: RawSale, fallbackStoreID = "", dte?: RawSaleD
     const saleReturn = pickFirst(raw.return, raw.Return) ?? null
     const returns = pickArray(raw.returns, raw.Returns)
     const receiver = pickFirst(raw.receiver, raw.Receiver) ?? null
+    const parsedFolio = raw.folio === null || raw.folio === undefined || raw.folio === "" ? null : Number(raw.folio)
 
     return {
         saleID: raw.saleID ?? raw.id ?? "",
         storeID: raw.storeID ?? store?.storeID ?? fallbackStoreID,
         total: Number(pickFirst(raw.total, raw.grandTotal, raw.netTotal) ?? 0),
+        subtotal: raw.subtotal === undefined ? undefined : Number(raw.subtotal),
+        discount: raw.discount === undefined ? undefined : Number(raw.discount),
+        netTotal: raw.netTotal === undefined ? undefined : Number(raw.netTotal),
+        taxTotal: raw.taxTotal === undefined ? undefined : Number(raw.taxTotal),
         status: (raw.status as ISaleResponse["status"]) ?? "Pendiente",
         createdAt: raw.createdAt ?? raw.issueDate ?? "",
         paymentType: raw.paymentType,
         saleType: raw.saleType,
+        folio: parsedFolio !== null && Number.isFinite(parsedFolio) ? parsedFolio : null,
         issueDate: raw.issueDate,
         manualDiscount: raw.manualDiscount === undefined ? undefined : Number(raw.manualDiscount),
         receiver: normalizeReceiver(receiver),
-        dte: normalizeSaleDte(dte),
+        dte: normalizeSaleDte(dte ?? raw.dteDocument),
         Store: normalizeStore(store ?? {}),
         SaleProducts: saleProducts.map(normalizeSaleProduct),
         Return: normalizeSaleReturn(saleReturn),
@@ -258,10 +277,10 @@ export const normalizeSaleOperation = (
     fallbackStoreID = "",
 ): ISaleOperationResponse => {
     const sale = raw.sale ?? {}
-    const dte = normalizeSaleDte(raw.dte)
+    const dte = normalizeSaleDte(raw.dte ?? sale.dteDocument)
     return {
         sale: {
-            ...normalizeSale(sale, fallbackStoreID, raw.dte),
+            ...normalizeSale(sale, fallbackStoreID, raw.dte ?? sale.dteDocument),
             dte,
         },
         dte,
