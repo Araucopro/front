@@ -74,6 +74,8 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                 <TableHead className="whitespace text-center font-semibold text-gray-700 dark:text-gray-200">
                                     SKU
                                 </TableHead>
+                                <TableHead className="whitespace-nowrap text-center font-semibold">SKU PROVEEDOR</TableHead>
+                                <TableHead className="whitespace-nowrap text-center font-semibold">CÓDIGO EAN</TableHead>
                                 <TableHead className="whitespace-nowrap text-center font-semibold text-gray-700 dark:text-gray-200">
                                     MARCA
                                 </TableHead>
@@ -90,8 +92,9 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                     PRECIO PLAZA
                                 </TableHead>
                                 <TableHead className="whitespace-nowrap text-center font-semibold text-gray-700 dark:text-gray-200">
-                                    TALLA
+                                    VARIANTE
                                 </TableHead>
+                                <TableHead className="whitespace-nowrap text-center font-semibold">SUBVARIANTE</TableHead>
                                 <TableHead className="whitespace text-center font-semibold text-gray-700 dark:text-gray-200">
                                     {user?.role === Role.Admin ? "STOCK CENTRAL" : "STOCK TIENDA"}
                                 </TableHead>
@@ -154,6 +157,8 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                                             <p className="font-medium text-base text-center">
                                                                 {product.name}
                                                             </p>
+                                                            {product.slug && <p className="text-center text-xs text-slate-500">/{product.slug}</p>}
+                                                            {product.description && <p className="max-w-52 text-center text-xs text-slate-500" title={product.description}>{product.description}</p>}
                                                             <div className="flex justify-center gap-2 mt-2">
                                                                 <span className="text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full font-medium">
                                                                     {product.variations?.reduce(
@@ -192,6 +197,8 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                                 <p>Imprimir Etiqueta</p>
                                             </TooltipContent>
                                         </Tooltip>
+                                        <TableCell className="px-3 py-1 text-center text-xs">{variation.supplierSku || "—"}</TableCell>
+                                        <TableCell className="px-3 py-1 text-center text-xs">{variation.barcode || "—"}</TableCell>
 
                                         {productData && (
                                             <PrintbarcodeModal
@@ -353,7 +360,7 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                             )}
                                         </TableCell>
 
-                                        {/* Columna TALLA */}
+                                        {/* Columna VARIANTE */}
                                         <TableCell
                                             className={`text-center py-2 ${
                                                 isEditable
@@ -386,11 +393,12 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                                         key={`${product.productID}-${variation.variationID}`}
                                                         delay={index + 3}
                                                     >
-                                                        <span className="font-medium">{variation.size}</span>
+                                                <span className="font-medium">{variation.variation ?? variation.size}</span>
                                                     </MotionItem>
                                                 </div>
                                             )}
                                         </TableCell>
+                                        <TableCell className="text-center text-sm">{variation.subVariation || "—"}</TableCell>
 
                                         {/* Columna STOCK CENTRAL */}
                                         <TableCell

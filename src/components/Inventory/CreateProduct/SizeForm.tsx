@@ -43,7 +43,7 @@ export function SizeForm({ productIndex, sizeIndex, size, error, innerRef }: Siz
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
                 <div className="space-y-3 -mt-3">
                     <Label className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                        Talla
+                        Variante
                     </Label>
                     <Input
                         placeholder="XL, 42, M..."
@@ -103,7 +103,7 @@ export function SizeForm({ productIndex, sizeIndex, size, error, innerRef }: Siz
                 <div className="space-y-3">
                     <Label className="flex items-center gap-1 text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                         <Hash className="w-3 h-3" />
-                        SKU
+                        SKU Tienda
                     </Label>
                     <Input
                         placeholder="ABC123"
@@ -147,6 +147,31 @@ export function SizeForm({ productIndex, sizeIndex, size, error, innerRef }: Siz
                 </div>
             </div>
 
+            <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase text-gray-600 dark:text-gray-300">Subvariante</Label>
+                    <Input
+                        placeholder="Rojo, Vantablack..."
+                        value={size.subVariation ?? ""}
+                        onChange={(e) => handleSizeChange(productIndex, sizeIndex, "subVariation", e.target.value)}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase text-gray-600 dark:text-gray-300">SKU Proveedor</Label>
+                    <Input
+                        value={size.supplierSku ?? ""}
+                        onChange={(e) => handleSizeChange(productIndex, sizeIndex, "supplierSku", e.target.value)}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase text-gray-600 dark:text-gray-300">Código EAN</Label>
+                    <Input
+                        value={size.barcode ?? ""}
+                        onChange={(e) => handleSizeChange(productIndex, sizeIndex, "barcode", e.target.value)}
+                    />
+                </div>
+            </div>
+
             <div className="mt-6 pt-4 border-t-2 border-gray-200 dark:border-slate-500">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -163,7 +188,7 @@ export function SizeForm({ productIndex, sizeIndex, size, error, innerRef }: Siz
                     type="button"
                     onClick={() => removeSize(productIndex, sizeIndex)}
                     className="absolute top-4 right-4 p-2 rounded-xl text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
-                    title="Eliminar talla"
+                    title="Eliminar variante"
                 >
                     <Minus className="w-5 h-5" />
                 </Button>

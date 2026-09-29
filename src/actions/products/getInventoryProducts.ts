@@ -17,7 +17,14 @@ const getInventoryProductsPage = async (limit?: number, offset?: number): Promis
         return []
     }
 
-    return raw
+    return raw.map((product) => ({
+        ...product,
+        variations: (product.variations ?? []).map((variation) => ({
+            ...variation,
+            size: variation.variation ?? variation.size ?? "",
+            subVariation: variation.subVariation ?? variation.color ?? "",
+        })),
+    }))
 }
 
 export const getInventoryProducts = async (limit?: number, offset?: number): Promise<IRawProduct[]> => {
