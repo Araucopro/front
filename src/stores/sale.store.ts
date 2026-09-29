@@ -37,6 +37,7 @@ interface SaleState {
             storeProduct: IStoreProduct,
             finalPrice?: number,
             activeOffer?: SaleItemOffer | null,
+            allowNegativeStock?: boolean,
         ) => void
         removeProduct: (storeProductID: string) => void
         updateQuantity: (storeProductID: string, quantity: number) => void
@@ -54,7 +55,7 @@ export const useSaleStore = create<SaleState>((set, get) => ({
     paymentMethod: "Efectivo",
     loading: false,
     actions: {
-        addProduct: (product, variation, storeProduct, finalPrice, activeOffer) => {
+        addProduct: (product, variation, storeProduct, finalPrice, activeOffer, allowNegativeStockOverride) => {
             const { storeSelected } = useTienda.getState()
             const storeIdFromProduct = storeProduct.storeID || storeProduct.Store?.storeID
             if (!storeSelected && !storeIdFromProduct) {
@@ -66,14 +67,17 @@ export const useSaleStore = create<SaleState>((set, get) => ({
             const existingItem = cartItems.find((item) => item.storeProductID === storeProductID || item.sku === variation.sku)
             const stockQuantity = existingItem ? existingItem.stockQuantity : variation.stockQuantity ?? 0
             const currentQuantity = existingItem ? existingItem.quantity : 0
+            const allowNegativeStock = allowNegativeStockOverride ?? storeSelected?.allowNegativeStock ?? false
 
-            if (currentQuantity + 1 > stockQuantity) {
+            if (!allowNegativeStock && currentQuantity + 1 > stockQuantity) {
                 toast("No se puede agregar más, stock insuficiente.")
                 return
             }
 
             const desiredQuantity = variation.quantity ?? 1
-            const normalizedQuantity = Math.max(0, Math.min(desiredQuantity, variation.stockQuantity ?? 0))
+            const normalizedQuantity = allowNegativeStock
+                ? Math.max(1, desiredQuantity)
+                : Math.max(0, Math.min(desiredQuantity, variation.stockQuantity ?? 0))
             if (normalizedQuantity <= 0) {
                 toast.error("Este producto no tiene stock en la tienda seleccionada")
                 return

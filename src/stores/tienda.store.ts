@@ -9,6 +9,7 @@ interface TiendaStore {
     setStores: (stores: IStore[]) => void
     setStoresUser: (storesFromUser: IStore[]) => void
     setStoreSelected: (store: IStore | null) => void
+    replaceStore: (store: IStore) => void
     cleanStores: () => void
 }
 
@@ -23,6 +24,14 @@ export const useTienda = create(
             setStoreSelected: (store) => {
                 set({ storeSelected: store })
             },
+            replaceStore: (store) =>
+                set((state) => ({
+                    stores: state.stores.map((item) => (item.storeID === store.storeID ? store : item)),
+                    storesFromUser: state.storesFromUser.map((item) =>
+                        item.storeID === store.storeID ? store : item,
+                    ),
+                    storeSelected: state.storeSelected?.storeID === store.storeID ? store : state.storeSelected,
+                })),
             cleanStores: () => {
                 set({ stores: [], storesFromUser: [], storeSelected: null })
             },

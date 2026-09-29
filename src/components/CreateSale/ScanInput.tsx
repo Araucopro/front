@@ -1,10 +1,11 @@
 "use client"
 
-import { ChangeEvent, KeyboardEvent, useMemo, useState } from "react"
+import { ChangeEvent, KeyboardEvent, useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
 import { getPriceCheck } from "@/actions/pricing/getPriceCheck"
+import { getStoreStockSaleProducts } from "@/actions/inventory/getStoreStock"
 import { IVariationWithQuantity } from "@/interfaces/orders/IOrder"
 import { IProduct } from "@/interfaces/products/IProduct"
 import { IProductVariation, IStoreProduct } from "@/interfaces/products/IProductVariation"
@@ -14,6 +15,7 @@ import { Search } from "lucide-react"
 
 interface Props {
     initialProducts: IProduct[]
+    allowNegativeStock?: boolean
 }
 
 type SearchOption = {
@@ -63,20 +65,48 @@ const buildSearchText = (product: IProduct, variation: IProductVariation) =>
             .join(" "),
     )
 
-export const ScanInput = ({ initialProducts }: Props) => {
+export const ScanInput = ({ initialProducts, allowNegativeStock = false }: Props) => {
     const { addProduct } = useSaleStore((state) => state.actions)
     const { storeSelected } = useTienda()
     const searchParams = useSearchParams()
     const [productInput, setProductCode] = useState("")
+    const [products, setProducts] = useState(initialProducts)
+    const [isRefreshingCatalog, setIsRefreshingCatalog] = useState(false)
 
     const effectiveStoreID = storeSelected?.storeID ?? searchParams.get("storeID") ?? ""
 
+    useEffect(() => {
+        setProducts(initialProducts)
+    }, [initialProducts])
+
+    useEffect(() => {
+        if (!allowNegativeStock || !effectiveStoreID) return
+
+        let cancelled = false
+        setIsRefreshingCatalog(true)
+
+        void getStoreStockSaleProducts(effectiveStoreID, { includeOutOfStock: true })
+            .then((completeProducts) => {
+                if (!cancelled) setProducts(completeProducts)
+            })
+            .catch((error) => {
+                console.error("ScanInput: no se pudo recargar el catálogo completo de la tienda", error)
+            })
+            .finally(() => {
+                if (!cancelled) setIsRefreshingCatalog(false)
+            })
+
+        return () => {
+            cancelled = true
+        }
+    }, [allowNegativeStock, effectiveStoreID])
+
     const storeOptions = useMemo<SearchOption[]>(() => {
-        if (!Array.isArray(initialProducts) || !effectiveStoreID) return []
+        if (!Array.isArray(products) || !effectiveStoreID) return []
 
         const options: SearchOption[] = []
 
-        for (const product of initialProducts) {
+        for (const product of products) {
             for (const variation of product.ProductVariations || []) {
                 const storeProduct = findStoreProductForStore(variation, effectiveStoreID)
                 if (!storeProduct) continue
@@ -92,11 +122,11 @@ export const ScanInput = ({ initialProducts }: Props) => {
         }
 
         return options
-    }, [effectiveStoreID, initialProducts])
+    }, [effectiveStoreID, products])
 
     const availableOptions = useMemo(
-        () => storeOptions.filter((option) => option.stockQuantity > 0),
-        [storeOptions],
+        () => storeOptions.filter((option) => allowNegativeStock || option.stockQuantity > 0),
+        [allowNegativeStock, storeOptions],
     )
 
     const normalizedQuery = useMemo(() => normalizeSearchText(productInput), [productInput])
@@ -121,9 +151,16 @@ export const ScanInput = ({ initialProducts }: Props) => {
 
         try {
             const check = await getPriceCheck(option.storeProduct.storeProductID)
-            addProduct(option.product, variationWithQuantity, option.storeProduct, check.finalPrice, check.activeOffer)
+            addProduct(
+                option.product,
+                variationWithQuantity,
+                option.storeProduct,
+                check.finalPrice,
+                check.activeOffer,
+                allowNegativeStock,
+            )
         } catch {
-            addProduct(option.product, variationWithQuantity, option.storeProduct)
+            addProduct(option.product, variationWithQuantity, option.storeProduct, undefined, undefined, allowNegativeStock)
         }
 
         setProductCode("")
@@ -148,7 +185,7 @@ export const ScanInput = ({ initialProducts }: Props) => {
         if (!query) return
 
         const exactAssignedSku = storeOptions.find((option) => normalizeSku(option.variation.sku) === normalizeSku(query))
-        if (exactAssignedSku && exactAssignedSku.stockQuantity <= 0) {
+        if (!allowNegativeStock && exactAssignedSku && exactAssignedSku.stockQuantity <= 0) {
             toast.error("El producto existe, pero no tiene stock en la tienda seleccionada")
             return
         }
@@ -171,7 +208,11 @@ export const ScanInput = ({ initialProducts }: Props) => {
             return
         }
 
-        toast.error(`No se encontro producto con stock: ${query}`)
+        toast.error(
+            allowNegativeStock
+                ? `No se encontró el producto: ${query}`
+                : `No se encontró producto con stock: ${query}`,
+        )
     }
 
     const shouldShowResults = normalizedQuery.length >= 2 && productInput.trim() !== ""
@@ -200,7 +241,11 @@ export const ScanInput = ({ initialProducts }: Props) => {
             {shouldShowResults && (
                 <div className="relative">
                     <ul className="absolute -top-6 left-0 w-full max-w-xl bg-white dark:bg-slate-700 border rounded-lg shadow mt-2 max-h-72 overflow-y-auto z-50">
-                        {searchResults.length > 0 ? (
+                            {isRefreshingCatalog ? (
+                                <li className="p-3 text-sm text-slate-500 dark:text-slate-300">
+                                    Cargando catálogo completo de la tienda...
+                                </li>
+                            ) : searchResults.length > 0 ? (
                             searchResults.map((option) => (
                                 <li key={`${option.product.productID}-${option.variation.variationID}`}>
                                     <button
@@ -219,7 +264,9 @@ export const ScanInput = ({ initialProducts }: Props) => {
                             ))
                         ) : (
                             <li className="p-3 text-sm text-slate-500 dark:text-slate-300">
-                                Sin productos con stock para esta busqueda
+                                {allowNegativeStock
+                                    ? "Sin productos para esta búsqueda"
+                                    : "Sin productos con stock para esta búsqueda"}
                             </li>
                         )}
                     </ul>

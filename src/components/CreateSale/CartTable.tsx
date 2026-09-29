@@ -6,7 +6,7 @@ import { toPrice } from "@/utils/priceFormat"
 import { ShoppingCart, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
-export const CartTable = () => {
+export const CartTable = ({ allowNegativeStock = false }: { allowNegativeStock?: boolean }) => {
     const { cartItems, actions } = useSaleStore()
     const { removeProduct, updateQuantity } = actions
 
@@ -53,21 +53,36 @@ export const CartTable = () => {
                                         title="Cantidad"
                                         type="number"
                                         min={0}
-                                        max={item.stockQuantity}
+                                        max={allowNegativeStock ? undefined : item.stockQuantity}
                                         value={item.quantity}
                                         onWheel={(e) => {
                                             e.currentTarget.blur()
                                         }}
                                         onChange={(e) => {
-                                            if (item.stockQuantity === 0) {
+                                            const nextQuantity = Number(e.target.value)
+                                            if (!allowNegativeStock && item.stockQuantity === 0) {
                                                 return toast.error("Stock agotado, solicite a central")
                                             }
-                                            updateQuantity(item.storeProductID, Number(e.target.value))
+                                            if (!allowNegativeStock && nextQuantity > item.stockQuantity) {
+                                                return toast.error("La cantidad supera el stock disponible")
+                                            }
+                                            updateQuantity(item.storeProductID, Math.max(0, nextQuantity))
                                         }}
                                         className="w-16 rounded border border-gray-300 p-1 text-center"
                                     />
 
-                                    <p className="mt-1 text-xs text-gray-500">Stock: {item.stockQuantity}</p>
+                                    <p
+                                        className={`mt-1 text-xs ${
+                                            allowNegativeStock && item.quantity > item.stockQuantity
+                                                ? "font-medium text-amber-600"
+                                                : "text-gray-500"
+                                        }`}
+                                    >
+                                        Stock: {item.stockQuantity}
+                                        {allowNegativeStock && item.quantity > item.stockQuantity
+                                            ? ` · quedará en ${item.stockQuantity - item.quantity}`
+                                            : ""}
+                                    </p>
                                 </div>
                             </TableCell>
 
