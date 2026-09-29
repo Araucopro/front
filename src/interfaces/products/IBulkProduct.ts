@@ -7,9 +7,10 @@ export interface IBulkProductVariation {
     priceCost: number
     priceList: number
     stock: number
-    color?: string
-    size?: string
+    variation?: string
+    subVariation?: string
     supplierSku?: string
+    barcode?: string
 }
 
 export interface IBulkProductItem {
@@ -19,6 +20,7 @@ export interface IBulkProductItem {
     brand?: string
     genre?: Genre
     description?: string
+    slug?: string
     variations: IBulkProductVariation[]
 }
 

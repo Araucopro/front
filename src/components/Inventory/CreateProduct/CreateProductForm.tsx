@@ -101,6 +101,8 @@ export default function CreateProductForm({
             name: product.name.trim(),
             categoryName: product.categoryName?.trim() || findCategoryNameByID(categories, product.categoryID),
             ...(product.image.trim() ? { image: product.image.trim() } : {}),
+            ...(product.description?.trim() ? { description: product.description.trim() } : {}),
+            ...(product.slug?.trim() ? { slug: product.slug.trim() } : {}),
             brand: product.brand,
             genre: product.genre,
             variations: product.sizes.map((size) => ({
@@ -108,7 +110,10 @@ export default function CreateProductForm({
                 priceCost: Number(size.priceCost),
                 priceList: Number(size.priceList),
                 stock: Number(size.stockQuantity),
-                ...(size.sizeNumber.trim() ? { size: size.sizeNumber.trim() } : {}),
+                ...(size.sizeNumber.trim() ? { variation: size.sizeNumber.trim() } : {}),
+                ...(size.subVariation?.trim() ? { subVariation: size.subVariation.trim() } : {}),
+                ...(size.supplierSku?.trim() ? { supplierSku: size.supplierSku.trim() } : {}),
+                ...(size.barcode?.trim() ? { barcode: size.barcode.trim() } : {}),
             })),
         }))
 

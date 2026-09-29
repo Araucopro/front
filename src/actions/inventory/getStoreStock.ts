@@ -18,6 +18,7 @@ type RawProductFromStock = {
     category?: RawCategoryFromStock | null
     Category?: RawCategoryFromStock | null
     name?: string
+    slug?: string
     brand?: string
     genre?: IRawProduct["genre"]
     description?: string | null
@@ -33,6 +34,10 @@ type RawVariationFromStock = {
     variationID?: string
     productID?: string
     sku?: string
+    variation?: string
+    subVariation?: string
+    supplierSku?: string | null
+    barcode?: string | null
     size?: string
     color?: string | null
     createdAt?: string
@@ -103,6 +108,7 @@ const buildProduct = (raw: RawProductFromStock): IRawProduct => {
         categoryID: raw.categoryID ?? category?.categoryID ?? null,
         category,
         name: raw.name ?? "",
+        slug: raw.slug ?? "",
         brand: raw.brand ?? "Otro",
         genre: raw.genre ?? "Unisex",
         description: raw.description ?? null,
@@ -122,7 +128,11 @@ const buildVariation = (
     variationID: raw.variationID ?? storeProduct.variationID,
     productID: raw.productID ?? productID,
     sku: raw.sku ?? "",
-    size: raw.size ?? "",
+    variation: raw.variation ?? raw.size ?? "",
+    subVariation: raw.subVariation ?? raw.color ?? "",
+    supplierSku: raw.supplierSku ?? null,
+    barcode: raw.barcode ?? null,
+    size: raw.variation ?? raw.size ?? "",
     color: raw.color ?? null,
     createdAt: raw.createdAt ?? "",
     updatedAt: raw.updatedAt ?? "",

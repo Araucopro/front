@@ -35,6 +35,10 @@ export interface IProductVariation {
     priceList: number
     priceCost: number
     sku: string
+    variation?: string
+    subVariation?: string
+    supplierSku?: string | null
+    barcode?: string | null
     stockQuantity: number
     Stores?: IStore[]
     StoreProducts?: IStoreProduct[]

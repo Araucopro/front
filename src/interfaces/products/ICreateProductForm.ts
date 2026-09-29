@@ -7,6 +7,9 @@ export interface Size {
     priceCost: number
     sku: string
     stockQuantity: number
+    subVariation?: string
+    supplierSku?: string
+    barcode?: string
 }
 
 export interface CreateProductFormData {
@@ -15,8 +18,10 @@ export interface CreateProductFormData {
     image: string
     categoryID: string
     categoryName?: string
+    description?: string
+    slug?: string
     genre: "Hombre" | "Mujer" | "Unisex"
-    brand: "D3SI" | "Otro"
+    brand: string
     sizes: Size[]
 }
 
