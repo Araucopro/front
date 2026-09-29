@@ -15,6 +15,8 @@ export interface IStore {
     email: string
     type?: string
     isCentralStore?: boolean
+    requireClientForSale: boolean
+    allowNegativeStock: boolean
     giro?: string
     acteco?: string
     cdgSIISucur?: string

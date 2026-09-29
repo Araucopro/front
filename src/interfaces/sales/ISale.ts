@@ -42,6 +42,7 @@ export interface ISaleRequest {
     paymentType: PaymentType
     issueDate?: string
     receiver?: ISaleReceiver
+    clientID?: string
     items: ISaleItemRequest[]
     cashRegisterID?: string
     payments?: ISalePaymentRequest[]

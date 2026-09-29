@@ -13,6 +13,7 @@ import {
     FaFileAlt,
     FaFileInvoice,
     FaHome,
+    FaLock,
     FaMoneyBillWave,
     FaReceipt,
     FaShoppingCart,
@@ -236,6 +237,13 @@ export const navItems: NavigationItem[] = [
         icon: FaCog,
         iconClassName: "text-[#b8a5d2]",
         subItems: [
+            {
+                id: "security",
+                label: "Seguridad",
+                route: "/home/configuracion/seguridad",
+                icon: FaLock,
+                iconClassName: "text-[#2563eb]",
+            },
             {
                 id: "cash-registers",
                 label: "Configuración de cajas",

@@ -81,8 +81,11 @@ export default function Sidebar() {
                 if (["cash", "inventory", "commercial"].includes(item.id)) return [item]
                 if (item.id !== "configuration") return []
 
-                const cashRegisterItems = item.subItems?.filter((subItem) => subItem.id === "cash-registers") ?? []
-                return cashRegisterItems.length > 0 ? [{ ...item, subItems: cashRegisterItems }] : []
+                const availableConfigurationItems =
+                    item.subItems?.filter((subItem) => ["cash-registers", "security"].includes(subItem.id)) ?? []
+                return availableConfigurationItems.length > 0
+                    ? [{ ...item, subItems: availableConfigurationItems }]
+                    : []
             })
         }
 

@@ -181,7 +181,10 @@ export async function getStoreStockProducts(storeID: string): Promise<IRawProduc
     return Array.isArray(items) ? mapStoreStockToProducts(items, storeID) : []
 }
 
-export async function getStoreStockSaleProducts(storeID: string): Promise<IProduct[]> {
+export async function getStoreStockSaleProducts(
+    storeID: string,
+    options: { includeOutOfStock?: boolean } = {},
+): Promise<IProduct[]> {
     const rawProducts = await getStoreStockProducts(storeID)
 
     return rawProducts
@@ -189,7 +192,7 @@ export async function getStoreStockSaleProducts(storeID: string): Promise<IProdu
         .map((product) => {
             const ProductVariations = product.ProductVariations.filter((variation) => {
                 const storeProduct = variation.StoreProducts?.find((item) => item.storeID === storeID)
-                return (storeProduct?.quantity ?? 0) > 0
+                return Boolean(storeProduct) && (options.includeOutOfStock || (storeProduct?.quantity ?? 0) > 0)
             })
 
             return {
