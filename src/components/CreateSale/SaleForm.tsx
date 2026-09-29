@@ -21,7 +21,7 @@ import { DiscountModal, DiscountStoreProductOption } from "@/components/Discount
 import { getPriceCheck } from "@/actions/pricing/getPriceCheck"
 import { getChileYYYYMMDD } from "@/utils/chile-date"
 import { normalizeRutValue } from "@/utils/rut"
-import { Banknote, Building2, CreditCard, FileText, Receipt, UserPlus, WalletCards, X } from "lucide-react"
+import { Banknote, CreditCard, FileText, UserPlus, WalletCards, X } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { IPaymentMethod, PaymentMethodType } from "@/interfaces/cash-registers/ICashCatalogs"
 import type { ICashRegister, ICashSession } from "@/interfaces/cash-registers/ICashRegister"
@@ -31,22 +31,14 @@ import type { IStore } from "@/interfaces/stores/IStore"
 const DEFAULT_RECEIVER_EMAIL = "soporte@araucopro.com"
 const EMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
 const isSpecialStoreFilter = (value: string | null) => value === "all" || value === "propias" || value === "consignadas"
-const saleTypes = new Set<SaleType>(["BOLETA", "FACTURA", "NOTA_VENTA"])
+const saleTypes = new Set<SaleType>(["NOTA_VENTA"])
 const saleTypeOptions: Array<{
     value: SaleType
     label: string
     description: string
-    icon: typeof Receipt
+    icon: typeof FileText
     selectedClassName: string
 }> = [
-    {
-        value: "BOLETA",
-        label: "Boleta electrónica",
-        description: "Venta directa",
-        icon: Receipt,
-        selectedClassName:
-            "border-blue-500 bg-blue-50 text-blue-800 ring-blue-200 dark:bg-blue-950/40 dark:text-blue-200",
-    },
     {
         value: "NOTA_VENTA",
         label: "Nota de venta",
@@ -54,14 +46,6 @@ const saleTypeOptions: Array<{
         icon: FileText,
         selectedClassName:
             "border-amber-500 bg-amber-50 text-amber-900 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-200",
-    },
-    {
-        value: "FACTURA",
-        label: "Factura electrónica",
-        description: "Con datos del receptor",
-        icon: Building2,
-        selectedClassName:
-            "border-emerald-500 bg-emerald-50 text-emerald-900 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200",
     },
 ]
 const legacyPaymentTypeByMethod: Partial<Record<PaymentMethodType, PaymentType>> = {
@@ -90,7 +74,7 @@ const paymentVisuals: Record<PaymentType, { icon: typeof Banknote; selectedClass
 
 type OpenCashRegister = { register: ICashRegister; session: ICashSession }
 const getSaleTypeFromParam = (value: string | null): SaleType =>
-    value && saleTypes.has(value as SaleType) ? (value as SaleType) : "BOLETA"
+    value && saleTypes.has(value as SaleType) ? (value as SaleType) : "NOTA_VENTA"
 const isValidEmail = (value: string) => {
     const email = value.trim()
     const [localPart, domain] = email.split("@")
@@ -470,7 +454,7 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                                         </p>
                                     </div>
                                 </div>
-                                <div className="grid gap-2 sm:grid-cols-3" role="group" aria-label="Tipo de documento">
+                                <div className="grid max-w-sm gap-2" role="group" aria-label="Tipo de documento">
                                     {saleTypeOptions.map((option) => {
                                         const Icon = option.icon
                                         const selected = saleType === option.value

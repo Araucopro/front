@@ -14,6 +14,7 @@ export type PaymentStatus =
     | "CONVERTIDA"
     | "ANULADA"
     | "DEVUELTA"
+    | "CORREGIDA"
 
 export interface ISaleItemRequest {
     storeProductID: string
@@ -66,7 +67,7 @@ export interface ISaleOperationResponse {
 
 export interface ISaleListFilters {
     saleType?: SaleType
-    status?: "EMITIDA" | "CONVERTIDA"
+    status?: "EMITIDA" | "CONVERTIDA" | "ANULADA" | "DEVUELTA" | "CORREGIDA"
     from?: string
     to?: string
     page?: number
@@ -125,10 +126,15 @@ export interface ISaleResponse {
     saleID: string
     storeID: string
     total: number
+    subtotal?: number
+    discount?: number
+    netTotal?: number
+    taxTotal?: number
     status: PaymentStatus
     createdAt: string
     paymentType?: string
     saleType?: SaleType
+    folio?: number | null
     issueDate?: string
     manualDiscount?: number
     receiver?: ISaleReceiver | null
