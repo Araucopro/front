@@ -27,12 +27,14 @@ import {
     MapPinned,
     UserRoundCheck,
     AtSign,
+    SlidersHorizontal,
 } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { RutInput } from "@/components/ui/rut-input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Switch } from "@/components/ui/switch"
 import { getAllUsers } from "@/actions/users/getAllUsers"
 import { getValidStoreType, STORE_TYPE_OPTIONS, StoreType } from "@/lib/storeTypes"
 import {
@@ -60,7 +62,7 @@ export default function GestionStoreForm({
     onUserStoresChange,
 }: GestionStoreFormProps) {
     const { users, setUsers } = useAuth()
-    const { setStores } = useTienda()
+    const { setStores, replaceStore } = useTienda()
     const initialStoreType = getValidStoreType(tienda.type ?? tienda.role)
     const [nombre, setNombre] = useState(tienda.name)
     const [rut] = useState(tienda.rut)
@@ -73,6 +75,8 @@ export default function GestionStoreForm({
     const [isCentralLocal, setIsCentralLocal] = useState<boolean>(
         tienda.isCentralStore ?? tienda.isAdminStore ?? initialStoreType === StoreType.Central,
     )
+    const [requireClientForSale, setRequireClientForSale] = useState(tienda.requireClientForSale ?? false)
+    const [allowNegativeStock, setAllowNegativeStock] = useState(tienda.allowNegativeStock ?? false)
     const [gestoresAsignados, setGestoresAsignados] = useState<IUserStoreRelation[]>(
         userStoreRelations.filter((relation) => relation.store?.storeID === tienda.storeID),
     )
@@ -111,7 +115,7 @@ export default function GestionStoreForm({
                 return
             }
 
-            await updateStore(tienda.storeID, {
+            const updatedStore = await updateStore(tienda.storeID, {
                 name: nombre.trim(),
                 location: location.trim(),
                 city: ciudad.trim(),
@@ -120,7 +124,11 @@ export default function GestionStoreForm({
                 type: storeTypeSelected.trim(),
                 email: email.trim(),
                 isCentralStore: isCentralLocal,
+                requireClientForSale,
+                allowNegativeStock,
             })
+
+            replaceStore(updatedStore)
 
             const [usuarios, tiendas] = await Promise.all([getAllUsers(), getAllStores()])
 
@@ -374,6 +382,55 @@ export default function GestionStoreForm({
                                 </div>
                             </RadioGroup>
                         </div>
+                    </div>
+                </div>
+
+                <div className="space-y-4 border-t border-slate-200 pt-5 dark:border-slate-700">
+                    <div className="flex items-center space-x-2 text-lg font-medium text-gray-700 dark:text-white">
+                        <SlidersHorizontal className="h-5 w-5" />
+                        <span>Reglas de venta</span>
+                    </div>
+
+                    <div className="grid gap-3 md:grid-cols-2">
+                        <label
+                            htmlFor="require-client-for-sale"
+                            className="flex cursor-pointer items-start justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800"
+                        >
+                            <span>
+                                <span className="block text-sm font-semibold text-slate-900 dark:text-white">
+                                    Exigir cliente en cada venta
+                                </span>
+                                <span className="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-300">
+                                    Caja no permitirá finalizar una venta sin seleccionar un cliente registrado.
+                                </span>
+                            </span>
+                            <Switch
+                                id="require-client-for-sale"
+                                checked={requireClientForSale}
+                                onCheckedChange={setRequireClientForSale}
+                                className="shrink-0"
+                            />
+                        </label>
+
+                        <label
+                            htmlFor="allow-negative-stock"
+                            className="flex cursor-pointer items-start justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800"
+                        >
+                            <span>
+                                <span className="block text-sm font-semibold text-slate-900 dark:text-white">
+                                    Permitir stock negativo
+                                </span>
+                                <span className="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-300">
+                                    Permite vender aun cuando la cantidad disponible sea cero o insuficiente.
+                                </span>
+                            </span>
+                            <Switch
+                                id="allow-negative-stock"
+                                checked={allowNegativeStock}
+                                onCheckedChange={setAllowNegativeStock}
+                                className="shrink-0"
+                            />
+                        </label>
                     </div>
                 </div>
 

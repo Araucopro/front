@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { ScanInput } from "@/components/CreateSale/ScanInput"
 import { CartTable } from "@/components/CreateSale/CartTable"
+import { SaleClientSelector } from "@/components/CreateSale/SaleClientSelector"
 import { useSaleStore } from "@/stores/sale.store"
 import { CASH_SESSION_CHANGED_EVENT } from "@/lib/cash-session-events"
 import { ISaleReceiver, ISaleRequest, PaymentType, SaleType } from "@/interfaces/sales/ISale"
@@ -24,6 +25,8 @@ import { Banknote, Building2, CreditCard, FileText, Receipt, UserPlus, WalletCar
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { IPaymentMethod, PaymentMethodType } from "@/interfaces/cash-registers/ICashCatalogs"
 import type { ICashRegister, ICashSession } from "@/interfaces/cash-registers/ICashRegister"
+import type { IClient } from "@/interfaces/clients/IClient"
+import type { IStore } from "@/interfaces/stores/IStore"
 
 const DEFAULT_RECEIVER_EMAIL = "soporte@araucopro.com"
 const EMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
@@ -102,7 +105,12 @@ const isValidEmail = (value: string) => {
     )
 }
 
-export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) => {
+type SaleFormProps = {
+    initialProducts: IProduct[]
+    storeSettings?: IStore
+}
+
+export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
     const router = useRouter()
     const searchParams = useSearchParams()
     const { cartItems, actions } = useSaleStore()
@@ -119,6 +127,7 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
     const [cashSetupLoading, setCashSetupLoading] = useState(false)
     const [cashSetupError, setCashSetupError] = useState<string | null>(null)
     const [cashSetupRevision, setCashSetupRevision] = useState(0)
+    const [selectedClient, setSelectedClient] = useState<IClient | null>(null)
     const [receiver, setReceiver] = useState<ISaleReceiver>({
         rut: "",
         name: "",
@@ -131,6 +140,9 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
     const urlStoreID = searchParams.get("storeID")
     const effectiveStoreID =
         storeSelected?.storeID ?? (urlStoreID && !isSpecialStoreFilter(urlStoreID) ? urlStoreID : "")
+    const activeStore = storeSettings?.storeID === effectiveStoreID ? storeSettings : storeSelected
+    const requireClientForSale = activeStore?.requireClientForSale ?? false
+    const allowNegativeStock = activeStore?.allowNegativeStock ?? false
     const total = useMemo(() => {
         return cartItems.reduce((acc, item) => {
             const price = item.finalPrice ?? item.priceList
@@ -220,6 +232,20 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
         ? legacyPaymentTypeByMethod[selectedPaymentMethod.type]
         : undefined
 
+    const handleClientSelect = (client: IClient | null) => {
+        setSelectedClient(client)
+        if (!client) return
+
+        setReceiver({
+            rut: client.rut,
+            name: client.name,
+            email: client.email ?? "",
+            address: client.address ?? "",
+            city: client.city ?? "",
+            giro: client.giro ?? "",
+        })
+    }
+
     const discountableStoreProducts = useMemo<DiscountStoreProductOption[]>(() => {
         const seen = new Set<string>()
         return cartItems
@@ -271,6 +297,9 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
                 return toast.error("Por favor elimina los productos sin stock")
             }
             if (!effectiveStoreID) return toast.error("No hay una tienda elegida")
+            if (requireClientForSale && !selectedClient) {
+                return toast.error("Esta tienda exige seleccionar un cliente registrado para cada venta")
+            }
             if (cashSetupLoading) return toast.error("Espera mientras se carga la configuración de caja")
             if (cashSetupError) return toast.error(cashSetupError)
             if (!cashRegisterID) return toast.error("Debes abrir un turno de caja antes de registrar la venta")
@@ -308,6 +337,7 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
                 issueDate: currentIssueDate,
                 cashRegisterID,
                 payments: [{ paymentMethodID: selectedPaymentMethod.paymentMethodID, amount: total }],
+                ...(selectedClient ? { clientID: selectedClient.clientID } : {}),
                 ...(shouldSendReceiver
                     ? {
                           receiver: {
@@ -368,10 +398,15 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
     return (
         <>
             <div className="p-4">
-                <ScanInput initialProducts={initialProducts} />
+                <ScanInput initialProducts={initialProducts} allowNegativeStock={allowNegativeStock} />
 
-                <CartTable />
+                <CartTable allowNegativeStock={allowNegativeStock} />
                 <div className="mt-4 flex flex-col gap-6">
+                    <SaleClientSelector
+                        required={requireClientForSale}
+                        selectedClient={selectedClient}
+                        onSelect={handleClientSelect}
+                    />
                     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
                         <div className="mb-4 flex flex-col gap-3 border-b border-slate-100 pb-3 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
                             <div>
@@ -753,7 +788,8 @@ export const SaleForm = ({ initialProducts }: { initialProducts: IProduct[] }) =
                                 cashSetupLoading ||
                                 cartItems.length === 0 ||
                                 !cashRegisterID ||
-                                !paymentMethodID
+                                !paymentMethodID ||
+                                (requireClientForSale && !selectedClient)
                             }
                             onClick={handleSubmit}
                             className="px-6 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition"

@@ -46,6 +46,8 @@ type RawStore = {
     email?: string
     type?: IStore["type"]
     isCentralStore?: boolean
+    requireClientForSale?: boolean
+    allowNegativeStock?: boolean
     giro?: string
     acteco?: string
     cdgSIISucur?: string
@@ -109,6 +111,8 @@ export const normalizeStore = (raw: RawStore): IStore => {
         email: raw.email ?? "",
         type: raw.type,
         isCentralStore: raw.isCentralStore,
+        requireClientForSale: raw.requireClientForSale ?? false,
+        allowNegativeStock: raw.allowNegativeStock ?? false,
         giro: raw.giro,
         acteco: raw.acteco,
         cdgSIISucur: raw.cdgSIISucur,

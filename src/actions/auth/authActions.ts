@@ -63,6 +63,23 @@ const setSessionCookies = async (accessToken: string, sessionType: AuthSessionTy
     })
 }
 
+const clearSessionCookies = async () => {
+    const cookieStore = await cookies()
+    const expiredCookieOptions = {
+        path: "/",
+        sameSite: "lax",
+        maxAge: 0,
+        secure: process.env.NODE_ENV === "production",
+        httpOnly: false,
+    } as const
+
+    cookieStore.set(AUTH_COOKIE_NAME, "", expiredCookieOptions)
+    cookieStore.set(AUTH_SESSION_COOKIE_NAME, "", expiredCookieOptions)
+    cookieStore.set(MASTER_AUTH_COOKIE_NAME, "", { ...expiredCookieOptions, httpOnly: true })
+    cookieStore.set(MASTER_IMPERSONATION_COOKIE_NAME, "", { ...expiredCookieOptions, httpOnly: true })
+    cookieStore.set(MASTER_PENDING_IMPERSONATION_COOKIE_NAME, "", { ...expiredCookieOptions, httpOnly: true })
+}
+
 export async function login(email: string, password: string) {
     const auth = await fetcher<RawAuthResponse>(`${API_URL}/auth/login`, {
         method: "POST",
@@ -105,21 +122,18 @@ export async function checkStatus() {
     }
 }
 
-export async function logout() {
-    const cookieStore = await cookies()
-    const expiredCookieOptions = {
-        path: "/",
-        sameSite: "lax",
-        maxAge: 0,
-        secure: process.env.NODE_ENV === "production",
-        httpOnly: false,
-    } as const
+export async function changePassword(newPassword: string): Promise<{ changed: boolean }> {
+    const result = await fetcher<{ changed: boolean }>(`${API_URL}/auth/change-password`, {
+        method: "PATCH",
+        body: JSON.stringify({ newPassword }),
+    })
 
-    cookieStore.set(AUTH_COOKIE_NAME, "", expiredCookieOptions)
-    cookieStore.set(AUTH_SESSION_COOKIE_NAME, "", expiredCookieOptions)
-    cookieStore.set(MASTER_AUTH_COOKIE_NAME, "", { ...expiredCookieOptions, httpOnly: true })
-    cookieStore.set(MASTER_IMPERSONATION_COOKIE_NAME, "", { ...expiredCookieOptions, httpOnly: true })
-    cookieStore.set(MASTER_PENDING_IMPERSONATION_COOKIE_NAME, "", { ...expiredCookieOptions, httpOnly: true })
+    await clearSessionCookies()
+    return result
+}
+
+export async function logout() {
+    await clearSessionCookies()
 
     return { ok: true }
 }
