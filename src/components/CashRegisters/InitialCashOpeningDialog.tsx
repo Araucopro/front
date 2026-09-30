@@ -3,7 +3,6 @@
 import { FormEvent, useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
-    getActiveCashSession,
     getCashRegisters,
     openCashSession,
 } from "@/actions/cash-registers/cashRegisters"
@@ -64,11 +63,8 @@ export default function InitialCashOpeningDialog() {
         setCheckError(null)
         try {
             const activeRegisters = await getCashRegisters({ storeID, status: "ACTIVE" })
-            const sessionResults = await Promise.allSettled(
-                activeRegisters.map((register) => getActiveCashSession(register.cashRegisterID)),
-            )
-            const hasOpenSession = sessionResults.some(
-                (result) => result.status === "fulfilled" && Boolean(result.value),
+            const hasOpenSession = activeRegisters.some((register) =>
+                register.sessions?.some((session) => session.status === "OPEN"),
             )
 
             if (hasOpenSession) {

@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import {
-    getActiveCashSession,
     getCashRegisters,
     getStoreCashSummary,
 } from "@/actions/cash-registers/cashRegisters"
@@ -91,17 +90,12 @@ export default function CashRegistersClient() {
             setRegisters(registerResponse)
             setSummary(summaryResponse)
 
-            const sessionResults = await Promise.allSettled(
-                registerResponse.map(async (register) => ({
-                    cashRegisterID: register.cashRegisterID,
-                    session: await getActiveCashSession(register.cashRegisterID),
-                })),
-            )
-            const nextSessions: Record<string, ICashSession | null> = {}
-            sessionResults.forEach((result, index) => {
-                const registerID = registerResponse[index].cashRegisterID
-                nextSessions[registerID] = result.status === "fulfilled" ? result.value.session : null
-            })
+            const nextSessions = Object.fromEntries(
+                registerResponse.map((register) => [
+                    register.cashRegisterID,
+                    register.sessions?.find((session) => session.status === "OPEN") ?? null,
+                ]),
+            ) satisfies Record<string, ICashSession | null>
             setActiveSessions(nextSessions)
         } catch (error) {
             const message = error instanceof Error ? error.message : "No se pudieron cargar las cajas"
