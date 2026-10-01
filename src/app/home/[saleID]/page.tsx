@@ -10,7 +10,8 @@ import SingleSaleTable from "@/components/Caja/SingleSaleTable"
 import FinancialSummary from "@/components/Invoices/FinancialSummary"
 import StoreInfo from "@/components/Invoices/StoreInfo"
 import { getAnulatedProducts } from "@/lib/getAnulatedProducts"
-import { Receipt, ShoppingBag } from "lucide-react"
+import { hasSplitSalePayment } from "@/utils/sale-payments"
+import { AlertTriangle, Receipt, ShoppingBag } from "lucide-react"
 import Link from "next/link"
 
 interface PropsSale {
@@ -81,6 +82,7 @@ export default async function SingleSalePage({ params, searchParams }: PropsSale
     }
 
     const neto = adjustedTotal / 1.19
+    const isSplitPayment = hasSplitSalePayment(sale)
     const completedReturns = sale.Returns.filter((ret) => ret.status === "COMPLETADA")
     const displayStatus = completedReturns.some((ret) => ret.returnType === "TOTAL")
         ? "ANULADA"
@@ -129,6 +131,7 @@ export default async function SingleSalePage({ params, searchParams }: PropsSale
                     <SaleMainInfo
                         cantidadTotalProductos={cantidadTotalProductos}
                         fecha={fecha}
+                        payments={sale.payments}
                         paymentType={sale.paymentType}
                         status={displayStatus}
                         total={adjustedTotal}
@@ -169,9 +172,24 @@ export default async function SingleSalePage({ params, searchParams }: PropsSale
                             </div>
                         </div>
                     )}
-                    {sale.saleType === "NOTA_VENTA" && sale.status !== "CONVERTIDA" && (
-                        <ConvertSaleButton saleID={sale.saleID} storeID={sale.storeID || storeID} />
-                    )}
+                    {sale.saleType === "NOTA_VENTA" && sale.status !== "CONVERTIDA" &&
+                        (isSplitPayment ? (
+                            <div
+                                className="flex gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100"
+                                role="status"
+                            >
+                                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-300" />
+                                <div>
+                                    <p className="text-sm font-semibold">Pago dividido · Nota no convertible</p>
+                                    <p className="mt-1 text-xs text-amber-800 dark:text-amber-200">
+                                        Esta nota de venta se pagó con más de un medio y no puede convertirse a
+                                        boleta ni factura desde Caja.
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <ConvertSaleButton saleID={sale.saleID} storeID={sale.storeID || storeID} />
+                        ))}
                     <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-6 shadow-sm ring-1 ring-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/30 dark:ring-emerald-900/50">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="flex items-center gap-2 text-lg font-semibold">

@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import type { ISaleResponse } from "@/interfaces/sales/ISale"
 import { getChileYYYYMMDD, isYYYYMMDD, toChileMiddayUTC } from "@/utils/chile-date"
 import { toPrice } from "@/utils/priceFormat"
+import { getSalePaymentBreakdown } from "@/utils/sale-payments"
 import { Download, FileText, Loader2, Printer, RotateCcw } from "lucide-react"
 import { toast } from "sonner"
 
@@ -48,6 +49,7 @@ function SaleDocument({ sale }: { sale: ISaleResponse }) {
     const receiver = sale.receiver
     const documentName = documentLabels[sale.saleType ?? ""] ?? "Documento de venta"
     const folio = sale.dte?.FOLIO ?? sale.folio
+    const payments = getSalePaymentBreakdown(sale)
 
     return (
         <article className="mx-auto flex min-h-[950px] w-[794px] flex-col border border-slate-200 bg-white px-12 py-10 text-slate-900 shadow-xl">
@@ -155,7 +157,12 @@ function SaleDocument({ sale }: { sale: ISaleResponse }) {
             <div className="mt-auto grid grid-cols-[1fr_250px] items-end gap-6 pt-12">
                 <div className="rounded-md border border-slate-300 p-3 text-[11px] text-slate-500">
                     <p className="font-bold uppercase text-slate-700">Información</p>
-                    <p className="mt-1">Medio de pago: {sale.paymentType || "No informado"}</p>
+                    <p className="mt-1 font-semibold text-slate-700">Medios de pago</p>
+                    {payments.map((payment, index) => (
+                        <p key={`${payment.label}-${index}`} className="mt-1">
+                            {payment.label}: {formatMoney(payment.amount)}
+                        </p>
+                    ))}
                     <p className="mt-1">ID de venta: {sale.saleID}</p>
                     <p className="mt-2 font-semibold text-amber-700">
                         Vista previa informativa. No sustituye el PDF oficial ni el timbre electrónico del SII.

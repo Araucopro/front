@@ -1,8 +1,11 @@
 import React from "react"
+import type { ISalePayment } from "@/interfaces/sales/ISale"
+import { toPrice } from "@/utils/priceFormat"
 
 interface Props {
     cantidadTotalProductos: number
     fecha: string
+    payments: ISalePayment[]
     paymentType?: string
     status?: string
     total?: number
@@ -16,7 +19,7 @@ const saleTypeLabels: Record<string, string> = {
     NOTA_VENTA: "Nota de venta",
 }
 
-export default function SaleMainInfo({ cantidadTotalProductos, fecha, paymentType, status, saleType, folio }: Props) {
+export default function SaleMainInfo({ cantidadTotalProductos, fecha, payments, paymentType, status, saleType, folio }: Props) {
     return (
         <>
             {/* Información Principal */}
@@ -39,12 +42,25 @@ export default function SaleMainInfo({ cantidadTotalProductos, fecha, paymentTyp
                     <p className="text-lg font-semibold">{fecha}</p>
                 </div>
 
-                {/* Tipo de pago */}
+                {/* Medios de pago */}
                 <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Tipo de Pago</span>
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Medios de pago</span>
                     </div>
-                    <p className="text-lg font-semibold">{paymentType || "N/A"}</p>
+                    {payments.length > 0 ? (
+                        <div className="space-y-1">
+                            {payments.map((payment) => (
+                                <div key={payment.paymentID || payment.paymentMethodID} className="flex justify-between gap-3 text-sm">
+                                    <span className="font-medium">
+                                        {payment.paymentMethod?.name || payment.paymentMethod?.code || "Medio de pago"}
+                                    </span>
+                                    <span className="tabular-nums">${toPrice(payment.amount)}</span>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-lg font-semibold">{paymentType || "N/A"}</p>
+                    )}
                 </div>
                 <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-slate-800">
                     <p className="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Documento</p>
