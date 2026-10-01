@@ -88,9 +88,26 @@ export async function getActiveCashSession(cashRegisterID: string): Promise<ICas
         return await fetcher<ICashSession>(`${API_URL}/cash-registers/${cashRegisterID}/sessions/active`)
     } catch (error) {
         const message = error instanceof Error ? error.message.toLowerCase() : ""
-        if (message.includes("404") || message.includes("no hay sesi") || message.includes("not found")) return null
+        if (
+            message.includes("404") ||
+            message.includes("no hay sesi") ||
+            message.includes("no existe una sesión activa") ||
+            message.includes("not found")
+        ) return null
         throw error
     }
+}
+
+export async function getCashRegistersWithActiveSessions(
+    filters: { storeID?: string; status?: CashRegisterStatus } = {},
+): Promise<Array<{ register: ICashRegister; session: ICashSession | null }>> {
+    const registers = await getCashRegisters(filters)
+    return Promise.all(registers.map(async (register) => {
+        // El listado puede omitir sessions aunque el turno esté abierto en el backend.
+        const listedSession = register.sessions?.find((session) => session.status === "OPEN")
+        const session = listedSession ?? (await getCashSessions(register.cashRegisterID, { status: "OPEN" }))[0] ?? null
+        return { register, session }
+    }))
 }
 
 export async function closeCashSession(cashRegisterID: string, payload: ICloseCashSession): Promise<ICashSession> {

@@ -3,7 +3,7 @@ import { IUser } from "../users/IUser"
 import type { IReturn } from "../returns/IReturn"
 
 // Para enviar una nueva venta desde el frontend
-export type PaymentType = "Efectivo" | "Debito" | "Credito"
+export type PaymentType = "Efectivo" | "Debito" | "Credito" | "Tranferencia"
 export type SaleType = "BOLETA" | "FACTURA" | "NOTA_VENTA"
 export type ElectronicDocumentType = Exclude<SaleType, "NOTA_VENTA">
 export type PaymentStatus =

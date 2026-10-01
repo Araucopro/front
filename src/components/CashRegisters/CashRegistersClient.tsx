@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import {
-    getCashRegisters,
+    getCashRegistersWithActiveSessions,
     getStoreCashSummary,
 } from "@/actions/cash-registers/cashRegisters"
 import CashRegisterFormDialog from "@/components/CashRegisters/CashRegisterFormDialog"
@@ -83,17 +83,17 @@ export default function CashRegistersClient() {
         setIsLoading(true)
         setLoadError(null)
         try {
-            const [registerResponse, summaryResponse] = await Promise.all([
-                getCashRegisters({ storeID }),
+            const [registersWithSessions, summaryResponse] = await Promise.all([
+                getCashRegistersWithActiveSessions({ storeID }),
                 getStoreCashSummary(storeID).catch(() => null),
             ])
-            setRegisters(registerResponse)
+            setRegisters(registersWithSessions.map(({ register }) => register))
             setSummary(summaryResponse)
 
             const nextSessions = Object.fromEntries(
-                registerResponse.map((register) => [
+                registersWithSessions.map(({ register, session }) => [
                     register.cashRegisterID,
-                    register.sessions?.find((session) => session.status === "OPEN") ?? null,
+                    session,
                 ]),
             ) satisfies Record<string, ICashSession | null>
             setActiveSessions(nextSessions)
@@ -166,7 +166,7 @@ export default function CashRegistersClient() {
 
             <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <SummaryCard label="Cajas registradas" value={registers.length} icon={WalletCards} tone="slate" />
-                <SummaryCard label="Turnos abiertos" value={summary?.openSessionCount ?? openSessionCount} icon={Activity} tone="emerald" />
+                <SummaryCard label="Turnos abiertos" value={openSessionCount} icon={Activity} tone="emerald" />
                 <SummaryCard label="Cobros últimos 30 días" value={toCLP(summary?.payments.totalAmount)} icon={CircleDollarSign} tone="sky" />
                 <SummaryCard label="Diferencia acumulada" value={toCLP(summary?.cashDifferenceTotal)} icon={Calculator} tone={(summary?.cashDifferenceTotal ?? 0) === 0 ? "emerald" : "rose"} />
             </div>

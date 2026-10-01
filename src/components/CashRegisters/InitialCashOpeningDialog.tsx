@@ -1,9 +1,9 @@
 "use client"
 
 import { FormEvent, useCallback, useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
-    getCashRegisters,
+    getCashRegistersWithActiveSessions,
     openCashSession,
 } from "@/actions/cash-registers/cashRegisters"
 import { Button } from "@/components/ui/button"
@@ -35,6 +35,7 @@ const getTodayValue = () => {
 
 export default function InitialCashOpeningDialog() {
     const router = useRouter()
+    const pathname = usePathname()
     const user = useAuth((state) => state.user)
     const storeSelected = useTienda((state) => state.storeSelected)
     const [open, setOpen] = useState(false)
@@ -53,7 +54,7 @@ export default function InitialCashOpeningDialog() {
     )
 
     const checkCashOpening = useCallback(async () => {
-        if (!storeID || !canOperateCash) {
+        if (!storeID || !canOperateCash || pathname === "/home/cajas") {
             setOpen(false)
             setRegisters([])
             return
@@ -62,10 +63,8 @@ export default function InitialCashOpeningDialog() {
         setIsChecking(true)
         setCheckError(null)
         try {
-            const activeRegisters = await getCashRegisters({ storeID, status: "ACTIVE" })
-            const hasOpenSession = activeRegisters.some((register) =>
-                register.sessions?.some((session) => session.status === "OPEN"),
-            )
+            const registersWithSessions = await getCashRegistersWithActiveSessions({ storeID, status: "ACTIVE" })
+            const hasOpenSession = registersWithSessions.some(({ session }) => Boolean(session))
 
             if (hasOpenSession) {
                 setOpen(false)
@@ -73,8 +72,8 @@ export default function InitialCashOpeningDialog() {
                 return
             }
 
-            setRegisters(activeRegisters)
-            setSelectedRegisterID(activeRegisters[0]?.cashRegisterID ?? "")
+            setRegisters(registersWithSessions.map(({ register }) => register))
+            setSelectedRegisterID(registersWithSessions[0]?.register.cashRegisterID ?? "")
             setBusinessDate(getTodayValue())
             setOpeningBalance("")
             setOpeningNotes("")
@@ -87,7 +86,7 @@ export default function InitialCashOpeningDialog() {
         } finally {
             setIsChecking(false)
         }
-    }, [canOperateCash, storeID])
+    }, [canOperateCash, pathname, storeID])
 
     useEffect(() => {
         void checkCashOpening()

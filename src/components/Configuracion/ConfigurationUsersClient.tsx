@@ -2,12 +2,14 @@
 
 import { FormEvent, useMemo, useState } from "react"
 import { getUsersPage } from "@/actions/users/getAllUsers"
+import NewHumanResourcesUserDialog from "@/components/RecursosHumanos/NewHumanResourcesUserDialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import type { IPermissionCatalogItem, IRolePermission, ITenantRole } from "@/interfaces/roles/IRole"
+import type { IStore } from "@/interfaces/stores/IStore"
 import type { IUser, IUsersResponse, UserStatus } from "@/interfaces/users/IUser"
 import { getLegacyRoleLabel, getRoleDisplayName } from "@/lib/role-helpers"
 import { cn } from "@/lib/utils"
@@ -20,6 +22,7 @@ type ConfigurationUsersClientProps = {
     initialUsers: IUsersResponse
     roles: ITenantRole[]
     permissions: IPermissionCatalogItem[]
+    stores: IStore[]
     loadError?: string
 }
 
@@ -112,6 +115,7 @@ export default function ConfigurationUsersClient({
     initialUsers,
     roles,
     permissions,
+    stores,
     loadError,
 }: ConfigurationUsersClientProps) {
     const [users, setUsers] = useState(initialUsers.users)
@@ -120,6 +124,7 @@ export default function ConfigurationUsersClient({
     const [selectedRoleID, setSelectedRoleID] = useState(ALL_ROLES_VALUE)
     const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("ALL")
     const [isLoading, setIsLoading] = useState(false)
+    const [isNewUserOpen, setIsNewUserOpen] = useState(false)
 
     const visibleRoles = useMemo(() => roles.filter((role) => !isInternalSystemRole(role)), [roles])
 
@@ -256,7 +261,7 @@ export default function ConfigurationUsersClient({
                             {meta.total} usuarios registrados
                         </p>
                     </div>
-                    <Button type="button" className="bg-slate-700 text-white hover:bg-slate-800">
+                    <Button type="button" className="bg-slate-700 text-white hover:bg-slate-800" onClick={() => setIsNewUserOpen(true)}>
                         <Settings className="h-4 w-4" />
                         Nuevo usuario
                     </Button>
@@ -341,6 +346,13 @@ export default function ConfigurationUsersClient({
                     </div>
                 </div>
             </section>
+            <NewHumanResourcesUserDialog
+                open={isNewUserOpen}
+                onOpenChange={setIsNewUserOpen}
+                roles={visibleRoles}
+                stores={stores}
+                onCreated={() => fetchUsers(1)}
+            />
         </div>
     )
 }

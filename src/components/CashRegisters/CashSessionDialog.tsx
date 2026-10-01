@@ -353,6 +353,7 @@ export default function CashSessionDialog({
                 onOpenChange(false)
             } else {
                 toast.error(message)
+                await onChanged()
             }
         } finally {
             setIsSubmitting(false)
