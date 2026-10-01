@@ -37,6 +37,28 @@ export const getSaleNetAmount = (sale: ISaleResponse): number => {
     return sale.total - totalNulledAmount
 }
 
+const getAdjustedPaymentAmounts = (sale: ISaleResponse) => {
+    const netAmount = getSaleNetAmount(sale)
+    const completedPayments = sale.payments.filter((payment) => payment.status === "COMPLETED")
+
+    if (completedPayments.length === 0) {
+        const cash = isCashPayment(sale.paymentType) ? netAmount : 0
+        const card = isDebitOrCreditPayment(sale.paymentType) ? netAmount : 0
+        return { cash, nonCash: netAmount - cash, card }
+    }
+
+    const paymentTotal = completedPayments.reduce((sum, payment) => sum + payment.amount, 0)
+    const scale = paymentTotal > 0 ? Math.min(netAmount / paymentTotal, 1) : 0
+    const cash = completedPayments
+        .filter((payment) => payment.paymentMethod?.type === "CASH")
+        .reduce((sum, payment) => sum + payment.amount, 0) * scale
+    const card = completedPayments
+        .filter((payment) => ["DEBIT_CARD", "CREDIT_CARD"].includes(payment.paymentMethod?.type ?? ""))
+        .reduce((sum, payment) => sum + payment.amount, 0) * scale
+
+    return { cash, nonCash: Math.max(netAmount - cash, 0), card }
+}
+
 export const salesToResume = (sales: ISaleResponse[], ref: Date): ISalesResume => {
     const resume: ISalesResume = {
         today: {
@@ -77,12 +99,14 @@ export const salesToResume = (sales: ISaleResponse[], ref: Date): ISalesResume =
         const saleMeta = getChileDateMeta(saleDate)
 
         const addSale = (period: keyof ISalesResume) => {
-            if (isCashPayment(sale.paymentType)) {
+            const paymentAmounts = getAdjustedPaymentAmounts(sale)
+            if (paymentAmounts.cash > 0) {
                 resume[period].efectivo.count += 1
-                resume[period].efectivo.amount += amount
-            } else {
+                resume[period].efectivo.amount += paymentAmounts.cash
+            }
+            if (paymentAmounts.nonCash > 0) {
                 resume[period].debitoCredito.count += 1
-                resume[period].debitoCredito.amount += amount
+                resume[period].debitoCredito.amount += paymentAmounts.nonCash
             }
             resume[period].total.count += 1
             resume[period].total.amount += amount
@@ -120,12 +144,12 @@ export const salesToBankDepositSummary = (sales: ISaleResponse[], ref: Date): IC
     }
 
     for (const sale of sales) {
-        if (!isCountableSaleStatus(sale.status) || !isDebitOrCreditPayment(sale.paymentType)) continue
+        if (!isCountableSaleStatus(sale.status)) continue
 
         const saleMeta = getChileDateMeta(new Date(sale.createdAt))
         if (saleMeta.dayNumber < startDayNumber || saleMeta.dayNumber > endDayNumber) continue
 
-        const amount = getSaleNetAmount(sale)
+        const amount = getAdjustedPaymentAmounts(sale).card
         if (amount <= 0) continue
 
         summary.count += 1

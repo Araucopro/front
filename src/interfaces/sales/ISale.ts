@@ -1,9 +1,10 @@
 import { IStore } from "../stores/IStore"
 import { IUser } from "../users/IUser"
 import type { IReturn } from "../returns/IReturn"
+import type { PaymentMethodType } from "../cash-registers/ICashCatalogs"
 
 // Para enviar una nueva venta desde el frontend
-export type PaymentType = "Efectivo" | "Debito" | "Credito" | "Tranferencia"
+export type FmaPago = "1" | "2" | "3"
 export type SaleType = "BOLETA" | "FACTURA" | "NOTA_VENTA"
 export type ElectronicDocumentType = Exclude<SaleType, "NOTA_VENTA">
 export type PaymentStatus =
@@ -40,13 +41,34 @@ export interface ISaleReceiver {
 
 export interface ISaleRequest {
     saleType: SaleType
-    paymentType: PaymentType
+    fmaPago: FmaPago
     issueDate?: string
     receiver?: ISaleReceiver
     clientID?: string
     items: ISaleItemRequest[]
     cashRegisterID?: string
     payments?: ISalePaymentRequest[]
+}
+
+export type SalePaymentStatus = "PENDING" | "COMPLETED" | "FAILED" | "CANCELLED" | "REFUNDED"
+
+export interface ISalePaymentMethod {
+    paymentMethodID: string
+    code: string
+    name: string
+    type: PaymentMethodType
+}
+
+export interface ISalePayment {
+    paymentID: string
+    paymentMethodID: string
+    paymentMethod: ISalePaymentMethod | null
+    amount: number
+    status: SalePaymentStatus
+    paidAt: string
+    authorizationCode: string | null
+    transactionID: string | null
+    reference: string | null
 }
 
 export interface ISaleDte {
@@ -132,6 +154,9 @@ export interface ISaleResponse {
     taxTotal?: number
     status: PaymentStatus
     createdAt: string
+    fmaPago?: FmaPago
+    payments: ISalePayment[]
+    /** Compatibilidad temporal con ventas antiguas previas a payments[]. */
     paymentType?: string
     saleType?: SaleType
     folio?: number | null

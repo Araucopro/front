@@ -8,7 +8,8 @@ import { IPurchaseOrder } from "@/interfaces/orders/IPurchaseOrder"
 import { useRouter } from "next/navigation"
 import { toPrice } from "@/utils/priceFormat"
 import { getAnulatedProducts } from "@/lib/getAnulatedProducts"
-import { CalendarDays, Eye, MoreHorizontal, RefreshCw, RotateCcw, Search } from "lucide-react"
+import { getSalePaymentLabel, hasSplitSalePayment } from "@/utils/sale-payments"
+import { AlertTriangle, CalendarDays, Eye, MoreHorizontal, RefreshCw, RotateCcw, Search } from "lucide-react"
 import { AnularVentaModal } from "@/components/Modals/AnularVentaModal"
 import {
     DropdownMenu,
@@ -173,7 +174,7 @@ const buildSearchText = (item: TableItem) => {
             getSaleDisplayStatus(item),
             item.saleType,
             item.dte?.FOLIO,
-            item.paymentType,
+            getSalePaymentLabel(item),
             amountText,
         ].join(" ")
     }
@@ -194,12 +195,23 @@ const statusClassName = (status: string) => {
     return "bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-200"
 }
 
-const paymentClassName = (paymentType?: string) => {
-    if (paymentType === "Efectivo") {
+const paymentClassName = (sale: ISaleResponse) => {
+    if (sale.payments.length > 1) {
+        return "bg-violet-100 text-violet-800 dark:bg-violet-950/50 dark:text-violet-200"
+    }
+    const paymentType = sale.payments[0]?.paymentMethod?.type
+    if (paymentType === "CASH" || (!paymentType && sale.paymentType === "Efectivo")) {
         return "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200"
     }
-    if (paymentType === "Debito" || paymentType === "Credito") {
+    if (
+        paymentType === "DEBIT_CARD" ||
+        paymentType === "CREDIT_CARD" ||
+        (!paymentType && (sale.paymentType === "Debito" || sale.paymentType === "Credito"))
+    ) {
         return "bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-200"
+    }
+    if (paymentType === "BANK_TRANSFER") {
+        return "bg-teal-100 text-teal-800 dark:bg-teal-950/50 dark:text-teal-200"
     }
     return "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
 }
@@ -353,15 +365,19 @@ const SalesTable: React.FC<Props> = ({ items }) => {
                                                                     {item.dte?.FOLIO ? ` · Folio ${item.dte.FOLIO}` : ""}
                                                                 </p>
                                                             )}
+                                                            {item.saleType === "NOTA_VENTA" && hasSplitSalePayment(item) && (
+                                                                <p className="flex items-center gap-1 text-xs font-semibold text-amber-700 dark:text-amber-300">
+                                                                    <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                                                                    Pago dividido · No convertible
+                                                                </p>
+                                                            )}
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="align-middle">
                                                         <span
-                                                            className={`rounded-full px-3 py-1 text-xs font-semibold ${paymentClassName(
-                                                                item.paymentType,
-                                                            )}`}
+                                                            className={`rounded-full px-3 py-1 text-xs font-semibold ${paymentClassName(item)}`}
                                                         >
-                                                            {item.paymentType ?? "Sin dato"}
+                                                            {getSalePaymentLabel(item)}
                                                         </span>
                                                     </TableCell>
                                                     <TableCell className="align-middle font-bold">{amount}</TableCell>

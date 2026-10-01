@@ -1,7 +1,6 @@
 import { create } from "zustand"
 import { toast } from "sonner"
 import { useTienda } from "./tienda.store"
-import { PaymentType } from "@/interfaces/sales/ISale"
 import { IStoreProduct } from "@/interfaces/products/IProductVariation"
 import { IVariationWithQuantity } from "@/interfaces/orders/IOrder"
 
@@ -28,7 +27,6 @@ interface SaleItem {
 
 interface SaleState {
     cartItems: SaleItem[]
-    paymentMethod: PaymentType
     loading: boolean
     actions: {
         addProduct: (
@@ -45,14 +43,12 @@ interface SaleState {
             storeProductID: string,
             pricing: { finalPrice?: number; activeOffer?: SaleItemOffer | null },
         ) => void
-        setPaymentMethod: (method: PaymentType) => void
         clearCart: () => void
     }
 }
 
 export const useSaleStore = create<SaleState>((set, get) => ({
     cartItems: [],
-    paymentMethod: "Efectivo",
     loading: false,
     actions: {
         addProduct: (product, variation, storeProduct, finalPrice, activeOffer, allowNegativeStockOverride) => {
@@ -145,9 +141,6 @@ export const useSaleStore = create<SaleState>((set, get) => ({
                 )
                 return { cartItems: newCartItems }
             })
-        },
-        setPaymentMethod: (method) => {
-            set({ paymentMethod: method })
         },
         clearCart: () => {
             set({ cartItems: [] })
