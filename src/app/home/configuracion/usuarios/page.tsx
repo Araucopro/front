@@ -1,8 +1,10 @@
 import { getPermissions } from "@/actions/roles/getPermissions"
 import { getRoles } from "@/actions/roles/getRoles"
+import { getAllStores } from "@/actions/stores/getAllStores"
 import { getUsersPage } from "@/actions/users/getAllUsers"
 import ConfigurationUsersClient from "@/components/Configuracion/ConfigurationUsersClient"
 import type { IPermissionCatalogItem, ITenantRole } from "@/interfaces/roles/IRole"
+import type { IStore } from "@/interfaces/stores/IStore"
 import type { IUsersResponse } from "@/interfaces/users/IUser"
 
 export default async function ConfiguracionUsuariosPage() {
@@ -12,18 +14,21 @@ export default async function ConfiguracionUsuariosPage() {
     }
     let roles: ITenantRole[] = []
     let permissions: IPermissionCatalogItem[] = []
+    let stores: IStore[] = []
     let loadError: string | undefined
 
     try {
-        const [usersResponse, rolesResponse, permissionsResponse] = await Promise.all([
+        const [usersResponse, rolesResponse, permissionsResponse, storesResponse] = await Promise.all([
             getUsersPage({ limit: 10, offset: 0 }),
             getRoles(),
             getPermissions(),
+            getAllStores(),
         ])
 
         usersData = usersResponse
         roles = rolesResponse
         permissions = permissionsResponse
+        stores = storesResponse
     } catch (error) {
         loadError = error instanceof Error ? error.message : "No se pudo cargar la configuración de usuarios."
     }
@@ -39,6 +44,7 @@ export default async function ConfiguracionUsuariosPage() {
                 initialUsers={usersData}
                 roles={roles}
                 permissions={permissions}
+                stores={stores}
                 loadError={loadError}
             />
         </main>

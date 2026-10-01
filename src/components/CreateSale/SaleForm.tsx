@@ -3,8 +3,9 @@ import { useEffect, useMemo, useState } from "react"
 import { ScanInput } from "@/components/CreateSale/ScanInput"
 import { CartTable } from "@/components/CreateSale/CartTable"
 import { SaleClientSelector } from "@/components/CreateSale/SaleClientSelector"
+import CashSessionDialog from "@/components/CashRegisters/CashSessionDialog"
 import { useSaleStore } from "@/stores/sale.store"
-import { CASH_SESSION_CHANGED_EVENT } from "@/lib/cash-session-events"
+import { CASH_SESSION_CHANGED_EVENT, notifyCashSessionChanged } from "@/lib/cash-session-events"
 import { ISaleReceiver, ISaleRequest, PaymentType, SaleType } from "@/interfaces/sales/ISale"
 import { useRouter, useSearchParams } from "next/navigation"
 import { IProduct } from "@/interfaces/products/IProduct"
@@ -15,13 +16,13 @@ import { RutInput } from "../ui/rut-input"
 import { useTienda } from "@/stores/tienda.store"
 import { createNewSale } from "@/actions/sales/postSale"
 import { getPaymentMethods } from "@/actions/cash-registers/cashCatalogs"
-import { getActiveCashSession, getCashRegisters } from "@/actions/cash-registers/cashRegisters"
+import { getCashRegistersWithActiveSessions } from "@/actions/cash-registers/cashRegisters"
 import { toast } from "sonner"
 import { DiscountModal, DiscountStoreProductOption } from "@/components/Discounts/DiscountModal"
 import { getPriceCheck } from "@/actions/pricing/getPriceCheck"
 import { getChileYYYYMMDD } from "@/utils/chile-date"
 import { normalizeRutValue } from "@/utils/rut"
-import { Banknote, CreditCard, FileText, UserPlus, WalletCards, X } from "lucide-react"
+import { Banknote, Building2, CreditCard, FileText, LockKeyhole, Receipt, Repeat2, UserPlus, WalletCards, X } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { IPaymentMethod, PaymentMethodType } from "@/interfaces/cash-registers/ICashCatalogs"
 import type { ICashRegister, ICashSession } from "@/interfaces/cash-registers/ICashRegister"
@@ -31,14 +32,22 @@ import type { IStore } from "@/interfaces/stores/IStore"
 const DEFAULT_RECEIVER_EMAIL = "soporte@araucopro.com"
 const EMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
 const isSpecialStoreFilter = (value: string | null) => value === "all" || value === "propias" || value === "consignadas"
-const saleTypes = new Set<SaleType>(["NOTA_VENTA"])
+const saleTypes = new Set<SaleType>(["BOLETA", "FACTURA", "NOTA_VENTA"])
 const saleTypeOptions: Array<{
     value: SaleType
     label: string
     description: string
-    icon: typeof FileText
+    icon: typeof Receipt
     selectedClassName: string
 }> = [
+    {
+        value: "BOLETA",
+        label: "Boleta electrónica",
+        description: "Venta directa",
+        icon: Receipt,
+        selectedClassName:
+            "border-blue-500 bg-blue-50 text-blue-800 ring-blue-200 dark:bg-blue-950/40 dark:text-blue-200",
+    },
     {
         value: "NOTA_VENTA",
         label: "Nota de venta",
@@ -47,11 +56,20 @@ const saleTypeOptions: Array<{
         selectedClassName:
             "border-amber-500 bg-amber-50 text-amber-900 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-200",
     },
+    {
+        value: "FACTURA",
+        label: "Factura electrónica",
+        description: "Con datos del receptor",
+        icon: Building2,
+        selectedClassName:
+            "border-emerald-500 bg-emerald-50 text-emerald-900 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200",
+    },
 ]
 const legacyPaymentTypeByMethod: Partial<Record<PaymentMethodType, PaymentType>> = {
     CASH: "Efectivo",
     DEBIT_CARD: "Debito",
     CREDIT_CARD: "Credito",
+    BANK_TRANSFER: "Tranferencia",
 }
 
 const paymentVisuals: Record<PaymentType, { icon: typeof Banknote; selectedClassName: string }> = {
@@ -70,11 +88,16 @@ const paymentVisuals: Record<PaymentType, { icon: typeof Banknote; selectedClass
         selectedClassName:
             "border-violet-500 bg-violet-50 text-violet-900 ring-violet-200 dark:bg-violet-950/40 dark:text-violet-200",
     },
+    Tranferencia: {
+        icon: Repeat2,
+        selectedClassName:
+            "border-teal-500 bg-teal-50 text-teal-900 ring-teal-200 dark:bg-teal-950/40 dark:text-teal-200",
+    },
 }
 
 type OpenCashRegister = { register: ICashRegister; session: ICashSession }
 const getSaleTypeFromParam = (value: string | null): SaleType =>
-    value && saleTypes.has(value as SaleType) ? (value as SaleType) : "NOTA_VENTA"
+    value && saleTypes.has(value as SaleType) ? (value as SaleType) : "BOLETA"
 const isValidEmail = (value: string) => {
     const email = value.trim()
     const [localPart, domain] = email.split("@")
@@ -102,6 +125,7 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
     const { storeSelected } = useTienda()
     const [loading, setLoading] = useState(false)
     const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false)
+    const [isCashSessionDialogOpen, setIsCashSessionDialogOpen] = useState(false)
     const [saleType, setSaleType] = useState<SaleType>(() => getSaleTypeFromParam(searchParams.get("saleType")))
     const [showReceiverFields, setShowReceiverFields] = useState(() => saleType === "FACTURA")
     const [openCashRegisters, setOpenCashRegisters] = useState<OpenCashRegister[]>([])
@@ -153,29 +177,22 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
         setCashSetupLoading(true)
         setCashSetupError(null)
         void Promise.all([
-            getCashRegisters({ storeID: effectiveStoreID, status: "ACTIVE" }),
+            getCashRegistersWithActiveSessions({ storeID: effectiveStoreID, status: "ACTIVE" }),
             getPaymentMethods({ active: true }),
         ])
-            .then(async ([registers, methods]) => {
-                const sessionResults = await Promise.allSettled(
-                    registers.map(async (register) => ({
-                        register,
-                        session: await getActiveCashSession(register.cashRegisterID),
-                    })),
-                )
+            .then(([registersWithSessions, methods]) => {
                 if (cancelled) return
 
-                const nextOpenRegisters = sessionResults.flatMap((result) =>
-                    result.status === "fulfilled" && result.value.session
-                        ? [{ register: result.value.register, session: result.value.session }]
-                        : [],
-                )
-                const compatibleMethods = methods.filter((method) => Boolean(legacyPaymentTypeByMethod[method.type]))
+                const nextOpenRegisters = registersWithSessions.flatMap(({ register, session }) => {
+                    return session ? [{ register, session }] : []
+                })
+                const activeMethods = methods.filter((method) => method.active)
+                const compatibleMethods = activeMethods.filter((method) => Boolean(legacyPaymentTypeByMethod[method.type]))
                 const preferredMethod =
                     compatibleMethods.find((method) => method.type === "CASH") ?? compatibleMethods[0]
 
                 setOpenCashRegisters(nextOpenRegisters)
-                setAvailablePaymentMethods(methods)
+                setAvailablePaymentMethods(activeMethods)
                 setCashRegisterID((current) =>
                     nextOpenRegisters.some(({ register }) => register.cashRegisterID === current)
                         ? current
@@ -212,6 +229,7 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
     }
 
     const selectedPaymentMethod = availablePaymentMethods.find((method) => method.paymentMethodID === paymentMethodID)
+    const selectedCashRegister = openCashRegisters.find(({ register }) => register.cashRegisterID === cashRegisterID)
     const selectedLegacyPaymentType = selectedPaymentMethod
         ? legacyPaymentTypeByMethod[selectedPaymentMethod.type]
         : undefined
@@ -454,7 +472,7 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                                         </p>
                                     </div>
                                 </div>
-                                <div className="grid max-w-sm gap-2" role="group" aria-label="Tipo de documento">
+                                <div className="grid gap-2 sm:grid-cols-3" role="group" aria-label="Tipo de documento">
                                     {saleTypeOptions.map((option) => {
                                         const Icon = option.icon
                                         const selected = saleType === option.value
@@ -561,9 +579,22 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                                 ) : (
                                     <>
                                         <div>
-                                            <label className="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-300">
-                                                Caja con turno abierto
-                                            </label>
+                                            <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+                                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300">
+                                                    Caja con turno abierto
+                                                </label>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setIsCashSessionDialogOpen(true)}
+                                                    disabled={!selectedCashRegister}
+                                                    className="border-rose-200 text-rose-700 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-800 dark:border-rose-900 dark:text-rose-300"
+                                                >
+                                                    <LockKeyhole className="h-4 w-4" />
+                                                    Cerrar turno
+                                                </Button>
+                                            </div>
                                             <Select value={cashRegisterID} onValueChange={setCashRegisterID}>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Selecciona una caja" />
@@ -606,7 +637,7 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                                                             >
                                                                 <Icon className="h-4 w-4" />
                                                             </span>
-                                                            <span className="min-w-0 break-words">
+                                                            <span className="min-w-0 wrap-break-word">
                                                                 <span className="block text-sm font-semibold leading-tight">
                                                                     {method.name}
                                                                 </span>
@@ -617,7 +648,9 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                                                                           ? "Efectivo"
                                                                           : legacyType === "Debito"
                                                                             ? "Tarjeta de débito"
-                                                                            : "Tarjeta de crédito"}
+                                                                            : legacyType === "Credito"
+                                                                              ? "Tarjeta de crédito"
+                                                                              : "Transferencia bancaria"}
                                                                 </span>
                                                             </span>
                                                         </button>
@@ -789,6 +822,13 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                 options={discountableStoreProducts}
                 initialStoreProductID={discountableStoreProducts[0]?.storeProductID}
                 onOfferCreated={(storeProductID) => handleDiscountCreated(storeProductID)}
+            />
+            <CashSessionDialog
+                open={isCashSessionDialogOpen}
+                onOpenChange={setIsCashSessionDialogOpen}
+                register={selectedCashRegister?.register ?? null}
+                activeSession={selectedCashRegister?.session ?? null}
+                onChanged={notifyCashSessionChanged}
             />
         </>
     )

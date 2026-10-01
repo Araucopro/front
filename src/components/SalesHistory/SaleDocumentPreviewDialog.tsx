@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { pdf } from "@react-pdf/renderer"
 import { useReactToPrint } from "react-to-print"
+import { getDteDocumentPdf } from "@/actions/dte/getDteDocument"
 import { getSingleSale } from "@/actions/sales/getSales"
 import { SalePreviewPdfDocument } from "@/components/SalesHistory/SalePreviewPdfDocument"
 import { Button } from "@/components/ui/button"
@@ -196,32 +197,54 @@ function SaleDocument({ sale }: { sale: ISaleResponse }) {
 
 export function SaleDocumentPreviewDialog({ sale, onClose }: SaleDocumentPreviewDialogProps) {
     const printRef = useRef<HTMLDivElement>(null)
+    const officialPdfRef = useRef<HTMLIFrameElement>(null)
     const [detail, setDetail] = useState<ISaleResponse | null>(null)
+    const [officialPdfUrl, setOfficialPdfUrl] = useState<string | null>(null)
+    const [officialPdfBlob, setOfficialPdfBlob] = useState<Blob | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(false)
     const [isDownloading, setIsDownloading] = useState(false)
     const [retry, setRetry] = useState(0)
 
-    const handlePrint = useReactToPrint({
+    const printPreview = useReactToPrint({
         contentRef: printRef,
         documentTitle: `vista-previa-venta-${detail?.dte?.FOLIO ?? detail?.folio ?? detail?.saleID ?? ""}`,
         pageStyle: "@page { size: A4 portrait; margin: 0; } @media print { body { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; } article { width: 100% !important; min-height: 297mm !important; border: 0 !important; box-shadow: none !important; } }",
     })
+
+    const handlePrint = () => {
+        if (!officialPdfUrl) {
+            void printPreview()
+            return
+        }
+
+        try {
+            const frameWindow = officialPdfRef.current?.contentWindow
+            if (!frameWindow) throw new Error("El visor todavía no está listo.")
+            frameWindow.focus()
+            frameWindow.print()
+        } catch {
+            const openedWindow = window.open(officialPdfUrl, "_blank", "noopener,noreferrer")
+            if (!openedWindow) toast.error("Permite las ventanas emergentes para imprimir el documento.")
+        }
+    }
 
     const handleDownload = async () => {
         if (!detail || isDownloading) return
 
         setIsDownloading(true)
         try {
-            const blob = await pdf(<SalePreviewPdfDocument sale={detail} />).toBlob()
-            const url = URL.createObjectURL(blob)
+            const blob = officialPdfBlob ?? (officialPdfUrl ? null : await pdf(<SalePreviewPdfDocument sale={detail} />).toBlob())
+            const url = officialPdfUrl ?? (blob ? URL.createObjectURL(blob) : null)
+            if (!url) throw new Error("No se pudo preparar el documento para descargar.")
             const link = document.createElement("a")
             link.href = url
-            link.download = `vista-previa-venta-${detail.dte?.FOLIO ?? detail.folio ?? detail.saleID.slice(0, 8)}.pdf`
+            const documentType = detail.saleType === "FACTURA" ? "factura" : detail.saleType === "BOLETA" ? "boleta" : "venta"
+            link.download = `${officialPdfUrl ? "dte" : "vista-previa"}-${documentType}-${detail.dte?.FOLIO ?? detail.folio ?? detail.saleID.slice(0, 8)}.pdf`
             document.body.appendChild(link)
             link.click()
             link.remove()
-            window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
+            if (!officialPdfUrl) window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
         } catch (downloadError) {
             toast.error(downloadError instanceof Error ? downloadError.message : "No se pudo descargar la vista previa.")
         } finally {
@@ -233,29 +256,59 @@ export function SaleDocumentPreviewDialog({ sale, onClose }: SaleDocumentPreview
         if (!sale) return
 
         let cancelled = false
+        let objectUrl: string | null = null
         setDetail(null)
+        setOfficialPdfUrl(null)
+        setOfficialPdfBlob(null)
         setError(null)
         setIsLoading(true)
 
-        void getSingleSale(sale.saleID, sale.storeID)
-            .then((response) => {
-                if (!cancelled) {
-                    setDetail({ ...response, Store: response.Store?.storeID ? response.Store : sale.Store })
+        const loadDocument = async () => {
+            try {
+                const response = await getSingleSale(sale.saleID, sale.storeID)
+                const nextDetail: ISaleResponse = {
+                    ...response,
+                    Store: response.Store?.storeID ? response.Store : sale.Store,
+                    dte: response.dte ?? sale.dte,
                 }
-            })
-            .catch((requestError) => {
+                if (cancelled) return
+                setDetail(nextDetail)
+
+                const dteDocumentID = nextDetail.dte?.dteDocumentID
+                if (dteDocumentID) {
+                    const document = await getDteDocumentPdf(dteDocumentID, nextDetail.storeID || sale.storeID)
+                    if (cancelled) return
+
+                    if (document.encoding === "url") {
+                        setOfficialPdfUrl(document.content)
+                    } else {
+                        const binary = window.atob(document.content)
+                        const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0))
+                        const blob = new Blob([bytes], { type: "application/pdf" })
+                        objectUrl = URL.createObjectURL(blob)
+                        setOfficialPdfBlob(blob)
+                        setOfficialPdfUrl(objectUrl)
+                    }
+                }
+            } catch (requestError) {
                 if (!cancelled) {
                     setError(requestError instanceof Error ? requestError.message : "No se pudo cargar el documento.")
                 }
-            })
-            .finally(() => {
+            } finally {
                 if (!cancelled) setIsLoading(false)
-            })
+            }
+        }
+
+        void loadDocument()
 
         return () => {
             cancelled = true
+            if (objectUrl) URL.revokeObjectURL(objectUrl)
         }
     }, [sale, retry])
+
+    const expectsOfficialDocument = Boolean(detail?.dte?.dteDocumentID ?? sale?.dte?.dteDocumentID)
+    const paperLabel = detail?.saleType === "FACTURA" ? "Carta" : detail?.saleType === "BOLETA" ? "Térmico 80 mm" : null
 
     return (
         <Dialog open={Boolean(sale)} onOpenChange={(open) => { if (!open) onClose() }}>
@@ -266,7 +319,7 @@ export function SaleDocumentPreviewDialog({ sale, onClose }: SaleDocumentPreview
                         Vista previa del documento de venta
                     </DialogTitle>
                     <DialogDescription>
-                        {sale ? `Venta ${sale.dte?.FOLIO ?? sale.folio ?? sale.saleID.slice(0, 8)} · Documento generado con datos de la venta` : ""}
+                        {sale ? `Venta ${sale.dte?.FOLIO ?? sale.folio ?? sale.saleID.slice(0, 8)} · ${expectsOfficialDocument ? `Documento tributario oficial${paperLabel ? ` · Formato ${paperLabel}` : ""}` : "Documento generado con datos de la venta"}` : ""}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="min-h-0 flex-1 overflow-auto bg-slate-200 p-3 dark:bg-slate-950 sm:p-6">
@@ -283,9 +336,22 @@ export function SaleDocumentPreviewDialog({ sale, onClose }: SaleDocumentPreview
                                 Reintentar
                             </Button>
                         </div>
-                    ) : detail ? (
+                    ) : detail && officialPdfUrl ? (
+                        <iframe
+                            ref={officialPdfRef}
+                            src={officialPdfUrl}
+                            title={`DTE ${detail.dte?.FOLIO ?? detail.folio ?? detail.saleID}`}
+                            className={`mx-auto h-full min-h-[650px] w-full border-0 bg-white shadow-xl ${detail.saleType === "BOLETA" ? "max-w-[480px]" : "max-w-[920px]"}`}
+                        />
+                    ) : detail && !expectsOfficialDocument ? (
                         <div ref={printRef}>
                             <SaleDocument sale={detail} />
+                        </div>
+                    ) : detail ? (
+                        <div className="mx-auto max-w-md rounded-lg bg-white p-6 text-center shadow-sm dark:bg-slate-900">
+                            <p className="text-sm text-rose-700 dark:text-rose-300">
+                                El documento oficial no está disponible para vista previa.
+                            </p>
                         </div>
                     ) : null}
                 </div>
@@ -294,7 +360,7 @@ export function SaleDocumentPreviewDialog({ sale, onClose }: SaleDocumentPreview
                         {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                         {isDownloading ? "Generando PDF..." : "Descargar PDF"}
                     </Button>
-                    <Button type="button" onClick={() => void handlePrint()} disabled={!detail || isLoading}>
+                    <Button type="button" onClick={handlePrint} disabled={!detail || isLoading || (expectsOfficialDocument && !officialPdfUrl)}>
                         <Printer className="h-4 w-4" />
                         Imprimir
                     </Button>
