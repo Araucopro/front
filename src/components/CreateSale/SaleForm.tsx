@@ -6,7 +6,7 @@ import { SaleClientSelector } from "@/components/CreateSale/SaleClientSelector"
 import CashSessionDialog from "@/components/CashRegisters/CashSessionDialog"
 import { useSaleStore } from "@/stores/sale.store"
 import { CASH_SESSION_CHANGED_EVENT, notifyCashSessionChanged } from "@/lib/cash-session-events"
-import { ISaleReceiver, ISaleRequest, PaymentType, SaleType } from "@/interfaces/sales/ISale"
+import { ISaleReceiver, ISaleRequest, SaleType } from "@/interfaces/sales/ISale"
 import { useRouter, useSearchParams } from "next/navigation"
 import { IProduct } from "@/interfaces/products/IProduct"
 import { toPrice } from "@/utils/priceFormat"
@@ -22,7 +22,7 @@ import { DiscountModal, DiscountStoreProductOption } from "@/components/Discount
 import { getPriceCheck } from "@/actions/pricing/getPriceCheck"
 import { getChileYYYYMMDD } from "@/utils/chile-date"
 import { normalizeRutValue } from "@/utils/rut"
-import { Banknote, Building2, CreditCard, FileText, LockKeyhole, Receipt, Repeat2, UserPlus, WalletCards, X } from "lucide-react"
+import { AlertTriangle, Banknote, Building2, CreditCard, FileText, LockKeyhole, Receipt, Repeat2, UserPlus, WalletCards, X } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { IPaymentMethod, PaymentMethodType } from "@/interfaces/cash-registers/ICashCatalogs"
 import type { ICashRegister, ICashSession } from "@/interfaces/cash-registers/ICashRegister"
@@ -65,37 +65,56 @@ const saleTypeOptions: Array<{
             "border-emerald-500 bg-emerald-50 text-emerald-900 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200",
     },
 ]
-const legacyPaymentTypeByMethod: Partial<Record<PaymentMethodType, PaymentType>> = {
-    CASH: "Efectivo",
-    DEBIT_CARD: "Debito",
-    CREDIT_CARD: "Credito",
-    BANK_TRANSFER: "Tranferencia",
-}
-
-const paymentVisuals: Record<PaymentType, { icon: typeof Banknote; selectedClassName: string }> = {
-    Efectivo: {
+const paymentVisuals: Record<PaymentMethodType, { icon: typeof Banknote; selectedClassName: string }> = {
+    CASH: {
         icon: Banknote,
         selectedClassName:
             "border-amber-500 bg-amber-50 text-amber-900 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-200",
     },
-    Debito: {
+    DEBIT_CARD: {
         icon: CreditCard,
         selectedClassName:
             "border-blue-500 bg-blue-50 text-blue-800 ring-blue-200 dark:bg-blue-950/40 dark:text-blue-200",
     },
-    Credito: {
+    CREDIT_CARD: {
         icon: WalletCards,
         selectedClassName:
             "border-violet-500 bg-violet-50 text-violet-900 ring-violet-200 dark:bg-violet-950/40 dark:text-violet-200",
     },
-    Tranferencia: {
+    BANK_TRANSFER: {
         icon: Repeat2,
         selectedClassName:
             "border-teal-500 bg-teal-50 text-teal-900 ring-teal-200 dark:bg-teal-950/40 dark:text-teal-200",
     },
+    CHECK: {
+        icon: FileText,
+        selectedClassName:
+            "border-cyan-500 bg-cyan-50 text-cyan-900 ring-cyan-200 dark:bg-cyan-950/40 dark:text-cyan-200",
+    },
+    CREDIT: {
+        icon: WalletCards,
+        selectedClassName:
+            "border-orange-500 bg-orange-50 text-orange-900 ring-orange-200 dark:bg-orange-950/40 dark:text-orange-200",
+    },
+    OTHER: {
+        icon: CreditCard,
+        selectedClassName:
+            "border-slate-500 bg-slate-50 text-slate-900 ring-slate-200 dark:bg-slate-800 dark:text-slate-100",
+    },
+}
+
+const paymentTypeDescriptions: Record<PaymentMethodType, string> = {
+    CASH: "Efectivo",
+    DEBIT_CARD: "Tarjeta de débito",
+    CREDIT_CARD: "Tarjeta de crédito",
+    BANK_TRANSFER: "Transferencia bancaria",
+    CHECK: "Cheque",
+    CREDIT: "Crédito",
+    OTHER: "Otro medio",
 }
 
 type OpenCashRegister = { register: ICashRegister; session: ICashSession }
+type PaymentAllocation = { paymentMethodID: string; amount: string }
 const getSaleTypeFromParam = (value: string | null): SaleType =>
     value && saleTypes.has(value as SaleType) ? (value as SaleType) : "BOLETA"
 const isValidEmail = (value: string) => {
@@ -121,7 +140,7 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
     const router = useRouter()
     const searchParams = useSearchParams()
     const { cartItems, actions } = useSaleStore()
-    const { setPaymentMethod, clearCart, updateCartItemPricing } = actions
+    const { clearCart, updateCartItemPricing } = actions
     const { storeSelected } = useTienda()
     const [loading, setLoading] = useState(false)
     const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false)
@@ -131,7 +150,8 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
     const [openCashRegisters, setOpenCashRegisters] = useState<OpenCashRegister[]>([])
     const [availablePaymentMethods, setAvailablePaymentMethods] = useState<IPaymentMethod[]>([])
     const [cashRegisterID, setCashRegisterID] = useState("")
-    const [paymentMethodID, setPaymentMethodID] = useState("")
+    const [paymentAllocations, setPaymentAllocations] = useState<PaymentAllocation[]>([])
+    const [isSplitPayment, setIsSplitPayment] = useState(false)
     const [cashSetupLoading, setCashSetupLoading] = useState(false)
     const [cashSetupError, setCashSetupError] = useState<string | null>(null)
     const [cashSetupRevision, setCashSetupRevision] = useState(0)
@@ -157,6 +177,8 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
             return acc + item.quantity * price
         }, 0)
     }, [cartItems])
+    const canSplitPayment = saleType === "NOTA_VENTA"
+    const isSplitPaymentActive = canSplitPayment && isSplitPayment
 
     useEffect(() => {
         const refreshCashSetup = () => setCashSetupRevision((value) => value + 1)
@@ -169,7 +191,8 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
             setOpenCashRegisters([])
             setAvailablePaymentMethods([])
             setCashRegisterID("")
-            setPaymentMethodID("")
+            setPaymentAllocations([])
+            setIsSplitPayment(false)
             return
         }
 
@@ -187,9 +210,8 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                     return session ? [{ register, session }] : []
                 })
                 const activeMethods = methods.filter((method) => method.active)
-                const compatibleMethods = activeMethods.filter((method) => Boolean(legacyPaymentTypeByMethod[method.type]))
                 const preferredMethod =
-                    compatibleMethods.find((method) => method.type === "CASH") ?? compatibleMethods[0]
+                    activeMethods.find((method) => method.type === "CASH") ?? activeMethods[0]
 
                 setOpenCashRegisters(nextOpenRegisters)
                 setAvailablePaymentMethods(activeMethods)
@@ -198,12 +220,15 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                         ? current
                         : (nextOpenRegisters[0]?.register.cashRegisterID ?? ""),
                 )
-                setPaymentMethodID((current) =>
-                    compatibleMethods.some((method) => method.paymentMethodID === current)
-                        ? current
-                        : (preferredMethod?.paymentMethodID ?? ""),
-                )
-                if (preferredMethod) setPaymentMethod(legacyPaymentTypeByMethod[preferredMethod.type]!)
+                setPaymentAllocations((current) => {
+                    const valid = current.filter((allocation) =>
+                        activeMethods.some((method) => method.paymentMethodID === allocation.paymentMethodID),
+                    )
+                    if (valid.length > 0) return valid
+                    return preferredMethod
+                        ? [{ paymentMethodID: preferredMethod.paymentMethodID, amount: "" }]
+                        : []
+                })
             })
             .catch((error) => {
                 if (!cancelled) {
@@ -219,20 +244,74 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
         return () => {
             cancelled = true
         }
-    }, [cashSetupRevision, effectiveStoreID, setPaymentMethod])
+    }, [cashSetupRevision, effectiveStoreID])
 
     const selectPaymentMethod = (method: IPaymentMethod) => {
-        const legacyType = legacyPaymentTypeByMethod[method.type]
-        if (!legacyType) return
-        setPaymentMethodID(method.paymentMethodID)
-        setPaymentMethod(legacyType)
+        setPaymentAllocations((current) => {
+            const existing = current.find((allocation) => allocation.paymentMethodID === method.paymentMethodID)
+            if (!isSplitPaymentActive) {
+                return [{ paymentMethodID: method.paymentMethodID, amount: String(total) }]
+            }
+            if (existing && current.length > 1) {
+                const remaining = current.filter((allocation) => allocation.paymentMethodID !== method.paymentMethodID)
+                return remaining.length === 1 ? [{ ...remaining[0], amount: String(total) }] : remaining
+            }
+            if (existing) return current
+
+            const allocated = current.reduce((sum, allocation) => sum + (Number(allocation.amount) || 0), 0)
+            const remainingAmount = total - allocated
+            if (remainingAmount <= 0 && total > 0) {
+                const next = [...current, { paymentMethodID: method.paymentMethodID, amount: "0" }]
+                const evenAmount = Math.floor((total / next.length) * 100) / 100
+                return next.map((allocation, index) => ({
+                    ...allocation,
+                    amount: String(index === next.length - 1 ? total - evenAmount * (next.length - 1) : evenAmount),
+                }))
+            }
+            return [
+                ...current,
+                { paymentMethodID: method.paymentMethodID, amount: String(Math.max(remainingAmount, 0)) },
+            ]
+        })
     }
 
-    const selectedPaymentMethod = availablePaymentMethods.find((method) => method.paymentMethodID === paymentMethodID)
     const selectedCashRegister = openCashRegisters.find(({ register }) => register.cashRegisterID === cashRegisterID)
-    const selectedLegacyPaymentType = selectedPaymentMethod
-        ? legacyPaymentTypeByMethod[selectedPaymentMethod.type]
-        : undefined
+    const effectivePaymentAllocations = isSplitPaymentActive
+        ? paymentAllocations
+        : paymentAllocations.slice(0, 1)
+    const allocatedPaymentTotal = effectivePaymentAllocations.reduce(
+        (sum, allocation) => sum + (Number(allocation.amount) || 0),
+        0,
+    )
+    const paymentDifference = total - allocatedPaymentTotal
+
+    useEffect(() => {
+        if (isSplitPaymentActive) return
+        setPaymentAllocations((current) =>
+            current.length > 0 ? [{ ...current[0], amount: String(total) }] : current,
+        )
+        if (!canSplitPayment) setIsSplitPayment(false)
+    }, [canSplitPayment, isSplitPaymentActive, paymentAllocations.length, total])
+
+    const toggleSplitPayment = () => {
+        if (!canSplitPayment) return
+        setIsSplitPayment((current) => {
+            if (current) {
+                setPaymentAllocations((allocations) =>
+                    allocations.length > 0 ? [{ ...allocations[0], amount: String(total) }] : allocations,
+                )
+            }
+            return !current
+        })
+    }
+
+    const updatePaymentAmount = (paymentMethodID: string, amount: string) => {
+        setPaymentAllocations((current) =>
+            current.map((allocation) =>
+                allocation.paymentMethodID === paymentMethodID ? { ...allocation, amount } : allocation,
+            ),
+        )
+    }
 
     const handleClientSelect = (client: IClient | null) => {
         setSelectedClient(client)
@@ -305,8 +384,29 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
             if (cashSetupLoading) return toast.error("Espera mientras se carga la configuración de caja")
             if (cashSetupError) return toast.error(cashSetupError)
             if (!cashRegisterID) return toast.error("Debes abrir un turno de caja antes de registrar la venta")
-            if (!selectedPaymentMethod || !selectedLegacyPaymentType) {
-                return toast.error("Selecciona un medio de pago activo")
+            const selectedPayments = effectivePaymentAllocations.map((allocation) => ({
+                paymentMethodID: allocation.paymentMethodID,
+                amount: Number(allocation.amount),
+            }))
+            if (selectedPayments.length === 0) return toast.error("Selecciona al menos un medio de pago activo")
+            if (isSplitPaymentActive && selectedPayments.length < 2) {
+                return toast.error("El pago dividido requiere al menos dos medios de pago")
+            }
+            if (
+                selectedPayments.some(
+                    (payment) =>
+                        !availablePaymentMethods.some(
+                            (method) => method.paymentMethodID === payment.paymentMethodID && method.active,
+                        ) ||
+                        !Number.isFinite(payment.amount) ||
+                        payment.amount <= 0,
+                )
+            ) {
+                return toast.error("Todos los medios seleccionados deben tener un monto mayor que cero")
+            }
+            const paymentsTotal = selectedPayments.reduce((sum, payment) => sum + payment.amount, 0)
+            if (Math.abs(paymentsTotal - total) > 0.009) {
+                return toast.error(`La suma de los pagos debe ser igual al total de $${toPrice(total)}`)
             }
             if (saleType === "FACTURA" && (!receiver.rut.trim() || !receiver.name.trim())) {
                 return toast.error("Para emitir una factura indica al menos el RUT y la razón social")
@@ -335,10 +435,10 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                     Boolean(receiver.rut.trim() && receiver.name.trim() && receiverEmail))
             const toSubmitSale: ISaleRequest = {
                 saleType,
-                paymentType: selectedLegacyPaymentType,
+                fmaPago: "1",
                 issueDate: currentIssueDate,
                 cashRegisterID,
-                payments: [{ paymentMethodID: selectedPaymentMethod.paymentMethodID, amount: total }],
+                payments: selectedPayments,
                 ...(selectedClient ? { clientID: selectedClient.clientID } : {}),
                 ...(shouldSendReceiver
                     ? {
@@ -613,24 +713,43 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                                         </div>
 
                                         {availablePaymentMethods.length ? (
-                                            <div
-                                                className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-2 2xl:grid-cols-4"
-                                                role="group"
-                                                aria-label="Medio de pago"
-                                            >
+                                            <div className="space-y-3">
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                                                        Medios de pago
+                                                    </p>
+                                                    {canSplitPayment && (
+                                                        <Button
+                                                            type="button"
+                                                            variant={isSplitPaymentActive ? "default" : "outline"}
+                                                            size="sm"
+                                                            onClick={toggleSplitPayment}
+                                                        >
+                                                            <Repeat2 className="h-4 w-4" />
+                                                            {isSplitPaymentActive
+                                                                ? "Pago dividido activo"
+                                                                : "Dividir pago"}
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                                <div
+                                                    className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-2 2xl:grid-cols-4"
+                                                    role="group"
+                                                    aria-label="Medios de pago"
+                                                >
                                                 {availablePaymentMethods.map((method) => {
-                                                    const legacyType = legacyPaymentTypeByMethod[method.type]
-                                                    const visual = legacyType ? paymentVisuals[legacyType] : null
-                                                    const Icon = visual?.icon ?? CreditCard
-                                                    const selected = paymentMethodID === method.paymentMethodID
+                                                    const visual = paymentVisuals[method.type]
+                                                    const Icon = visual.icon
+                                                    const selected = paymentAllocations.some(
+                                                        (allocation) => allocation.paymentMethodID === method.paymentMethodID,
+                                                    )
                                                     return (
                                                         <button
                                                             key={method.paymentMethodID}
                                                             type="button"
                                                             aria-pressed={selected}
-                                                            disabled={!legacyType}
                                                             onClick={() => selectPaymentMethod(method)}
-                                                            className={`flex min-h-20 min-w-0 items-center gap-3 rounded-lg border px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60 ${selected && visual ? `${visual.selectedClassName} ring-1` : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"}`}
+                                                            className={`flex min-h-20 min-w-0 items-center gap-3 rounded-lg border px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${selected ? `${visual.selectedClassName} ring-1` : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"}`}
                                                         >
                                                             <span
                                                                 className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${selected ? "bg-white/70 dark:bg-slate-900/50" : "bg-slate-100 dark:bg-slate-800"}`}
@@ -642,45 +761,97 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                                                                     {method.name}
                                                                 </span>
                                                                 <span className="mt-1 block text-xs opacity-70">
-                                                                    {!legacyType
-                                                                        ? "En desarrollo"
-                                                                        : legacyType === "Efectivo"
-                                                                          ? "Efectivo"
-                                                                          : legacyType === "Debito"
-                                                                            ? "Tarjeta de débito"
-                                                                            : legacyType === "Credito"
-                                                                              ? "Tarjeta de crédito"
-                                                                              : "Transferencia bancaria"}
+                                                                    {paymentTypeDescriptions[method.type]}
                                                                 </span>
                                                             </span>
                                                         </button>
                                                     )
                                                 })}
+                                                </div>
+
+                                                {isSplitPaymentActive && paymentAllocations.length > 0 && (
+                                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900">
+                                                        <div className="space-y-3">
+                                                            {paymentAllocations.map((allocation) => {
+                                                                const method = availablePaymentMethods.find(
+                                                                    (candidate) => candidate.paymentMethodID === allocation.paymentMethodID,
+                                                                )
+                                                                if (!method) return null
+                                                                return (
+                                                                    <div
+                                                                        key={allocation.paymentMethodID}
+                                                                        className="grid items-center gap-2 sm:grid-cols-[minmax(0,1fr)_160px]"
+                                                                    >
+                                                                        <label
+                                                                            htmlFor={`payment-${allocation.paymentMethodID}`}
+                                                                            className="truncate text-sm font-medium text-slate-700 dark:text-slate-200"
+                                                                        >
+                                                                            {method.name}
+                                                                        </label>
+                                                                        <Input
+                                                                            id={`payment-${allocation.paymentMethodID}`}
+                                                                            type="number"
+                                                                            min="0"
+                                                                            step="0.01"
+                                                                            inputMode="decimal"
+                                                                            value={allocation.amount}
+                                                                            onChange={(event) =>
+                                                                                updatePaymentAmount(
+                                                                                    allocation.paymentMethodID,
+                                                                                    event.target.value,
+                                                                                )
+                                                                            }
+                                                                            aria-label={`Monto pagado con ${method.name}`}
+                                                                        />
+                                                                    </div>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                        <div className="mt-3 flex flex-wrap justify-between gap-2 border-t border-slate-200 pt-3 text-xs dark:border-slate-700">
+                                                            <span>Asignado: ${toPrice(allocatedPaymentTotal)}</span>
+                                                            <span
+                                                                className={
+                                                                    Math.abs(paymentDifference) <= 0.009
+                                                                        ? "font-semibold text-emerald-700 dark:text-emerald-300"
+                                                                        : "font-semibold text-amber-700 dark:text-amber-300"
+                                                                }
+                                                            >
+                                                                {paymentDifference >= 0 ? "Restante" : "Exceso"}: ${toPrice(Math.abs(paymentDifference))}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {isSplitPaymentActive && (
+                                                    <div
+                                                        className="flex gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100"
+                                                        role="alert"
+                                                    >
+                                                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-300" />
+                                                        <div>
+                                                            <p className="text-xs font-semibold">
+                                                                Esta nota de venta no se podrá convertir después
+                                                            </p>
+                                                            <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-200">
+                                                                Las notas con pago dividido no pueden convertirse a
+                                                                boleta ni factura desde Caja.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                <p className="text-xs text-slate-500">
+                                                    {isSplitPaymentActive
+                                                        ? "Selecciona dos o más medios y distribuye el total entre ellos."
+                                                        : canSplitPayment
+                                                          ? "Selecciona un medio o activa el pago dividido."
+                                                          : "Selecciona un medio de pago."}
+                                                </p>
                                             </div>
                                         ) : (
                                             <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-3 text-sm text-amber-900">
-                                                No hay medios de pago activos compatibles con ventas. Configúralos en la
+                                                No hay medios de pago activos para ventas. Configúralos en la
                                                 sección Cajas.
                                             </p>
                                         )}
-                                        {availablePaymentMethods.some(
-                                            (method) => legacyPaymentTypeByMethod[method.type],
-                                        ) && (
-                                            <p className="text-xs text-slate-500">
-                                                Pago dividido entre varios medios:{" "}
-                                                <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 font-semibold text-amber-700">
-                                                    En desarrollo
-                                                </span>
-                                            </p>
-                                        )}
-                                        {availablePaymentMethods.length > 0 &&
-                                            !availablePaymentMethods.some(
-                                                (method) => legacyPaymentTypeByMethod[method.type],
-                                            ) && (
-                                                <p className="text-xs text-amber-800">
-                                                    El contrato de ventas todavía no permite usar estos tipos de pago.
-                                                </p>
-                                            )}
                                     </>
                                 )}
                             </div>
@@ -805,7 +976,10 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                                 cashSetupLoading ||
                                 cartItems.length === 0 ||
                                 !cashRegisterID ||
-                                !paymentMethodID ||
+                                paymentAllocations.length === 0 ||
+                                (isSplitPaymentActive && paymentAllocations.length < 2) ||
+                                paymentAllocations.some((allocation) => Number(allocation.amount) <= 0) ||
+                                Math.abs(paymentDifference) > 0.009 ||
                                 (requireClientForSale && !selectedClient)
                             }
                             onClick={handleSubmit}

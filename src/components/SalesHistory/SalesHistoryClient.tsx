@@ -10,6 +10,7 @@ import type { ISaleResponse } from "@/interfaces/sales/ISale"
 import { cn } from "@/lib/utils"
 import { getChileYYYYMMDD, isYYYYMMDD, toChileMiddayUTC } from "@/utils/chile-date"
 import { toPrice } from "@/utils/priceFormat"
+import { getSalePaymentBreakdown, getSalePaymentLabel } from "@/utils/sale-payments"
 import { AlertCircle, Ban, CheckCircle2, Download, Eye, List, Search, X } from "lucide-react"
 
 type HistoryFilter = "GENERAL" | "ISSUED" | "REJECTED" | "VOIDED"
@@ -149,7 +150,7 @@ export function SalesHistoryClient({ initialSales, loadError }: SalesHistoryClie
                     sale.receiver?.rut,
                     sale.receiver?.name,
                     sale.receiver?.email,
-                    sale.paymentType,
+                    getSalePaymentLabel(sale),
                     sale.Store?.name,
                 ].join(" "),
             )
@@ -166,7 +167,9 @@ export function SalesHistoryClient({ initialSales, loadError }: SalesHistoryClie
             sale.receiver?.name ?? "Cliente general",
             sale.receiver?.email ?? "",
             getStatusPresentation(sale).label,
-            sale.paymentType ?? "",
+            getSalePaymentBreakdown(sale)
+                .map((payment) => `${payment.label}: $${toPrice(payment.amount)}`)
+                .join(" + "),
             sale.Store?.name ?? "",
             sale.total,
         ])
@@ -356,7 +359,18 @@ export function SalesHistoryClient({ initialSales, loadError }: SalesHistoryClie
                                                     {status.label}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell className="text-sm">{sale.paymentType || "—"}</TableCell>
+                                            <TableCell className="text-sm">
+                                                <div className="space-y-0.5">
+                                                    {getSalePaymentBreakdown(sale).map((payment, index) => (
+                                                        <p key={`${payment.label}-${index}`} className="whitespace-nowrap">
+                                                            {payment.label}
+                                                            <span className="ml-1 text-xs text-slate-500">
+                                                                ${toPrice(payment.amount)}
+                                                            </span>
+                                                        </p>
+                                                    ))}
+                                                </div>
+                                            </TableCell>
                                             <TableCell className="text-sm">{sale.Store?.name || "—"}</TableCell>
                                             <TableCell className="text-right font-semibold tabular-nums">
                                                 ${toPrice(sale.total)}

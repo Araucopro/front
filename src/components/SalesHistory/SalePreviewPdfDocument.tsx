@@ -2,6 +2,7 @@ import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer"
 import type { ISaleResponse } from "@/interfaces/sales/ISale"
 import { getChileYYYYMMDD, isYYYYMMDD, toChileMiddayUTC } from "@/utils/chile-date"
 import { toPrice } from "@/utils/priceFormat"
+import { getSalePaymentBreakdown } from "@/utils/sale-payments"
 
 const styles = StyleSheet.create({
     page: { padding: 38, fontSize: 9, fontFamily: "Helvetica", color: "#172033", backgroundColor: "#ffffff" },
@@ -81,6 +82,7 @@ export function SalePreviewPdfDocument({ sale }: { sale: ISaleResponse }) {
     const issuer = sale.Store
     const receiver = sale.receiver
     const folio = sale.dte?.FOLIO ?? sale.folio
+    const payments = getSalePaymentBreakdown(sale)
 
     return (
         <Document title={`Vista previa de venta ${folio ?? sale.saleID}`} author="ARAUCO">
@@ -166,7 +168,12 @@ export function SalePreviewPdfDocument({ sale }: { sale: ISaleResponse }) {
                 <View style={styles.bottom} wrap={false}>
                     <View style={styles.info}>
                         <Text style={styles.infoTitle}>INFORMACIÓN</Text>
-                        <Text style={styles.infoLine}>Medio de pago: {sale.paymentType || "No informado"}</Text>
+                        <Text style={styles.infoLine}>MEDIOS DE PAGO</Text>
+                        {payments.map((payment, index) => (
+                            <Text key={`${payment.label}-${index}`} style={styles.infoLine}>
+                                {payment.label}: {formatMoney(payment.amount)}
+                            </Text>
+                        ))}
                         <Text style={styles.infoLine}>ID de venta: {sale.saleID}</Text>
                         <Text style={styles.previewNotice}>
                             Vista previa informativa. No sustituye el PDF oficial ni el timbre electrónico del SII.

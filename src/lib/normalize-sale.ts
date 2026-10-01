@@ -1,8 +1,10 @@
 import type { IStore } from "@/interfaces/stores/IStore"
 import type { IUser } from "@/interfaces/users/IUser"
+import type { PaymentMethodType } from "@/interfaces/cash-registers/ICashCatalogs"
 import type {
     ISaleDte,
     ISaleOperationResponse,
+    ISalePayment,
     ISaleProduct,
     ISaleReceiver,
     ISaleResponse,
@@ -96,6 +98,9 @@ export type RawSale = {
     status?: ISaleResponse["status"] | string
     createdAt?: string
     updatedAt?: string
+    fmaPago?: ISaleResponse["fmaPago"]
+    payments?: RawSalePayment[]
+    Payments?: RawSalePayment[]
     paymentType?: ISaleResponse["paymentType"]
     saleType?: ISaleResponse["saleType"]
     folio?: number | string | null
@@ -111,6 +116,26 @@ export type RawSale = {
     returns?: RawReturn[]
     Returns?: RawReturn[]
     dteDocument?: RawSaleDte | null
+}
+
+type RawSalePaymentMethod = {
+    paymentMethodID?: string
+    code?: string
+    name?: string
+    type?: PaymentMethodType
+}
+
+type RawSalePayment = {
+    paymentID?: string
+    paymentMethodID?: string
+    paymentMethod?: RawSalePaymentMethod | null
+    PaymentMethod?: RawSalePaymentMethod | null
+    amount?: number | string
+    status?: ISalePayment["status"]
+    paidAt?: string
+    authorizationCode?: string | null
+    transactionID?: string | null
+    reference?: string | null
 }
 
 export type RawSaleDte = {
@@ -165,6 +190,28 @@ const normalizeSaleProduct = (raw: RawSaleProduct): ISaleProduct => ({
     createdAt: raw.createdAt ?? "",
     updatedAt: raw.updatedAt ?? "",
 })
+
+const normalizeSalePayment = (raw: RawSalePayment): ISalePayment => {
+    const paymentMethod = raw.paymentMethod ?? raw.PaymentMethod ?? null
+    return {
+        paymentID: raw.paymentID ?? "",
+        paymentMethodID: raw.paymentMethodID ?? paymentMethod?.paymentMethodID ?? "",
+        paymentMethod: paymentMethod
+            ? {
+                  paymentMethodID: paymentMethod.paymentMethodID ?? raw.paymentMethodID ?? "",
+                  code: paymentMethod.code ?? "",
+                  name: paymentMethod.name ?? paymentMethod.code ?? "Medio de pago",
+                  type: paymentMethod.type ?? "OTHER",
+              }
+            : null,
+        amount: Number(raw.amount ?? 0),
+        status: raw.status ?? "COMPLETED",
+        paidAt: raw.paidAt ?? "",
+        authorizationCode: raw.authorizationCode ?? null,
+        transactionID: raw.transactionID ?? null,
+        reference: raw.reference ?? null,
+    }
+}
 
 const normalizeReceiver = (raw: Partial<ISaleReceiver> | null | undefined): ISaleReceiver | null => {
     if (!raw) return null
@@ -258,6 +305,8 @@ export const normalizeSale = (raw: RawSale, fallbackStoreID = "", dte?: RawSaleD
         taxTotal: raw.taxTotal === undefined ? undefined : Number(raw.taxTotal),
         status: (raw.status as ISaleResponse["status"]) ?? "Pendiente",
         createdAt: raw.createdAt ?? raw.issueDate ?? "",
+        fmaPago: raw.fmaPago,
+        payments: pickArray(raw.payments, raw.Payments).map(normalizeSalePayment),
         paymentType: raw.paymentType,
         saleType: raw.saleType,
         folio: parsedFolio !== null && Number.isFinite(parsedFolio) ? parsedFolio : null,

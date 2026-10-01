@@ -25,13 +25,9 @@ import { notifyCashSessionChanged } from "@/lib/cash-session-events"
 import { Role } from "@/lib/userRoles"
 import { useTienda } from "@/stores/tienda.store"
 import { useAuth } from "@/stores/user.store"
+import { getChileYYYYMMDD } from "@/utils/chile-date"
 import { Banknote, LoaderCircle, Settings2, Store } from "lucide-react"
 import { toast } from "sonner"
-
-const getTodayValue = () => {
-    const date = new Date()
-    return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10)
-}
 
 export default function InitialCashOpeningDialog() {
     const router = useRouter()
@@ -41,7 +37,6 @@ export default function InitialCashOpeningDialog() {
     const [open, setOpen] = useState(false)
     const [registers, setRegisters] = useState<ICashRegister[]>([])
     const [selectedRegisterID, setSelectedRegisterID] = useState("")
-    const [businessDate, setBusinessDate] = useState(getTodayValue)
     const [openingBalance, setOpeningBalance] = useState("")
     const [openingNotes, setOpeningNotes] = useState("")
     const [isChecking, setIsChecking] = useState(false)
@@ -49,6 +44,7 @@ export default function InitialCashOpeningDialog() {
     const [checkError, setCheckError] = useState<string | null>(null)
 
     const storeID = storeSelected?.storeID ?? ""
+    const businessDate = getChileYYYYMMDD(new Date())
     const canOperateCash = Boolean(
         user && user.role !== Role.Consignado && user.role !== Role.Tercero,
     )
@@ -74,7 +70,6 @@ export default function InitialCashOpeningDialog() {
 
             setRegisters(registersWithSessions.map(({ register }) => register))
             setSelectedRegisterID(registersWithSessions[0]?.register.cashRegisterID ?? "")
-            setBusinessDate(getTodayValue())
             setOpeningBalance("")
             setOpeningNotes("")
             setOpen(true)
@@ -108,7 +103,7 @@ export default function InitialCashOpeningDialog() {
         setIsSubmitting(true)
         try {
             await openCashSession(selectedRegisterID, {
-                businessDate,
+                businessDate: getChileYYYYMMDD(new Date()),
                 openingBalance: balance,
                 ...(openingNotes.trim() ? { openingNotes: openingNotes.trim() } : {}),
             })
@@ -207,7 +202,7 @@ export default function InitialCashOpeningDialog() {
                                     id="initial-business-date"
                                     type="date"
                                     value={businessDate}
-                                    onChange={(event) => setBusinessDate(event.target.value)}
+                                    disabled
                                     required
                                 />
                             </div>
