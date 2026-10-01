@@ -369,7 +369,7 @@ export default function NewHumanResourcesUserDialog({
                             <UserPlus className="h-4 w-4 text-violet-600" />
                             Nuevo Usuario
                         </DialogTitle>
-                        <DialogDescription className="sr-only">Formulario de creacion de usuario para Recursos Humanos</DialogDescription>
+                        <DialogDescription className="sr-only">Formulario para crear un usuario y asignarle tiendas</DialogDescription>
                     </DialogHeader>
 
                     <div className="border-b border-slate-200 dark:border-slate-700">

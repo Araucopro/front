@@ -1,59 +1,23 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { createClient } from "@/actions/clients/createClient"
 import { deleteClient } from "@/actions/clients/deleteClient"
 import { getClients } from "@/actions/clients/getClients"
-import { updateClient } from "@/actions/clients/updateClient"
+import ClientDialog from "@/components/Clientes/ClientDialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { RutInput } from "@/components/ui/rut-input"
-import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Textarea } from "@/components/ui/textarea"
-import type { ClientSegment, IClient, IClientPayload, IClientsResponse } from "@/interfaces/clients/IClient"
+import type { ClientSegment, IClient, IClientsResponse } from "@/interfaces/clients/IClient"
 import { Building2, Edit, Plus, Search, Trash2, Users } from "lucide-react"
 import { toast } from "sonner"
-import { normalizeRutValue } from "@/utils/rut"
 
 type SegmentFilter = ClientSegment | "ALL"
-
-type ClientFormState = {
-    rut: string
-    name: string
-    giro: string
-    address: string
-    city: string
-    email: string
-    phone: string
-    segment: ClientSegment
-    notes: string
-}
 
 interface ClientsClientProps {
     initialData: IClientsResponse
     loadError?: string
-}
-
-const emptyForm: ClientFormState = {
-    rut: "",
-    name: "",
-    giro: "",
-    address: "",
-    city: "",
-    email: "",
-    phone: "",
-    segment: "RETAIL",
-    notes: "",
 }
 
 const segmentLabels: Record<ClientSegment, string> = {
@@ -67,49 +31,12 @@ const segmentStyles: Record<ClientSegment, string> = {
         "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200",
 }
 
-const toFormState = (client: IClient): ClientFormState => ({
-    rut: client.rut,
-    name: client.name,
-    giro: client.giro ?? "",
-    address: client.address ?? "",
-    city: client.city ?? "",
-    email: client.email ?? "",
-    phone: client.phone ?? "",
-    segment: client.segment,
-    notes: client.notes ?? "",
-})
-
-const buildCreatePayload = (form: ClientFormState): IClientPayload => ({
-    rut: normalizeRutValue(form.rut),
-    name: form.name.trim(),
-    giro: form.giro.trim() || undefined,
-    address: form.address.trim() || undefined,
-    city: form.city.trim() || undefined,
-    email: form.email.trim() || undefined,
-    phone: form.phone.trim() || undefined,
-    segment: form.segment,
-    notes: form.notes.trim() || undefined,
-})
-
-const buildUpdatePayload = (form: ClientFormState): IClientPayload => ({
-    rut: normalizeRutValue(form.rut),
-    name: form.name.trim(),
-    giro: form.giro.trim(),
-    address: form.address.trim(),
-    city: form.city.trim(),
-    email: form.email.trim(),
-    phone: form.phone.trim(),
-    segment: form.segment,
-    notes: form.notes.trim(),
-})
-
 export default function ClientsClient({ initialData, loadError }: ClientsClientProps) {
     const [clients, setClients] = useState(initialData.clients)
     const [meta, setMeta] = useState(initialData.meta)
     const [search, setSearch] = useState("")
     const [segment, setSegment] = useState<SegmentFilter>("ALL")
     const [page, setPage] = useState(initialData.meta.page || 1)
-    const [form, setForm] = useState<ClientFormState>(emptyForm)
     const [editingClient, setEditingClient] = useState<IClient | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
@@ -138,46 +65,13 @@ export default function ClientsClient({ initialData, loadError }: ClientsClientP
 
     const openCreateDialog = () => {
         setEditingClient(null)
-        setForm(emptyForm)
         setIsDialogOpen(true)
     }
 
     const openEditDialog = (client: IClient) => {
         setEditingClient(client)
-        setForm(toFormState(client))
         setIsDialogOpen(true)
         setConfirmingDeleteId(null)
-    }
-
-    const updateField = (field: keyof ClientFormState, value: string) => {
-        setForm((current) => ({ ...current, [field]: value }))
-    }
-
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault()
-
-        if (!form.rut.trim() || !form.name.trim()) {
-            toast.error("RUT y razón social son obligatorios")
-            return
-        }
-
-        setIsLoading(true)
-        try {
-            if (editingClient) {
-                await updateClient(editingClient.clientID, buildUpdatePayload(form))
-                toast.success("Cliente actualizado correctamente")
-            } else {
-                await createClient(buildCreatePayload(form))
-                toast.success("Cliente creado correctamente")
-            }
-
-            setIsDialogOpen(false)
-            await refreshClients(editingClient ? page : 1)
-        } catch (error) {
-            toast.error(error instanceof Error ? error.message : "No se pudo guardar el cliente")
-        } finally {
-            setIsLoading(false)
-        }
     }
 
     const handleDelete = async (clientID: string) => {
@@ -404,128 +298,14 @@ export default function ClientsClient({ initialData, loadError }: ClientsClientP
                 </div>
             </section>
 
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-w-4xl">
-                    <DialogHeader className="border-b border-slate-200 px-6 py-5 dark:border-slate-700">
-                        <DialogTitle>{editingClient ? "Editar cliente" : "Agregar cliente"}</DialogTitle>
-                        <DialogDescription>
-                            Completa los datos comerciales del cliente. RUT y razón social son obligatorios.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <form onSubmit={handleSubmit} className="max-h-[72vh] overflow-y-auto px-6 py-5">
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                            <div>
-                                <Label htmlFor="client-rut">RUT *</Label>
-                                <RutInput
-                                    id="client-rut"
-                                    value={form.rut}
-                                    onValueChange={(rut) => updateField("rut", rut)}
-                                    placeholder="76.234.556-6"
-                                    required
-                                    className="mt-2"
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="client-segment">Tipo *</Label>
-                                <Select
-                                    value={form.segment}
-                                    onValueChange={(value) => updateField("segment", value as ClientSegment)}
-                                >
-                                    <SelectTrigger id="client-segment" className="mt-2">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="RETAIL">Retail</SelectItem>
-                                        <SelectItem value="WHOLESALE">Mayorista</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="md:col-span-2">
-                                <Label htmlFor="client-name">Razón social *</Label>
-                                <Input
-                                    id="client-name"
-                                    value={form.name}
-                                    onChange={(event) => updateField("name", event.target.value)}
-                                    placeholder="Comercial Ejemplo SpA"
-                                    required
-                                    className="mt-2"
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="client-giro">Giro</Label>
-                                <Input
-                                    id="client-giro"
-                                    value={form.giro}
-                                    onChange={(event) => updateField("giro", event.target.value)}
-                                    placeholder="Venta al por menor"
-                                    className="mt-2"
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="client-email">Email</Label>
-                                <Input
-                                    id="client-email"
-                                    type="email"
-                                    value={form.email}
-                                    onChange={(event) => updateField("email", event.target.value)}
-                                    placeholder="contacto@empresa.cl"
-                                    className="mt-2"
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="client-address">Dirección</Label>
-                                <Input
-                                    id="client-address"
-                                    value={form.address}
-                                    onChange={(event) => updateField("address", event.target.value)}
-                                    placeholder="Av. Providencia 1234"
-                                    className="mt-2"
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="client-city">Comuna o ciudad</Label>
-                                <Input
-                                    id="client-city"
-                                    value={form.city}
-                                    onChange={(event) => updateField("city", event.target.value)}
-                                    placeholder="Providencia"
-                                    className="mt-2"
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="client-phone">Teléfono</Label>
-                                <Input
-                                    id="client-phone"
-                                    value={form.phone}
-                                    onChange={(event) => updateField("phone", event.target.value)}
-                                    placeholder="+56912345678"
-                                    className="mt-2"
-                                />
-                            </div>
-                            <div className="md:col-span-2">
-                                <Label htmlFor="client-notes">Notas</Label>
-                                <Textarea
-                                    id="client-notes"
-                                    value={form.notes}
-                                    onChange={(event) => updateField("notes", event.target.value)}
-                                    placeholder="Comentarios comerciales o condiciones relevantes"
-                                    className="mt-2"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="mt-6 flex justify-end gap-3 border-t border-slate-200 pt-4 dark:border-slate-700">
-                            <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                                Cancelar
-                            </Button>
-                            <Button type="submit" disabled={isLoading} className="bg-blue-600 text-white hover:bg-blue-700">
-                                {isLoading ? "Guardando..." : "Guardar cliente"}
-                            </Button>
-                        </div>
-                    </form>
-                </DialogContent>
-            </Dialog>
+            {isDialogOpen && (
+                <ClientDialog
+                    open={isDialogOpen}
+                    onOpenChange={setIsDialogOpen}
+                    client={editingClient}
+                    onSaved={() => refreshClients(editingClient ? page : 1)}
+                />
+            )}
         </div>
     )
 }

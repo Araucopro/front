@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from "react"
 import { getClients } from "@/actions/clients/getClients"
+import ClientDialog from "@/components/Clientes/ClientDialog"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { IClient } from "@/interfaces/clients/IClient"
 import { cn } from "@/lib/utils"
-import { Check, Loader2, Search, UserRound, X } from "lucide-react"
+import { Check, Loader2, Plus, Search, UserRound, X } from "lucide-react"
 
 type SaleClientSelectorProps = {
     required: boolean
@@ -18,6 +20,7 @@ export function SaleClientSelector({ required, selectedClient, onSelect }: SaleC
     const [query, setQuery] = useState("")
     const [clients, setClients] = useState<IClient[]>([])
     const [isOpen, setIsOpen] = useState(false)
+    const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
@@ -90,6 +93,10 @@ export function SaleClientSelector({ required, selectedClient, onSelect }: SaleC
                         Busca por nombre, RUT o correo y selecciona un cliente registrado.
                     </p>
                 </div>
+                <Button type="button" variant="outline" size="sm" onClick={() => setIsDialogOpen(true)}>
+                    <Plus className="h-4 w-4" />
+                    Agregar cliente
+                </Button>
             </div>
 
             {selectedClient ? (
@@ -164,6 +171,13 @@ export function SaleClientSelector({ required, selectedClient, onSelect }: SaleC
                         </div>
                     )}
                 </div>
+            )}
+            {isDialogOpen && (
+                <ClientDialog
+                    open={isDialogOpen}
+                    onOpenChange={setIsDialogOpen}
+                    onSaved={selectClient}
+                />
             )}
         </section>
     )
