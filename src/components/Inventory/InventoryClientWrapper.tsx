@@ -21,16 +21,19 @@ import { InventoryTable } from "./TableSection/InventoryTable"
 import InventoryHeader from "./HeaderSetion/InventoryHeader"
 import { useInventory } from "@/hooks/useInventory"
 import { createInventoryMovement } from "@/actions/inventory/createInventoryMovement"
+import { useInventoryColumns } from "@/hooks/useInventoryColumns"
 
 interface Props {
     initialProducts: IRawProduct[]
     categories: ICategory[]
     stores: IStore[]
+    storeID: string
 }
 
-export default function UnifiedInventoryClientWrapper({ initialProducts, categories: cats, stores }: Props) {
+export default function UnifiedInventoryClientWrapper({ initialProducts, categories: cats, stores, storeID }: Props) {
     const { user } = useAuth()
     const { storeSelected } = useTienda()
+    const { visibleColumns, toggleColumn, resetColumns, ready: columnsReady } = useInventoryColumns(user?.userID, storeID)
     const { categories, setCategories } = useCategories()
     const {
         rawProducts,
@@ -237,6 +240,10 @@ export default function UnifiedInventoryClientWrapper({ initialProducts, categor
                     uniqueProductsInCurrentPage={uniqueProductsInCurrentPage}
                     searchedProductsLength={filteredProducts.length}
                     categories={categories}
+                    visibleColumns={visibleColumns}
+                    onToggleColumn={toggleColumn}
+                    onResetColumns={resetColumns}
+                    columnsReady={columnsReady}
                 />
                 <div className="flex justify-between lg:mt-0 mt-6 lg:flex-row flex-col lg:items-center">
                     <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -264,6 +271,7 @@ export default function UnifiedInventoryClientWrapper({ initialProducts, categor
                                 handleDeleteProduct={handleDeleteProduct}
                                 adminStoreIDs={adminStoreIDs}
                                 categories={categories}
+                                visibleColumns={visibleColumns}
                             />
                         </Suspense>
                     </div>

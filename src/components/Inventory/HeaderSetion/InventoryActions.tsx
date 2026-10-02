@@ -28,7 +28,7 @@ export default function InventoryActions({ products, categories }: InventoryActi
     }
 
     return (
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
             <Button onClick={() => setShowCategoryModal(true)} className="bg-gray-600 text-white px-4 py-2 rounded">
                 Administrar Categorías
             </Button>

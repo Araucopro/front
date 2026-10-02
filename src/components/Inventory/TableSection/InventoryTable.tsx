@@ -27,6 +27,7 @@ import type { IStoreProduct } from "@/interfaces/products/IProductVariation"
 import type { IUpdatePriceResponse } from "@/interfaces/pricing/IPricing"
 import { PricingModal } from "./PricingModal"
 import { getProductCategoryName } from "@/utils/categoryName"
+import type { InventoryColumnId } from "./inventory-columns"
 
 interface InventoryTableProps {
     currentItems: FlattenedItem[]
@@ -34,6 +35,7 @@ interface InventoryTableProps {
     handleDeleteProduct: (product: IRawProduct) => void
     adminStoreIDs: string[]
     categories: ICategory[]
+    visibleColumns: InventoryColumnId[]
 }
 
 type PricingVariationState = {
@@ -47,7 +49,7 @@ const calculateMarkup = (priceCost: number, priceList: number): string => {
     return markup.toFixed(2)
 }
 
-export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProduct, categories }: InventoryTableProps) {
+export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProduct, categories, visibleColumns }: InventoryTableProps) {
     const { user } = useAuth()
     const { editingField, setEditingField, editValue, setEditValue } = inventoryStore()
     const { storeSelected } = useTienda()
@@ -60,6 +62,7 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
         setOpenSku(sku)
     }
     const isEditable = user?.role !== Role.Vendedor && user?.role !== Role.Tercero
+    const showColumn = (column: InventoryColumnId) => visibleColumns.includes(column)
 
     return (
         <div className="flex-1 flex flex-col">
@@ -68,39 +71,39 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                     <Table>
                         <TableHeader className="sticky top-0 bg-gray-50 dark:bg-slate-800">
                             <TableRow>
-                                <TableHead className="whitespace-nowrap text-center font-semibold text-gray-700 dark:text-gray-200">
+                                {showColumn("product") && <TableHead className="whitespace-nowrap text-center font-semibold text-gray-700 dark:text-gray-200">
                                     PRODUCTO
-                                </TableHead>
-                                <TableHead className="whitespace text-center font-semibold text-gray-700 dark:text-gray-200">
+                                </TableHead>}
+                                {showColumn("sku") && <TableHead className="whitespace text-center font-semibold text-gray-700 dark:text-gray-200">
                                     SKU
-                                </TableHead>
-                                <TableHead className="whitespace-nowrap text-center font-semibold">SKU PROVEEDOR</TableHead>
-                                <TableHead className="whitespace-nowrap text-center font-semibold">CÓDIGO EAN</TableHead>
-                                <TableHead className="whitespace-nowrap text-center font-semibold text-gray-700 dark:text-gray-200">
+                                </TableHead>}
+                                {showColumn("supplierSku") && <TableHead className="whitespace-nowrap text-center font-semibold">SKU PROVEEDOR</TableHead>}
+                                {showColumn("ean") && <TableHead className="whitespace-nowrap text-center font-semibold">CÓDIGO EAN</TableHead>}
+                                {showColumn("brand") && <TableHead className="whitespace-nowrap text-center font-semibold text-gray-700 dark:text-gray-200">
                                     MARCA
-                                </TableHead>
-                                <TableHead className="whitespace-nowrap text-center font-semibold text-gray-700 dark:text-gray-200">
+                                </TableHead>}
+                                {showColumn("category") && <TableHead className="whitespace-nowrap text-center font-semibold text-gray-700 dark:text-gray-200">
                                     CATEGORÍA
-                                </TableHead>
+                                </TableHead>}
                                 {/* PRECIO COSTO se muestra solo si es admin */}
-                                {user?.role === Role.Admin && (
+                                {user?.role === Role.Admin && showColumn("netCost") && (
                                     <TableHead className="whitespace text-center font-semibold text-gray-700 dark:text-gray-200">
                                         COSTO NETO
                                     </TableHead>
                                 )}
-                                <TableHead className="whitespace text-center font-semibold text-gray-700 dark:text-gray-200">
+                                {showColumn("price") && <TableHead className="whitespace text-center font-semibold text-gray-700 dark:text-gray-200">
                                     PRECIO PLAZA
-                                </TableHead>
-                                <TableHead className="whitespace-nowrap text-center font-semibold text-gray-700 dark:text-gray-200">
+                                </TableHead>}
+                                {showColumn("variant") && <TableHead className="whitespace-nowrap text-center font-semibold text-gray-700 dark:text-gray-200">
                                     VARIANTE
-                                </TableHead>
-                                <TableHead className="whitespace-nowrap text-center font-semibold">SUBVARIANTE</TableHead>
-                                <TableHead className="whitespace text-center font-semibold text-gray-700 dark:text-gray-200">
+                                </TableHead>}
+                                {showColumn("subvariant") && <TableHead className="whitespace-nowrap text-center font-semibold">SUBVARIANTE</TableHead>}
+                                {showColumn("stock") && <TableHead className="whitespace text-center font-semibold text-gray-700 dark:text-gray-200">
                                     {user?.role === Role.Admin ? "STOCK CENTRAL" : "STOCK TIENDA"}
-                                </TableHead>
-                                <TableHead className="whitespace-nowrap text-center font-semibold text-gray-700 dark:text-gray-200">
+                                </TableHead>}
+                                {showColumn("aggregateStock") && <TableHead className="whitespace-nowrap text-center font-semibold text-gray-700 dark:text-gray-200">
                                     Stock agregado
-                                </TableHead>
+                                </TableHead>}
                                 {user?.role === Role.Admin && (
                                     <TableHead className="w-12 text-center font-semibold text-gray-700 dark:text-gray-200" />
                                 )}
@@ -134,7 +137,7 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                                 : "border-t border-gray-100 dark:border-gray-700"
                                         } text-sm dark:text-gray-300 text-gray-800 h-16`}
                                     >
-                                        {isFirst && (
+                                        {showColumn("product") && isFirst && (
                                             <TableCell
                                                 className="py-2 px-3 text-left w-1/4"
                                                 rowSpan={product.variations?.length || 1}
@@ -180,7 +183,7 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                                 </MotionItem>
                                             </TableCell>
                                         )}
-                                        <Tooltip>
+                                        {showColumn("sku") && <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <TableCell
                                                     onClick={() =>
@@ -196,9 +199,9 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                             <TooltipContent side="left" sideOffset={-10}>
                                                 <p>Imprimir Etiqueta</p>
                                             </TooltipContent>
-                                        </Tooltip>
-                                        <TableCell className="px-3 py-1 text-center text-xs">{variation.supplierSku || "—"}</TableCell>
-                                        <TableCell className="px-3 py-1 text-center text-xs">{variation.barcode || "—"}</TableCell>
+                                        </Tooltip>}
+                                        {showColumn("supplierSku") && <TableCell className="px-3 py-1 text-center text-xs">{variation.supplierSku || "—"}</TableCell>}
+                                        {showColumn("ean") && <TableCell className="px-3 py-1 text-center text-xs">{variation.barcode || "—"}</TableCell>}
 
                                         {productData && (
                                             <PrintbarcodeModal
@@ -213,7 +216,7 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                         )}
 
                                         {/* Columna MARCA */}
-                                        <TableCell
+                                        {showColumn("brand") && <TableCell
                                             className={`text-center py-2 ${
                                                 isEditable
                                                     ? "cursor-pointer dark:hover:bg-gray-900 hover:bg-gray-100"
@@ -244,15 +247,15 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                                     <span className="font-medium">{product.brand}</span>
                                                 </MotionItem>
                                             )}
-                                        </TableCell>
+                                        </TableCell>}
 
                                         {/* Columna CATEGORIA */}
-                                        <TableCell className="text-center dark:hover:bg-gray-900 hover:bg-gray-100 py-2">
+                                        {showColumn("category") && <TableCell className="text-center dark:hover:bg-gray-900 hover:bg-gray-100 py-2">
                                             {getProductCategoryName(product, categories, "-")}
-                                        </TableCell>
+                                        </TableCell>}
 
                                         {/* Columna PRECIO COSTO se muestra solo si es admin */}
-                                        {user?.role === Role.Admin && (
+                                        {user?.role === Role.Admin && showColumn("netCost") && (
                                             <TableCell
                                                 className={`w-32 text-center py-3 transition-colors ${
                                                     isEditable
@@ -296,7 +299,7 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                         )}
 
                                         {/* Columna PRECIO PLAZA */}
-                                        <TableCell
+                                        {showColumn("price") && <TableCell
                                             className={`w-32 text-center py-3 transition-colors ${
                                                 isEditable
                                                     ? "cursor-pointer dark:hover:bg-gray-800 hover:bg-gray-50"
@@ -360,10 +363,10 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                                     )}
                                                 </div>
                                             )}
-                                        </TableCell>
+                                        </TableCell>}
 
                                         {/* Columna VARIANTE */}
-                                        <TableCell
+                                        {showColumn("variant") && <TableCell
                                             className={`text-center py-2 ${
                                                 isEditable
                                                     ? "cursor-pointer dark:hover:bg-gray-900 hover:bg-gray-100"
@@ -399,11 +402,11 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                                     </MotionItem>
                                                 </div>
                                             )}
-                                        </TableCell>
-                                        <TableCell className="text-center text-sm">{variation.subVariation || "—"}</TableCell>
+                                        </TableCell>}
+                                        {showColumn("subvariant") && <TableCell className="text-center text-sm">{variation.subVariation || "—"}</TableCell>}
 
                                         {/* Columna STOCK CENTRAL */}
-                                        <TableCell
+                                        {showColumn("stock") && <TableCell
                                             className={`w-32 text-center py-3 transition-colors ${
                                                 isEditable
                                                     ? "cursor-pointer dark:hover:bg-gray-800 hover:bg-gray-50"
@@ -441,9 +444,9 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                                     {stockQuantity}
                                                 </Badge>
                                             )}
-                                        </TableCell>
+                                        </TableCell>}
 
-                                        <TableCell
+                                        {showColumn("aggregateStock") && <TableCell
                                             className={`group relative w-32 text-center py-3 transition-colors cursor-pointer dark:hover:bg-gray-800 hover:bg-gray-50`}
                                         >
                                             <Tooltip>
@@ -467,7 +470,7 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                                     )}
                                                 </TooltipContent>
                                             </Tooltip>
-                                        </TableCell>
+                                        </TableCell>}
                                         {user?.role === Role.Admin && isFirst && (
                                             <TableCell
                                                 className="text-center py-2"
