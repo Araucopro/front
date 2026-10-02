@@ -22,6 +22,7 @@ import { useAuth } from "@/stores/user.store"
 import { useTienda } from "@/stores/tienda.store"
 import { usePedidoOC } from "@/stores/pedidoOC"
 import { IVariationWithQuantity } from "@/interfaces/orders/IOrder"
+import { Role } from "@/lib/userRoles"
 
 const MAX_VARIATIONS_PER_PAGE = 20
 
@@ -286,7 +287,7 @@ export default function PurchaseOrderClient({
                                         <Switch id="tercero-mode" checked={isTercero} onCheckedChange={setIsTercero} />
                                         <Label htmlFor="tercero-mode">Tercero</Label>
                                     </div>
-                                    {isTercero && (
+                                    {isTercero && user?.role !== Role.Vendedor && (
                                         <div className="flex items-center space-x-2">
                                             <Switch
                                                 id="markup-sort-mode"

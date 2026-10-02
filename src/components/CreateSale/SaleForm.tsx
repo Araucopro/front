@@ -142,10 +142,16 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
     const { cartItems, actions } = useSaleStore()
     const { clearCart, updateCartItemPricing } = actions
     const { storeSelected } = useTienda()
+    const urlStoreID = searchParams.get("storeID")
+    const effectiveStoreID =
+        storeSelected?.storeID ?? (urlStoreID && !isSpecialStoreFilter(urlStoreID) ? urlStoreID : "")
+    const activeStore = storeSettings?.storeID === effectiveStoreID ? storeSettings : storeSelected
+    const canIssueDte = activeStore?.hasOpenfacturaKey === true
     const [loading, setLoading] = useState(false)
     const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false)
     const [isCashSessionDialogOpen, setIsCashSessionDialogOpen] = useState(false)
-    const [saleType, setSaleType] = useState<SaleType>(() => getSaleTypeFromParam(searchParams.get("saleType")))
+    const [requestedSaleType, setSaleType] = useState<SaleType>(() => getSaleTypeFromParam(searchParams.get("saleType")))
+    const saleType = canIssueDte ? requestedSaleType : "NOTA_VENTA"
     const [showReceiverFields, setShowReceiverFields] = useState(() => saleType === "FACTURA")
     const [openCashRegisters, setOpenCashRegisters] = useState<OpenCashRegister[]>([])
     const [availablePaymentMethods, setAvailablePaymentMethods] = useState<IPaymentMethod[]>([])
@@ -165,10 +171,6 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
         giro: "",
     })
 
-    const urlStoreID = searchParams.get("storeID")
-    const effectiveStoreID =
-        storeSelected?.storeID ?? (urlStoreID && !isSpecialStoreFilter(urlStoreID) ? urlStoreID : "")
-    const activeStore = storeSettings?.storeID === effectiveStoreID ? storeSettings : storeSelected
     const requireClientForSale = activeStore?.requireClientForSale ?? false
     const allowNegativeStock = activeStore?.allowNegativeStock ?? false
     const total = useMemo(() => {
@@ -576,14 +578,16 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                                     {saleTypeOptions.map((option) => {
                                         const Icon = option.icon
                                         const selected = saleType === option.value
+                                        const disabled = !canIssueDte && option.value !== "NOTA_VENTA"
 
                                         return (
                                             <button
                                                 key={option.value}
                                                 type="button"
                                                 aria-pressed={selected}
+                                                disabled={disabled}
                                                 onClick={() => setSaleType(option.value)}
-                                                className={`flex min-h-20 items-center gap-3 rounded-lg border px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                                                className={`flex min-h-20 items-center gap-3 rounded-lg border px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 ${
                                                     selected
                                                         ? `${option.selectedClassName} ring-1`
                                                         : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
@@ -610,6 +614,11 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                                         )
                                     })}
                                 </div>
+                                {!canIssueDte && (
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                        Para emitir boletas o facturas, configura la API key de OpenFactura en la tienda.
+                                    </p>
+                                )}
                             </div>
 
                             <div className="flex items-center gap-3 xl:hidden" aria-hidden="true">

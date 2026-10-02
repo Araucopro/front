@@ -53,10 +53,7 @@ export default function CreateProductForm({
     const totalBatches = Math.ceil(products.length / BULK_PRODUCT_BATCH_SIZE)
     const totalFormPages = Math.max(1, Math.ceil(products.length / PRODUCTS_PER_FORM_PAGE))
     const firstVisibleProductIndex = (formPage - 1) * PRODUCTS_PER_FORM_PAGE
-    const visibleProducts = products.slice(
-        firstVisibleProductIndex,
-        firstVisibleProductIndex + PRODUCTS_PER_FORM_PAGE,
-    )
+    const visibleProducts = products.slice(firstVisibleProductIndex, firstVisibleProductIndex + PRODUCTS_PER_FORM_PAGE)
 
     useEffect(() => {
         return () => {
@@ -209,7 +206,7 @@ export default function CreateProductForm({
 
                     <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-xl border border-gray-200 dark:border-slate-700">
                         <div className="flex items-center gap-4 mb-4">
-                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                            <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-blue-500 via-purple-500 to-indigo-600 flex items-center justify-center shadow-lg">
                                 <Package className="w-8 h-8 text-white" />
                             </div>
                             <div>
@@ -217,7 +214,8 @@ export default function CreateProductForm({
                                     Crear o actualizar productos
                                 </h1>
                                 <p className="text-gray-600 lg:text-base text-xs dark:text-gray-300 mt-1">
-                                    Los productos se procesan automáticamente en lotes de hasta {BULK_PRODUCT_BATCH_SIZE}
+                                    Los productos se procesan automáticamente en lotes de hasta{" "}
+                                    {BULK_PRODUCT_BATCH_SIZE}
                                 </p>
                             </div>
                         </div>
@@ -241,11 +239,7 @@ export default function CreateProductForm({
                     </div>
                 </div>
 
-                <ExcelImporter
-                    categories={categories}
-                    disabled={isUploading}
-                    onCategoriesChange={setCategories}
-                />
+                <ExcelImporter categories={categories} disabled={isUploading} onCategoriesChange={setCategories} />
 
                 {bulkProgress && (
                     <div
@@ -280,13 +274,16 @@ export default function CreateProductForm({
                                 }`}
                                 style={{
                                     width: `${Math.min(
-                                        (bulkProgress.processedProducts / Math.max(bulkProgress.totalProducts, 1)) * 100,
+                                        (bulkProgress.processedProducts / Math.max(bulkProgress.totalProducts, 1)) *
+                                            100,
                                         100,
                                     )}%`,
                                 }}
                             />
                         </div>
-                        {bulkProgress.error && <p className="mt-3 text-sm text-red-700 dark:text-red-300">{bulkProgress.error}</p>}
+                        {bulkProgress.error && (
+                            <p className="mt-3 text-sm text-red-700 dark:text-red-300">{bulkProgress.error}</p>
+                        )}
                     </div>
                 )}
 
@@ -309,18 +306,19 @@ export default function CreateProductForm({
                             className={`flex items-center gap-3 px-10 py-4 rounded-xl font-bold text-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 ${
                                 isUploading || products.length === 0 || hasErrors(errors)
                                     ? "bg-gray-300 dark:bg-gray-600 text-gray-500 cursor-not-allowed"
-                                    : "bg-gradient-to-r from-green-500 via-emerald-500 to-teal-600 hover:from-green-600 hover:via-emerald-600 hover:to-teal-700 text-white"
+                                    : "bg-linear-to-r from-green-500 via-emerald-500 to-teal-600 hover:from-green-600 hover:via-emerald-600 hover:to-teal-700 text-white"
                             }`}
                         >
                             {isUploading ? (
                                 <>
                                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                    Lote {bulkProgress?.currentBatch ?? 1} de {bulkProgress?.totalBatches ?? totalBatches}...
+                                    Lote {bulkProgress?.currentBatch ?? 1} de{" "}
+                                    {bulkProgress?.totalBatches ?? totalBatches}...
                                 </>
                             ) : (
                                 <>
                                     <Save className="w-5 h-5" />
-                                    Procesar carga masiva
+                                    Procesar carga de inventario
                                 </>
                             )}
                         </Button>
@@ -331,14 +329,14 @@ export default function CreateProductForm({
                     {visibleProducts.map((product, visibleIndex) => {
                         const productIndex = firstVisibleProductIndex + visibleIndex
                         return (
-                        <ProductCard
-                            key={product.tempId || productIndex}
-                            productIndex={productIndex}
-                            product={product}
-                            categories={categories}
-                            onCategoriesChange={setCategories}
-                            error={errors[productIndex]}
-                        />
+                            <ProductCard
+                                key={product.tempId || productIndex}
+                                productIndex={productIndex}
+                                product={product}
+                                categories={categories}
+                                onCategoriesChange={setCategories}
+                                error={errors[productIndex]}
+                            />
                         )
                     })}
                 </div>
@@ -347,7 +345,8 @@ export default function CreateProductForm({
                     <div className="mt-4 flex flex-col items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row dark:border-slate-700 dark:bg-slate-900">
                         <p className="text-sm text-slate-600 dark:text-slate-300">
                             Revisando productos {firstVisibleProductIndex + 1}–
-                            {Math.min(firstVisibleProductIndex + PRODUCTS_PER_FORM_PAGE, products.length)} de {products.length}
+                            {Math.min(firstVisibleProductIndex + PRODUCTS_PER_FORM_PAGE, products.length)} de{" "}
+                            {products.length}
                         </p>
                         <div className="flex items-center gap-2">
                             <Button
@@ -392,18 +391,19 @@ export default function CreateProductForm({
                             className={`flex items-center gap-3 px-10 py-4 rounded-xl font-bold text-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 ${
                                 isUploading || products.length === 0 || hasErrors(errors)
                                     ? "bg-gray-300 dark:bg-gray-600 text-gray-500 cursor-not-allowed"
-                                    : "bg-gradient-to-r from-green-500 via-emerald-500 to-teal-600 hover:from-green-600 hover:via-emerald-600 hover:to-teal-700 text-white"
+                                    : "bg-linear-to-r from-green-500 via-emerald-500 to-teal-600 hover:from-green-600 hover:via-emerald-600 hover:to-teal-700 text-white"
                             }`}
                         >
                             {isUploading ? (
                                 <>
                                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                    Lote {bulkProgress?.currentBatch ?? 1} de {bulkProgress?.totalBatches ?? totalBatches}...
+                                    Lote {bulkProgress?.currentBatch ?? 1} de{" "}
+                                    {bulkProgress?.totalBatches ?? totalBatches}...
                                 </>
                             ) : (
                                 <>
                                     <Save className="w-5 h-5" />
-                                    Procesar carga masiva
+                                    Procesar carga de inventario
                                 </>
                             )}
                         </Button>

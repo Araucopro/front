@@ -34,6 +34,7 @@ export default async function HomePage({ searchParams }: SearchParams) {
     return (
         <HomeDashboard
             stores={viewModel.stores}
+            storeID={viewModel.storeID}
             resume={viewModel.resume}
             allSalesForResume={viewModel.allSalesForResume}
             items={viewModel.items}

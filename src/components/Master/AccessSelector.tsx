@@ -9,6 +9,7 @@ import {
     stopTenantImpersonation,
 } from "@/actions/master/impersonationActions"
 import { logout as logoutSession } from "@/actions/auth/authActions"
+import { CASH_OPENING_PROMPT_SEEN_KEY } from "@/lib/cash-opening-prompt"
 import {
     Dialog,
     DialogContent,
@@ -99,6 +100,7 @@ export default function AccessSelector({ initialTenants, initialError }: AccessS
             }
 
             clearTenantSession()
+            sessionStorage.removeItem(CASH_OPENING_PROMPT_SEEN_KEY)
             setUser(tenantAdmin, "master-impersonation")
             setUsers(users)
             setStores(stores)

@@ -18,6 +18,7 @@ import { salesToBankDepositSummary, salesToResume } from "@/utils/saleToResume"
 
 type HomeDashboardProps = {
     stores: IStore[]
+    storeID: string
     resume: IResume
     allSalesForResume: ISaleResponse[]
     items: Array<ISaleResponse | (IPurchaseOrder & { isOrder: true })>
@@ -28,6 +29,7 @@ type HomeDashboardProps = {
 
 export default function HomeDashboard({
     stores,
+    storeID,
     resume,
     allSalesForResume,
     items,
@@ -91,7 +93,10 @@ export default function HomeDashboard({
                     <span>Punto de venta</span>
                 </div>
                 <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                    <SaleForm initialProducts={allProducts} />
+                    <SaleForm
+                        initialProducts={allProducts}
+                        storeSettings={stores.find((store) => store.storeID === storeID)}
+                    />
                 </div>
             </section>
 

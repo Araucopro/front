@@ -1,6 +1,6 @@
 "use client"
 
-import { FormEvent, useCallback, useEffect, useState } from "react"
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import {
     getCashRegistersWithActiveSessions,
@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import type { ICashRegister } from "@/interfaces/cash-registers/ICashRegister"
+import { CASH_OPENING_PROMPT_SEEN_KEY } from "@/lib/cash-opening-prompt"
 import { notifyCashSessionChanged } from "@/lib/cash-session-events"
 import { Role } from "@/lib/userRoles"
 import { useTienda } from "@/stores/tienda.store"
@@ -42,6 +43,7 @@ export default function InitialCashOpeningDialog() {
     const [isChecking, setIsChecking] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [checkError, setCheckError] = useState<string | null>(null)
+    const checkVersion = useRef(0)
 
     const storeID = storeSelected?.storeID ?? ""
     const businessDate = getChileYYYYMMDD(new Date())
@@ -49,10 +51,12 @@ export default function InitialCashOpeningDialog() {
         user && user.role !== Role.Consignado && user.role !== Role.Tercero,
     )
 
-    const checkCashOpening = useCallback(async () => {
-        if (!storeID || !canOperateCash || pathname === "/home/cajas") {
+    const checkCashOpening = useCallback(async (force = false) => {
+        const currentCheck = ++checkVersion.current
+        if (!storeID || !canOperateCash || pathname !== "/home" || (!force && sessionStorage.getItem(CASH_OPENING_PROMPT_SEEN_KEY))) {
             setOpen(false)
             setRegisters([])
+            setIsChecking(false)
             return
         }
 
@@ -60,6 +64,8 @@ export default function InitialCashOpeningDialog() {
         setCheckError(null)
         try {
             const registersWithSessions = await getCashRegistersWithActiveSessions({ storeID, status: "ACTIVE" })
+            if (currentCheck !== checkVersion.current) return
+            sessionStorage.setItem(CASH_OPENING_PROMPT_SEEN_KEY, "1")
             const hasOpenSession = registersWithSessions.some(({ session }) => Boolean(session))
 
             if (hasOpenSession) {
@@ -74,18 +80,28 @@ export default function InitialCashOpeningDialog() {
             setOpeningNotes("")
             setOpen(true)
         } catch (error) {
+            if (currentCheck !== checkVersion.current) return
             setRegisters([])
             setSelectedRegisterID("")
             setCheckError(error instanceof Error ? error.message : "No se pudo revisar el estado de las cajas")
             setOpen(true)
         } finally {
-            setIsChecking(false)
+            if (currentCheck === checkVersion.current) setIsChecking(false)
         }
     }, [canOperateCash, pathname, storeID])
 
     useEffect(() => {
         void checkCashOpening()
+        return () => {
+            checkVersion.current++
+        }
     }, [checkCashOpening])
+
+    const handleOpenChange = (nextOpen: boolean) => {
+        if (isSubmitting) return
+        if (!nextOpen) sessionStorage.setItem(CASH_OPENING_PROMPT_SEEN_KEY, "1")
+        setOpen(nextOpen)
+    }
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault()
@@ -96,7 +112,7 @@ export default function InitialCashOpeningDialog() {
             return
         }
         if (openingBalance.trim() === "" || !Number.isFinite(balance) || balance < 0) {
-            toast.error("Ingresa un fondo inicial válido")
+            toast.error("Ingresa un monto de caja inicial válido")
             return
         }
 
@@ -113,7 +129,7 @@ export default function InitialCashOpeningDialog() {
         } catch (error) {
             const message = error instanceof Error ? error.message : "No se pudo abrir el turno"
             toast.error(message)
-            await checkCashOpening()
+            await checkCashOpening(true)
         } finally {
             setIsSubmitting(false)
         }
@@ -125,7 +141,7 @@ export default function InitialCashOpeningDialog() {
     }
 
     return (
-        <Dialog open={open} onOpenChange={(nextOpen) => !isSubmitting && setOpen(nextOpen)}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="max-w-lg">
                 <DialogHeader className="border-b border-slate-200 px-6 py-5 dark:border-slate-700">
                     <DialogTitle className="flex items-center gap-2">
@@ -161,7 +177,7 @@ export default function InitialCashOpeningDialog() {
                                 <div>
                                     <p className="font-bold">No hay una caja activa configurada</p>
                                     <p className="mt-1 text-xs leading-5">
-                                        Primero crea o activa una caja para esta tienda y luego podrás ingresar el fondo inicial.
+                                        Primero crea o activa una caja para esta tienda y luego podrás ingresar el monto de caja inicial.
                                     </p>
                                 </div>
                             </div>
@@ -174,7 +190,7 @@ export default function InitialCashOpeningDialog() {
                 ) : (
                     <form id="initial-cash-opening-form" onSubmit={handleSubmit} className="space-y-5 px-6 py-5">
                         <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-                            Indica con cuánto efectivo comienza el turno. Este valor quedará registrado para el cierre y arqueo de caja.
+                            El monto que ingreses quedará registrado para el cierre y arqueo de caja.
                         </div>
 
                         <div>
@@ -208,7 +224,7 @@ export default function InitialCashOpeningDialog() {
                             </div>
                             <div>
                                 <Label htmlFor="initial-opening-balance" className="mb-2 block">
-                                    Fondo inicial *
+                                    Monto de caja inicial *
                                 </Label>
                                 <CurrencyInput
                                     id="initial-opening-balance"
@@ -217,6 +233,9 @@ export default function InitialCashOpeningDialog() {
                                     placeholder="$ 0"
                                     required
                                 />
+                                <p className="mt-1.5 text-xs text-slate-500">
+                                    Indica cuánto efectivo hay en la caja al comenzar el turno.
+                                </p>
                             </div>
                         </div>
 
@@ -236,7 +255,7 @@ export default function InitialCashOpeningDialog() {
 
                 {!isChecking && !checkError && registers.length > 0 && (
                     <DialogFooter className="border-t border-slate-200 px-6 py-4 dark:border-slate-700">
-                        <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setOpen(false)}>
+                        <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => handleOpenChange(false)}>
                             Ahora no
                         </Button>
                         <Button
