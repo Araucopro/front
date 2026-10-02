@@ -48,6 +48,7 @@ type RawStore = {
     isCentralStore?: boolean
     requireClientForSale?: boolean
     allowNegativeStock?: boolean
+    hasOpenfacturaKey?: boolean
     giro?: string
     acteco?: string
     cdgSIISucur?: string
@@ -113,6 +114,7 @@ export const normalizeStore = (raw: RawStore): IStore => {
         isCentralStore: raw.isCentralStore,
         requireClientForSale: raw.requireClientForSale ?? false,
         allowNegativeStock: raw.allowNegativeStock ?? false,
+        hasOpenfacturaKey: raw.hasOpenfacturaKey ?? false,
         giro: raw.giro,
         acteco: raw.acteco,
         cdgSIISucur: raw.cdgSIISucur,

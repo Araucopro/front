@@ -17,6 +17,7 @@ export interface IStore {
     isCentralStore?: boolean
     requireClientForSale: boolean
     allowNegativeStock: boolean
+    hasOpenfacturaKey?: boolean
     giro?: string
     acteco?: string
     cdgSIISucur?: string
@@ -30,4 +31,8 @@ export interface IStore {
     StoreProduct?: IStoreProduct
     userStores: IUserStoreRelation[]
     Users?: IUser[]
+}
+
+export interface ISetOpenfacturaKeyResponse {
+    hasOpenfacturaKey: boolean
 }

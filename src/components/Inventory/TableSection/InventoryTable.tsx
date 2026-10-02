@@ -325,17 +325,19 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                             ) : (
                                                 <div className="flex flex-col items-center gap-1">
                                                     <span className="font-semibold text-sm">${toPrice(priceList)}</span>
-                                                    <span
-                                                        className={`text-xs ${
-                                                            profitMargin > 30
-                                                                ? "text-green-600"
-                                                                : profitMargin > 15
-                                                                  ? "text-yellow-600"
-                                                                  : "text-red-600"
-                                                        }`}
-                                                    >
-                                                        Markup: {calculateMarkup(priceCost, priceList)}
-                                                    </span>
+                                                    {user?.role !== Role.Vendedor && (
+                                                        <span
+                                                            className={`text-xs ${
+                                                                profitMargin > 30
+                                                                    ? "text-green-600"
+                                                                    : profitMargin > 15
+                                                                      ? "text-yellow-600"
+                                                                      : "text-red-600"
+                                                            }`}
+                                                        >
+                                                            Markup: {calculateMarkup(priceCost, priceList)}
+                                                        </span>
+                                                    )}
                                                     {/* Botón Pricing - solo admins */}
                                                     {user?.role === Role.Admin && (
                                                         <Tooltip>
