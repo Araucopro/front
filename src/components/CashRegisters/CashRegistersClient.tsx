@@ -214,7 +214,7 @@ export default function CashRegistersClient() {
                                         <div className="flex flex-wrap items-center justify-between gap-3">
                                             <div>
                                                 <p className="text-xs font-bold uppercase text-emerald-700">Turno abierto</p>
-                                                <p className="mt-1 text-sm text-slate-700">Fondo inicial: {toCLP(activeSession.openingBalance)}</p>
+                                                <p className="mt-1 text-sm text-slate-700">Monto de caja inicial: {toCLP(activeSession.openingBalance)}</p>
                                                 <p className="text-xs text-slate-500">Fecha contable: {activeSession.businessDate}</p>
                                             </div>
                                             <Badge className="bg-emerald-700 text-white">En operación</Badge>

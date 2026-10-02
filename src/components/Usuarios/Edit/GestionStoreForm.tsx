@@ -9,6 +9,7 @@ import type { IUserStoreRelation } from "@/interfaces/common/IUserStoreRelation"
 import { useTienda } from "@/stores/tienda.store"
 import { getAllStores } from "@/actions/stores/getAllStores"
 import { updateStore } from "@/actions/stores/updateStore"
+import { setOpenfacturaKey } from "@/actions/stores/setOpenfacturaKey"
 import { addUserToStore } from "@/actions/userstores/addUserToStore"
 import { removeUserStore } from "@/actions/userstores/removeUserStore"
 import ModalUserTienda from "./ModalGestion"
@@ -28,6 +29,7 @@ import {
     UserRoundCheck,
     AtSign,
     SlidersHorizontal,
+    KeyRound,
 } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
@@ -45,6 +47,7 @@ import {
     type StoreUserRoleValue,
 } from "@/lib/storeUserRoles"
 import { useAuth } from "@/stores/user.store"
+import { Role } from "@/lib/userRoles"
 
 interface GestionStoreFormProps {
     isOpen: boolean
@@ -61,7 +64,7 @@ export default function GestionStoreForm({
     userStoreRelations,
     onUserStoresChange,
 }: GestionStoreFormProps) {
-    const { users, setUsers } = useAuth()
+    const { user, users, setUsers } = useAuth()
     const { setStores, replaceStore } = useTienda()
     const initialStoreType = getValidStoreType(tienda.type ?? tienda.role)
     const [nombre, setNombre] = useState(tienda.name)
@@ -77,12 +80,15 @@ export default function GestionStoreForm({
     )
     const [requireClientForSale, setRequireClientForSale] = useState(tienda.requireClientForSale ?? false)
     const [allowNegativeStock, setAllowNegativeStock] = useState(tienda.allowNegativeStock ?? false)
+    const [openfacturaKey, setOpenfacturaKeyValue] = useState("")
+    const [hasOpenfacturaKey, setHasOpenfacturaKey] = useState(tienda.hasOpenfacturaKey ?? false)
     const [gestoresAsignados, setGestoresAsignados] = useState<IUserStoreRelation[]>(
         userStoreRelations.filter((relation) => relation.store?.storeID === tienda.storeID),
     )
     const [selectedUserId, setSelectedUserId] = useState("")
     const [selectedUserRole, setSelectedUserRole] = useState<StoreUserRoleValue>(StoreUserRole.StoreManager)
     const [isLoading, setIsLoading] = useState(false)
+    const [isSavingOpenfacturaKey, setIsSavingOpenfacturaKey] = useState(false)
 
     useEffect(() => {
         const assignedRelations = userStoreRelations.filter((relation) => relation.store?.storeID === tienda.storeID)
@@ -128,6 +134,20 @@ export default function GestionStoreForm({
                 allowNegativeStock,
             })
 
+            const pendingOpenfacturaKey = openfacturaKey.trim()
+            if (pendingOpenfacturaKey && user?.role === Role.Admin) {
+                try {
+                    const result = await setOpenfacturaKey(tienda.storeID, pendingOpenfacturaKey)
+                    updatedStore.hasOpenfacturaKey = result.hasOpenfacturaKey
+                    setHasOpenfacturaKey(result.hasOpenfacturaKey)
+                    setOpenfacturaKeyValue("")
+                } catch {
+                    replaceStore(updatedStore)
+                    toast.error("La tienda se actualizó, pero no se pudo guardar la API key de OpenFactura")
+                    return
+                }
+            }
+
             replaceStore(updatedStore)
 
             const [usuarios, tiendas] = await Promise.all([getAllUsers(), getAllStores()])
@@ -135,7 +155,7 @@ export default function GestionStoreForm({
             setUsers(usuarios)
             setStores(tiendas)
             await onUserStoresChange?.()
-            toast.success("Tienda actualizada exitosamente")
+            toast.success(pendingOpenfacturaKey ? "Tienda y API key actualizadas correctamente" : "Tienda actualizada exitosamente")
             onClose()
         } catch (error) {
             toast.error("Error al actualizar tienda")
@@ -180,6 +200,27 @@ export default function GestionStoreForm({
         } catch (error) {
             toast.error("Error al asignar gestor")
             console.error(error)
+        }
+    }
+
+    const handleSaveOpenfacturaKey = async () => {
+        const apiKey = openfacturaKey.trim()
+        if (!apiKey) {
+            toast.error("Ingresa la API key de OpenFactura")
+            return
+        }
+
+        setIsSavingOpenfacturaKey(true)
+        try {
+            const result = await setOpenfacturaKey(tienda.storeID, apiKey)
+            setHasOpenfacturaKey(result.hasOpenfacturaKey)
+            replaceStore({ ...tienda, hasOpenfacturaKey: result.hasOpenfacturaKey })
+            setOpenfacturaKeyValue("")
+            toast.success("API key de OpenFactura guardada correctamente")
+        } catch {
+            toast.error("No se pudo guardar la API key de OpenFactura")
+        } finally {
+            setIsSavingOpenfacturaKey(false)
         }
     }
 
@@ -434,6 +475,57 @@ export default function GestionStoreForm({
                     </div>
                 </div>
 
+                {user?.role === Role.Admin && (
+                    <div className="space-y-4 border-t border-slate-200 pt-5 dark:border-slate-700">
+                        <div className="flex items-center gap-2 text-lg font-medium text-gray-700 dark:text-white">
+                            <KeyRound className="h-5 w-5" />
+                            <span>OpenFactura</span>
+                        </div>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-sm text-slate-600 dark:text-slate-300">
+                                Configura la API key de OpenFactura para esta tienda.
+                            </p>
+                            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                                hasOpenfacturaKey
+                                    ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"
+                                    : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-200"
+                            }`}>
+                                {hasOpenfacturaKey ? "Clave configurada" : "Sin clave configurada"}
+                            </span>
+                        </div>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                            <div className="flex-1">
+                                <Label htmlFor="openfactura-api-key" className="mb-2 block text-sm font-medium">
+                                    API key de OpenFactura
+                                </Label>
+                                <Input
+                                    id="openfactura-api-key"
+                                    type="password"
+                                    value={openfacturaKey}
+                                    onChange={(event) => setOpenfacturaKeyValue(event.target.value)}
+                                    placeholder={hasOpenfacturaKey ? "Ingresa una nueva clave para reemplazarla" : "Pega la API key"}
+                                    autoComplete="new-password"
+                                    autoCapitalize="none"
+                                    spellCheck={false}
+                                    maxLength={512}
+                                    disabled={isSavingOpenfacturaKey}
+                                />
+                            </div>
+                            <Button
+                                type="button"
+                                onClick={handleSaveOpenfacturaKey}
+                                disabled={!openfacturaKey.trim() || isSavingOpenfacturaKey || isLoading}
+                                className="bg-blue-600 text-white hover:bg-blue-700"
+                            >
+                                {isSavingOpenfacturaKey ? "Guardando..." : hasOpenfacturaKey ? "Actualizar clave" : "Guardar clave"}
+                            </Button>
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-300">
+                            La clave se guarda cifrada en el servidor y no se muestra después de guardarla.
+                        </p>
+                    </div>
+                )}
+
                 <div className="space-y-4">
                     <div className="flex items-center space-x-2 text-lg font-medium dark:text-white text-gray-700">
                         <User className="w-5 h-5" />
@@ -553,7 +645,7 @@ export default function GestionStoreForm({
                     <Button
                         type="button"
                         onClick={onClose}
-                        disabled={isLoading}
+                        disabled={isLoading || isSavingOpenfacturaKey}
                         className="bg-gray-200 dark:bg-slate-700 dark:hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 disabled:cursor-not-allowed flex items-center space-x-2"
                     >
                         <X className="w-4 h-4" />
@@ -561,7 +653,7 @@ export default function GestionStoreForm({
                     </Button>
                     <Button
                         type="submit"
-                        disabled={!validateForm() || isLoading}
+                        disabled={!validateForm() || isLoading || isSavingOpenfacturaKey}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-2"
                     >
                         <Save className="w-4 h-4" />

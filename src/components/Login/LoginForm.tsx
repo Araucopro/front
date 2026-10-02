@@ -12,6 +12,7 @@ import { useAuth } from "@/stores/user.store"
 import { toast } from "sonner"
 import { useTienda } from "@/stores/tienda.store"
 import { Role } from "@/lib/userRoles"
+import { CASH_OPENING_PROMPT_SEEN_KEY } from "@/lib/cash-opening-prompt"
 import { useMasterAuth } from "@/stores/master.store"
 
 export default function LoginForm() {
@@ -44,6 +45,7 @@ export default function LoginForm() {
 
                 try {
                     const masterData = await loginMaster(email, password)
+                    sessionStorage.removeItem(CASH_OPENING_PROMPT_SEEN_KEY)
                     clearTenantSession()
                     setMasterUser(masterData.masterUser)
                     setLoadingMessage("Preparando tus accesos...")
@@ -63,6 +65,7 @@ export default function LoginForm() {
             }
 
             clearMasterUser()
+            sessionStorage.removeItem(CASH_OPENING_PROMPT_SEEN_KEY)
             setUser(data.user, data.accessToken)
             setLoadingMessage("Buscando tus tiendas...")
 

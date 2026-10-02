@@ -48,6 +48,7 @@ import type {
 } from "@/interfaces/cash-registers/ICashRegister"
 import type { IUser } from "@/interfaces/users/IUser"
 import { Role } from "@/lib/userRoles"
+import { useAuth } from "@/stores/user.store"
 import { ArrowDownToLine, ArrowLeft, ArrowUpFromLine, Banknote, Calculator, ChevronDown, History, UserRound } from "lucide-react"
 import { toast } from "sonner"
 
@@ -58,8 +59,6 @@ const toLocalDate = () => {
     const date = new Date()
     return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10)
 }
-
-const toLocalTime = () => new Date().toTimeString().slice(0, 5)
 
 const formatDateTime = (value?: string | null) => {
     if (!value) return "—"
@@ -77,6 +76,19 @@ const formatTime = (value?: string | null) => {
         : new Intl.DateTimeFormat("es-CL", { hour: "2-digit", minute: "2-digit" }).format(date)
 }
 
+const getClosingUserName = (
+    userID: string | null,
+    storeUsers: IUser[],
+    currentUser: IUser | null,
+    summary: ICashSessionSummary | null,
+) => {
+    if (!userID) return "Sin cierre registrado"
+    const user = storeUsers.find((item) => item.userID === userID)
+        ?? summary?.operators.find((operator) => operator.userID === userID)?.user
+        ?? (currentUser?.userID === userID ? currentUser : null)
+    return user?.name || `Usuario ${userID}`
+}
+
 type CashSessionDialogProps = {
     open: boolean
     onOpenChange: (open: boolean) => void
@@ -92,9 +104,10 @@ export default function CashSessionDialog({
     activeSession,
     onChanged,
 }: CashSessionDialogProps) {
+    const currentUser = useAuth((state) => state.user)
     const [view, setView] = useState<"main" | "movement" | "count">("main")
     const [businessDate, setBusinessDate] = useState(toLocalDate)
-    const [operatorStartTime, setOperatorStartTime] = useState(toLocalTime)
+    const [currentTime, setCurrentTime] = useState("")
     const [selectedSellerID, setSelectedSellerID] = useState("")
     const [availableSellers, setAvailableSellers] = useState<IUser[]>([])
     const [openingBalance, setOpeningBalance] = useState("")
@@ -122,9 +135,22 @@ export default function CashSessionDialog({
     const [countNotes, setCountNotes] = useState("")
 
     useEffect(() => {
+        if (!open) return
+
+        let timeoutID: ReturnType<typeof setTimeout>
+        const refreshTime = () => {
+            const now = new Date()
+            setCurrentTime(formatTime(now.toISOString()))
+            timeoutID = setTimeout(refreshTime, 60_000 - now.getSeconds() * 1000 - now.getMilliseconds())
+        }
+
+        refreshTime()
+        return () => clearTimeout(timeoutID)
+    }, [open])
+
+    useEffect(() => {
         if (!open || !register) return
         setBusinessDate(toLocalDate())
-        setOperatorStartTime(toLocalTime())
         setSelectedSellerID("")
         setAvailableSellers([])
         setOpeningBalance("")
@@ -160,7 +186,7 @@ export default function CashSessionDialog({
                 const sellers = activeUsers
                     .filter((user) => user.role === Role.Vendedor)
                     .sort((a, b) => a.name.localeCompare(b.name, "es"))
-                setStoreUsers(activeUsers)
+                setStoreUsers(users)
                 setAvailableSellers(sellers)
                 setSelectedSellerID((current) =>
                     sellers.some((seller) => seller.userID === current) ? current : (sellers[0]?.userID ?? ""),
@@ -305,19 +331,13 @@ export default function CashSessionDialog({
         if (!register) return
         const balance = Number(openingBalance)
         if (!Number.isFinite(balance) || balance < 0) {
-            toast.error("Ingresa un fondo inicial válido")
+            toast.error("Ingresa un monto de caja inicial válido")
             return
         }
         if (!selectedSellerID) {
             toast.error("Selecciona el vendedor que atenderá la caja")
             return
         }
-        const requestedEntry = new Date(`${businessDate}T${operatorStartTime}:00`)
-        if (!operatorStartTime || Number.isNaN(requestedEntry.getTime())) {
-            toast.error("Ingresa una hora de entrada válida")
-            return
-        }
-
         let openedSession: ICashSession | null = null
         setIsSubmitting(true)
         try {
@@ -326,11 +346,6 @@ export default function CashSessionDialog({
                 openingBalance: balance,
                 ...(openingNotes.trim() ? { openingNotes: openingNotes.trim() } : {}),
             })
-            const sessionOpenedAt = new Date(openedSession.openedAt)
-            const enteredAt =
-                requestedEntry.getTime() < sessionOpenedAt.getTime()
-                    ? sessionOpenedAt.toISOString()
-                    : requestedEntry.toISOString()
             const assignedOperators = await getCashSessionOperators(register.cashRegisterID, openedSession.sessionID, {
                 active: true,
             })
@@ -338,7 +353,6 @@ export default function CashSessionDialog({
                 await assignCashSessionOperator(register.cashRegisterID, openedSession.sessionID, {
                     userID: selectedSellerID,
                     role: "OPERATOR",
-                    enteredAt,
                 })
             }
             const seller = availableSellers.find((user) => user.userID === selectedSellerID)
@@ -476,7 +490,7 @@ export default function CashSessionDialog({
                     {!activeSession ? (
                         <form id="cash-session-form" onSubmit={handleOpen} className="space-y-5">
                             <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                                Configura el turno, asigna al vendedor y define su hora de entrada.
+                                Configura el turno y asigna al vendedor. La hora de entrada se registra automáticamente.
                             </div>
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div>
@@ -493,7 +507,7 @@ export default function CashSessionDialog({
                                 </div>
                                 <div>
                                     <Label htmlFor="opening-balance" className="mb-2 block">
-                                        Fondo inicial
+                                        Monto de caja inicial
                                     </Label>
                                     <CurrencyInput
                                         id="opening-balance"
@@ -502,6 +516,9 @@ export default function CashSessionDialog({
                                         placeholder="$ 0"
                                         required
                                     />
+                                    <p className="mt-1.5 text-xs text-slate-500">
+                                        Indica cuánto efectivo hay en la caja al comenzar el turno.
+                                    </p>
                                 </div>
                             </div>
                             <div className="grid gap-4 sm:grid-cols-2">
@@ -535,10 +552,9 @@ export default function CashSessionDialog({
                                     </Label>
                                     <Input
                                         id="operator-start-time"
-                                        type="time"
-                                        value={operatorStartTime}
-                                        onChange={(event) => setOperatorStartTime(event.target.value)}
-                                        required
+                                        value={currentTime}
+                                        readOnly
+                                        aria-readonly="true"
                                     />
                                     <p className="mt-1.5 text-xs text-slate-500">
                                         La salida se registrará al cerrar el turno.
@@ -692,6 +708,12 @@ export default function CashSessionDialog({
                                         />
                                     </div>
                                 ))}
+                            </div>
+                            <div>
+                                <Label htmlFor="count-closing-time" className="mb-2 block">
+                                    Hora de cierre
+                                </Label>
+                                <Input id="count-closing-time" value={currentTime} readOnly aria-readonly="true" />
                             </div>
                             <div>
                                 <Label htmlFor="count-notes" className="mb-2 block">
@@ -918,6 +940,12 @@ export default function CashSessionDialog({
                                         />
                                     </div>
                                     <div>
+                                        <Label htmlFor="closing-time" className="mb-2 block">
+                                            Hora de cierre
+                                        </Label>
+                                        <Input id="closing-time" value={currentTime} readOnly aria-readonly="true" />
+                                    </div>
+                                    <div>
                                         <Label htmlFor="closing-notes" className="mb-2 block">
                                             Notas de cierre
                                         </Label>
@@ -980,13 +1008,26 @@ export default function CashSessionDialog({
                                             </button>
                                             {expanded ? (
                                                 <div className="border-t border-slate-200 bg-slate-50/70 p-3 dark:border-slate-700 dark:bg-slate-900/60">
+                                                    <div className="mb-3 grid gap-2 sm:grid-cols-3">
+                                                        <HistoryDetail label="Inicio del turno" value={formatDateTime(session.openedAt)} />
+                                                        <HistoryDetail
+                                                            label="Cierre del turno"
+                                                            value={session.closedAt ? formatDateTime(session.closedAt) : "Pendiente"}
+                                                        />
+                                                        <HistoryDetail
+                                                            label="Cerrado por"
+                                                            value={getClosingUserName(
+                                                                session.closedByUserID,
+                                                                storeUsers,
+                                                                currentUser,
+                                                                historySummary,
+                                                            )}
+                                                        />
+                                                    </div>
                                                     {isLoadingHistorySummary || !historySummary ? (
                                                         <p className="text-xs text-slate-500">Cargando resumen de la sesión...</p>
                                                     ) : (
-                                                        <SessionSummaryDetails
-                                                            summary={historySummary}
-                                                            storeUsers={storeUsers}
-                                                        />
+                                                        <SessionSummaryDetails summary={historySummary} />
                                                     )}
                                                 </div>
                                             ) : null}
@@ -1084,44 +1125,14 @@ function FlowOperator({ symbol }: { symbol: "+" | "−" | "=" }) {
     )
 }
 
-function SessionSummaryDetails({
-    summary,
-    storeUsers,
-}: {
-    summary: ICashSessionSummary
-    storeUsers: IUser[]
-}) {
+function SessionSummaryDetails({ summary }: { summary: ICashSessionSummary }) {
     return (
-        <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-                <HistoryMetric label="Monto inicial" value={toCLP(summary.expected.openingBalance)} />
-                <HistoryMetric label="Entradas" value={toCLP(summary.cashMovements.cashIn)} />
-                <HistoryMetric label="Egresos" value={toCLP(summary.cashMovements.cashOut)} />
-                <HistoryMetric label="Efectivo esperado" value={toCLP(summary.expected.expectedCashAmount)} />
-                <HistoryMetric label="Cobros" value={toCLP(summary.payments.totalAmount)} />
-            </div>
-            {summary.operators.length ? (
-                <div className="space-y-1 border-t border-slate-200 pt-2 dark:border-slate-700">
-                    {summary.operators.map((operator) => (
-                        <div
-                            key={operator.sessionUserID}
-                            className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-300"
-                        >
-                            <span className="flex items-center gap-1.5 font-semibold">
-                                <UserRound className="h-3.5 w-3.5" />
-                                {operator.user?.name ||
-                                    storeUsers.find((user) => user.userID === operator.userID)?.name ||
-                                    "Vendedor"}
-                            </span>
-                            <span>
-                                {formatTime(operator.enteredAt)}–{operator.leftAt ? formatTime(operator.leftAt) : "En turno"}
-                            </span>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                <p className="text-xs text-slate-500">Esta sesión no tiene vendedores asignados.</p>
-            )}
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+            <HistoryMetric label="Monto inicial" value={toCLP(summary.expected.openingBalance)} />
+            <HistoryMetric label="Entradas" value={toCLP(summary.cashMovements.cashIn)} />
+            <HistoryMetric label="Egresos" value={toCLP(summary.cashMovements.cashOut)} />
+            <HistoryMetric label="Efectivo esperado" value={toCLP(summary.expected.expectedCashAmount)} />
+            <HistoryMetric label="Cobros" value={toCLP(summary.payments.totalAmount)} />
         </div>
     )
 }
@@ -1131,6 +1142,15 @@ function HistoryMetric({ label, value }: { label: string; value: string }) {
         <div className="rounded-md border border-slate-200 bg-white px-2.5 py-2 dark:border-slate-700 dark:bg-slate-800">
             <p className="font-bold text-slate-900 dark:text-white">{value}</p>
             <p className="mt-0.5 text-[10px] leading-tight text-slate-500">{label}</p>
+        </div>
+    )
+}
+
+function HistoryDetail({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="min-w-0 rounded-md border border-slate-200 bg-white px-2.5 py-2 dark:border-slate-700 dark:bg-slate-800">
+            <p className="text-[10px] font-medium uppercase tracking-wide text-slate-500">{label}</p>
+            <p className="mt-1 break-words text-xs font-semibold text-slate-900 dark:text-white">{value}</p>
         </div>
     )
 }

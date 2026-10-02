@@ -128,8 +128,10 @@ export function PurchaseOrderTable({ currentItems }: { currentItems: PurchaseOrd
                                     SKU
                                 </TableHead>
                                 <TableHead
-                                    className="whitespace-nowrap text-center font-semibold text-gray-700 dark:text-gray-200 cursor-pointer"
-                                    onClick={() => setOrderByMarkup(!orderByMarkup)}
+                                    className={`whitespace-nowrap text-center font-semibold text-gray-700 dark:text-gray-200 ${user?.role !== Role.Vendedor ? "cursor-pointer" : ""}`}
+                                    onClick={() => {
+                                        if (user?.role !== Role.Vendedor) setOrderByMarkup(!orderByMarkup)
+                                    }}
                                 >
                                     <div className="flex flex-col items-center gap-1">
                                         <span>COSTO NETO</span>
@@ -280,15 +282,17 @@ export function PurchaseOrderTable({ currentItems }: { currentItems: PurchaseOrd
                                                         ${toPrice(variation.priceList)}
                                                     </span>
                                                     {/* {isTercero && ( */}
-                                                    <span
-                                                        className={`font-semibold text-xs ${
-                                                            markupToShow >= markupTerceroMin
-                                                                ? "text-green-600"
-                                                                : "text-red-600"
-                                                        }`}
-                                                    >
-                                                        {markupToShow.toFixed(2)}
-                                                    </span>
+                                                    {user?.role !== Role.Vendedor && (
+                                                        <span
+                                                            className={`font-semibold text-xs ${
+                                                                markupToShow >= markupTerceroMin
+                                                                    ? "text-green-600"
+                                                                    : "text-red-600"
+                                                            }`}
+                                                        >
+                                                            {markupToShow.toFixed(2)}
+                                                        </span>
+                                                    )}
                                                     {/* )} */}
                                                 </div>
                                             </MotionItem>
