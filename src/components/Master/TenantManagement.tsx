@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react"
 import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Search, X } from "lucide-react"
 import { getTenants } from "@/actions/master/tenantActions"
 import TenantManagementDialog from "@/components/Master/TenantManagementDialog"
+import CommerceChannelsDialog from "@/components/Master/CommerceChannelsDialog"
 import TenantProvisioningDialog from "@/components/Master/TenantProvisioningDialog"
 import type { ITenant, ITenantListResponse, TenantStatus } from "@/interfaces/master/ITenant"
 import { toast } from "sonner"
@@ -60,6 +61,8 @@ export default function TenantManagement({
     const [selectedTenant, setSelectedTenant] = useState<TenantReference | null>(null)
     const [isManagementOpen, setIsManagementOpen] = useState(false)
     const [managedTenant, setManagedTenant] = useState<ITenant | null>(null)
+    const [commerceTenant, setCommerceTenant] = useState<ITenant | null>(null)
+    const [isCommerceOpen, setIsCommerceOpen] = useState(false)
     const [search, setSearch] = useState("")
     const [status, setStatus] = useState<TenantStatus | "">("")
     const [appliedSearch, setAppliedSearch] = useState("")
@@ -303,6 +306,12 @@ export default function TenantManagement({
                                                 >
                                                     Gestionar
                                                 </button>
+                                                <button
+                                                    onClick={() => { setCommerceTenant(tenant); setIsCommerceOpen(true) }}
+                                                    className="whitespace-nowrap rounded-md border border-[#b9c7d3] bg-white px-3 py-1.5 text-[9px] font-bold text-[#294157] hover:bg-[#f5f7f8]"
+                                                >
+                                                    Ecommerce
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -349,6 +358,11 @@ export default function TenantManagement({
                 tenant={managedTenant}
                 onOpenChange={setIsManagementOpen}
                 onTenantChanged={() => loadTenants(tenants.offset)}
+            />
+            <CommerceChannelsDialog
+                open={isCommerceOpen}
+                tenant={commerceTenant}
+                onOpenChange={setIsCommerceOpen}
             />
         </section>
     )
