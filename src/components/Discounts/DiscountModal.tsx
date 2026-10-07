@@ -18,6 +18,7 @@ import {
 import { createOffer } from "@/actions/pricing/createOffer"
 import { updateOffer } from "@/actions/pricing/updateOffer"
 import { normalize } from "@/utils/product-form.utils"
+import { useTienda } from "@/stores/tienda.store"
 import { toast } from "sonner"
 import { Check, ChevronDown, Loader2, Tag } from "lucide-react"
 
@@ -223,12 +224,25 @@ const buildForm = (
 export function DiscountModal({
     isOpen,
     onClose,
-    options,
+    options: productOptions,
     initialStoreProductID,
     initialOffer,
     onOfferCreated,
     onOfferUpdated,
 }: DiscountModalProps) {
+    const { storeSelected, storesFromUser, stores } = useTienda()
+    const options = useMemo(() => {
+        const storeNames = new Map(
+            [...stores, ...storesFromUser, ...(storeSelected ? [storeSelected] : [])]
+                .map((store) => [store.storeID, store.name.trim()] as const)
+                .filter(([, name]) => Boolean(name)),
+        )
+
+        return productOptions.map((option) => ({
+            ...option,
+            storeName: storeNames.get(option.storeID) || option.storeName.trim() || option.storeID,
+        }))
+    }, [productOptions, storeSelected, storesFromUser, stores])
     const [saving, setSaving] = useState(false)
     const [isProductOpen, setIsProductOpen] = useState(false)
     const [productQuery, setProductQuery] = useState("")

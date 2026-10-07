@@ -1,6 +1,7 @@
 "use client"
 
 import { FormEvent, ReactNode, useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import {
     assignCashSessionOperator,
     closeCashSession,
@@ -104,6 +105,7 @@ export default function CashSessionDialog({
     activeSession,
     onChanged,
 }: CashSessionDialogProps) {
+    const router = useRouter()
     const currentUser = useAuth((state) => state.user)
     const [view, setView] = useState<"main" | "movement" | "count">("main")
     const [businessDate, setBusinessDate] = useState(toLocalDate)
@@ -501,8 +503,8 @@ export default function CashSessionDialog({
                                         id="business-date"
                                         type="date"
                                         value={businessDate}
-                                        onChange={(event) => setBusinessDate(event.target.value)}
-                                        required
+                                        disabled
+                                        className="disabled:bg-slate-100 disabled:text-slate-500 disabled:opacity-100 dark:disabled:bg-slate-800 dark:disabled:text-slate-400"
                                     />
                                 </div>
                                 <div>
@@ -541,9 +543,23 @@ export default function CashSessionDialog({
                                         </SelectContent>
                                     </Select>
                                     {!isLoadingDetail && availableSellers.length === 0 ? (
-                                        <p className="mt-1.5 text-xs text-amber-700">
-                                            No hay vendedores activos asignados a esta tienda.
-                                        </p>
+                                        <div className="mt-1.5 space-y-2">
+                                            <p className="text-xs text-amber-700">
+                                                No hay vendedores activos asignados a esta tienda.
+                                            </p>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-auto whitespace-normal text-left"
+                                                onClick={() => {
+                                                    onOpenChange(false)
+                                                    router.push(`/home/recursos-humanos?${new URLSearchParams({ storeID: register.storeID })}`)
+                                                }}
+                                            >
+                                                Ir a dar de alta un vendedor
+                                            </Button>
+                                        </div>
                                     ) : null}
                                 </div>
                                 <div>
@@ -553,8 +569,8 @@ export default function CashSessionDialog({
                                     <Input
                                         id="operator-start-time"
                                         value={currentTime}
-                                        readOnly
-                                        aria-readonly="true"
+                                        disabled
+                                        className="disabled:bg-slate-100 disabled:text-slate-500 disabled:opacity-100 dark:disabled:bg-slate-800 dark:disabled:text-slate-400"
                                     />
                                     <p className="mt-1.5 text-xs text-slate-500">
                                         La salida se registrará al cerrar el turno.
@@ -713,7 +729,12 @@ export default function CashSessionDialog({
                                 <Label htmlFor="count-closing-time" className="mb-2 block">
                                     Hora de cierre
                                 </Label>
-                                <Input id="count-closing-time" value={currentTime} readOnly aria-readonly="true" />
+                                <Input
+                                    id="count-closing-time"
+                                    value={currentTime}
+                                    disabled
+                                    className="disabled:bg-slate-100 disabled:text-slate-500 disabled:opacity-100 dark:disabled:bg-slate-800 dark:disabled:text-slate-400"
+                                />
                             </div>
                             <div>
                                 <Label htmlFor="count-notes" className="mb-2 block">
@@ -943,7 +964,12 @@ export default function CashSessionDialog({
                                         <Label htmlFor="closing-time" className="mb-2 block">
                                             Hora de cierre
                                         </Label>
-                                        <Input id="closing-time" value={currentTime} readOnly aria-readonly="true" />
+                                        <Input
+                                            id="closing-time"
+                                            value={currentTime}
+                                            disabled
+                                            className="disabled:bg-slate-100 disabled:text-slate-500 disabled:opacity-100 dark:disabled:bg-slate-800 dark:disabled:text-slate-400"
+                                        />
                                     </div>
                                     <div>
                                         <Label htmlFor="closing-notes" className="mb-2 block">

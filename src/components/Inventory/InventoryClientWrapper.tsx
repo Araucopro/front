@@ -1,6 +1,7 @@
 "use client"
 
 import React, { Suspense, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { MotionItem } from "@/components/Animations/motionItem"
 import { CategoryProgress } from "../CategorySection/CategoryProgress"
@@ -8,9 +9,10 @@ import InventoryPagination from "@/components/Inventory/TableSection/InventoryPa
 import { ColumnFilters } from "@/components/Inventory/TableSection/ColumnFilters"
 import { createMassiveProducts } from "@/actions/products/createMassiveProducts"
 import { deleteProduct } from "@/actions/products/deleteProduct"
+import { deleteProductVariation } from "@/actions/products/deleteProductVariation"
 import type { ICategory } from "@/interfaces/categories/ICategory"
 import type { IStore } from "@/interfaces/stores/IStore"
-import type { IRawProduct } from "@/interfaces/products/IRawProduct"
+import type { IRawProduct, IProductVariationRaw } from "@/interfaces/products/IRawProduct"
 import { useAuth } from "@/stores/user.store"
 import { useTienda } from "@/stores/tienda.store"
 import { Role } from "@/lib/userRoles"
@@ -31,9 +33,18 @@ interface Props {
 }
 
 export default function UnifiedInventoryClientWrapper({ initialProducts, categories: cats, stores, storeID }: Props) {
+    const router = useRouter()
     const { user } = useAuth()
     const { storeSelected } = useTienda()
-    const { visibleColumns, toggleColumn, resetColumns, ready: columnsReady } = useInventoryColumns(user?.userID, storeID)
+    const {
+        visibleColumns,
+        toggleColumn,
+        resetColumns,
+        ready: columnsReady,
+        saving: columnsSaving,
+        loadError: columnsLoadError,
+        retryColumns,
+    } = useInventoryColumns(user?.userID, storeID)
     const { categories, setCategories } = useCategories()
     const {
         rawProducts,
@@ -69,7 +80,7 @@ export default function UnifiedInventoryClientWrapper({ initialProducts, categor
         }
     }, [])
 
-    function handleDeleteProduct(product: any) {
+    function handleDeleteProduct(product: IRawProduct) {
         const variationCount = product.variations?.length ?? 0
         toast.warning(`¿Eliminar "${product.name}"?`, {
             description: `Se eliminarán el producto y ${variationCount} variación${variationCount !== 1 ? "es" : ""}. Esta acción no se puede revertir.`,
@@ -84,6 +95,47 @@ export default function UnifiedInventoryClientWrapper({ initialProducts, categor
                             return "Producto eliminado con éxito"
                         },
                         error: "Hubo un error al eliminar el producto",
+                    })
+                },
+            },
+            cancel: {
+                label: "Cancelar",
+                onClick: () => {},
+            },
+        })
+    }
+
+    function handleDeleteVariation(product: IRawProduct, variation: IProductVariationRaw) {
+        const variationLabel = [variation.size, variation.subVariation].filter(Boolean).join(" / ") || variation.sku
+        toast.warning(`¿Eliminar la variante "${variationLabel}" de "${product.name}"?`, {
+            id: `delete-variation-${variation.variationID}`,
+            description: `SKU: ${variation.sku}. Se eliminarán esta variante y sus registros de tienda e inventario en todas las tiendas. Las demás variantes se conservarán. Esta acción no se puede revertir.`,
+            duration: 10000,
+            action: {
+                label: "Sí, eliminar variante",
+                onClick: () => {
+                    toast.promise(deleteProductVariation(product.productID, variation.variationID), {
+                        loading: "Eliminando variante...",
+                        success: () => {
+                            const currentProducts: IRawProduct[] = inventoryStore.getState().rawProducts
+                            setRawProducts(currentProducts.map((currentProduct) =>
+                                currentProduct.productID === product.productID
+                                    ? {
+                                          ...currentProduct,
+                                          variations: currentProduct.variations.filter((currentVariation) =>
+                                              currentVariation.variationID !== variation.variationID,
+                                          ),
+                                      }
+                                    : currentProduct,
+                            ))
+                            if (inventoryStore.getState().editingField?.sku === variation.sku) {
+                                setEditingField(null)
+                            }
+                            setCurrentPage(1)
+                            router.refresh()
+                            return "Variante eliminada con éxito"
+                        },
+                        error: (error) => error instanceof Error ? error.message : "Hubo un error al eliminar la variante",
                     })
                 },
             },
@@ -244,6 +296,9 @@ export default function UnifiedInventoryClientWrapper({ initialProducts, categor
                     onToggleColumn={toggleColumn}
                     onResetColumns={resetColumns}
                     columnsReady={columnsReady}
+                    columnsSaving={columnsSaving}
+                    columnsLoadError={columnsLoadError}
+                    onRetryColumns={retryColumns}
                 />
                 <div className="flex justify-between lg:mt-0 mt-6 lg:flex-row flex-col lg:items-center">
                     <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -269,6 +324,7 @@ export default function UnifiedInventoryClientWrapper({ initialProducts, categor
                                 currentItems={currentItems}
                                 handleSaveEdit={handleSaveEdit}
                                 handleDeleteProduct={handleDeleteProduct}
+                                handleDeleteVariation={handleDeleteVariation}
                                 adminStoreIDs={adminStoreIDs}
                                 categories={categories}
                                 visibleColumns={visibleColumns}

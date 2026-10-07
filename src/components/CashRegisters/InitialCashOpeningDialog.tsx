@@ -219,6 +219,7 @@ export default function InitialCashOpeningDialog() {
                                     type="date"
                                     value={businessDate}
                                     disabled
+                                    className="disabled:bg-slate-100 disabled:text-slate-500 disabled:opacity-100 dark:disabled:bg-slate-800 dark:disabled:text-slate-400"
                                     required
                                 />
                             </div>

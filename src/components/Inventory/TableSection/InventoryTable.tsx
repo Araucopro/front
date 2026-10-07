@@ -33,6 +33,7 @@ interface InventoryTableProps {
     currentItems: FlattenedItem[]
     handleSaveEdit: (product: IRawProduct, variationID?: string) => void
     handleDeleteProduct: (product: IRawProduct) => void
+    handleDeleteVariation: (product: IRawProduct, variation: IProductVariationRaw) => void
     adminStoreIDs: string[]
     categories: ICategory[]
     visibleColumns: InventoryColumnId[]
@@ -49,7 +50,7 @@ const calculateMarkup = (priceCost: number, priceList: number): string => {
     return markup.toFixed(2)
 }
 
-export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProduct, categories, visibleColumns }: InventoryTableProps) {
+export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProduct, handleDeleteVariation, categories, visibleColumns }: InventoryTableProps) {
     const { user } = useAuth()
     const { editingField, setEditingField, editValue, setEditValue } = inventoryStore()
     const { storeSelected } = useTienda()
@@ -111,7 +112,7 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                         </TableHeader>
 
                         <TableBody>
-                            {currentItems.map(({ product, variation, isFirst, totalStock }, index) => {
+                            {currentItems.map(({ product, variation, isFirst, totalStock, rowSpan }, index) => {
                                 const productData = findProductBySku([product], storeID!, variation.sku)
                                 const storeFilter = variation.storeProducts?.filter((sp) => !sp.store?.isCentralStore)
                                 const stockAgregado =
@@ -140,7 +141,7 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                         {showColumn("product") && isFirst && (
                                             <TableCell
                                                 className="py-2 px-3 text-left w-1/4"
-                                                rowSpan={product.variations?.length || 1}
+                                                rowSpan={rowSpan}
                                             >
                                                 <MotionItem key={`product-${product.productID}`} delay={index + 2}>
                                                     <div className="flex flex-col relative w-full items-center gap-4">
@@ -178,6 +179,19 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                                                     productos
                                                                 </span>
                                                             </div>
+                                                            {user?.role === Role.Admin && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(event) => {
+                                                                        event.stopPropagation()
+                                                                        handleDeleteProduct(product)
+                                                                    }}
+                                                                    className="mx-auto mt-2 flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-red-500 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950"
+                                                                >
+                                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                                    Eliminar producto completo
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </MotionItem>
@@ -471,28 +485,26 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                                 </TooltipContent>
                                             </Tooltip>
                                         </TableCell>}
-                                        {user?.role === Role.Admin && isFirst && (
-                                            <TableCell
-                                                className="text-center py-2"
-                                                rowSpan={product.variations?.length || 1}
-                                            >
+                                        {user?.role === Role.Admin && (
+                                            <TableCell className="text-center py-2">
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
                                                         <button
+                                                            type="button"
+                                                            aria-label={`Eliminar variante ${variation.size || variation.sku} de ${product.name}`}
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
-                                                                handleDeleteProduct(product)
+                                                                handleDeleteVariation(product, variation)
                                                             }}
                                                             className="p-1.5 rounded-md text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
                                                         >
                                                             <Trash2 className="w-4 h-4" />
                                                         </button>
                                                     </TooltipTrigger>
-                                                    <TooltipContent>Eliminar producto</TooltipContent>
+                                                    <TooltipContent>Eliminar variante</TooltipContent>
                                                 </Tooltip>
                                             </TableCell>
                                         )}
-                                        {user?.role === Role.Admin && !isFirst && <TableCell />}
                                     </TableRow>
                                 )
                             })}
