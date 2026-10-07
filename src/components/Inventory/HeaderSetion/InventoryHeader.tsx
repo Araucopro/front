@@ -18,6 +18,9 @@ interface InventoryHeaderProps {
     onToggleColumn: (column: InventoryColumnId) => void
     onResetColumns: () => void
     columnsReady: boolean
+    columnsSaving: boolean
+    columnsLoadError: string | null
+    onRetryColumns: () => void
 }
 
 export default function InventoryHeader({
@@ -30,6 +33,9 @@ export default function InventoryHeader({
     onToggleColumn,
     onResetColumns,
     columnsReady,
+    columnsSaving,
+    columnsLoadError,
+    onRetryColumns,
 }: InventoryHeaderProps) {
     const { rawProducts } = inventoryStore()
     const { user } = useAuth()
@@ -46,7 +52,10 @@ export default function InventoryHeader({
                         onToggle={onToggleColumn}
                         onReset={onResetColumns}
                         isAdmin={user?.role === Role.Admin}
-                        disabled={!columnsReady}
+                        disabled={!columnsReady || columnsSaving}
+                        saving={columnsSaving}
+                        loadError={columnsLoadError}
+                        onRetry={onRetryColumns}
                     />
                     {/* CREAR PRODUCTO Y DESCARGAR EXCEL, no se muestra si es store manager ni tercero */}
                     {user?.role !== Role.Vendedor && user?.role !== Role.Tercero && (

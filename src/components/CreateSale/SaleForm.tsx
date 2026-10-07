@@ -152,6 +152,9 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
     const [isCashSessionDialogOpen, setIsCashSessionDialogOpen] = useState(false)
     const [requestedSaleType, setSaleType] = useState<SaleType>(() => getSaleTypeFromParam(searchParams.get("saleType")))
     const saleType = canIssueDte ? requestedSaleType : "NOTA_VENTA"
+    const saleActionDescription = saleType === "NOTA_VENTA"
+        ? canIssueDte ? "Crear nota" : "Emitir comprobante de venta"
+        : saleType === "BOLETA" ? "Emitir boleta" : "Emitir factura"
     const [showReceiverFields, setShowReceiverFields] = useState(() => saleType === "FACTURA")
     const [openCashRegisters, setOpenCashRegisters] = useState<OpenCashRegister[]>([])
     const [availablePaymentMethods, setAvailablePaymentMethods] = useState<IPaymentMethod[]>([])
@@ -319,6 +322,7 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
         setSelectedClient(client)
         if (!client) return
 
+        setShowReceiverFields(saleType === "FACTURA")
         setReceiver({
             rut: client.rut,
             name: client.name,
@@ -463,7 +467,9 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
             const res = await createNewSale(effectiveStoreID, toSubmitSale)
             if (res) {
                 const createdSaleID = res.sale.saleID || res.dte?.saleID || ""
-                toast.success(res.dte ? "Documento emitido exitosamente" : "Nota de venta creada exitosamente")
+                toast.success(res.dte
+                    ? "Documento emitido exitosamente"
+                    : canIssueDte ? "Nota de venta creada exitosamente" : "Comprobante de venta creado exitosamente")
                 actions.clearCart()
                 router.refresh()
                 router.push(
@@ -515,10 +521,12 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                         <div className="mb-4 flex flex-col gap-3 border-b border-slate-100 pb-3 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                                    Configura el documento
+                                    {canIssueDte ? "Configura el documento" : "Configura la venta"}
                                 </p>
                                 <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                                    Selecciona una opción en cada grupo para continuar con la venta.
+                                    {canIssueDte
+                                        ? "Selecciona una opción en cada grupo para continuar con la venta."
+                                        : "Selecciona la caja y el medio de pago para continuar con la venta."}
                                 </p>
                             </div>
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -549,91 +557,90 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                             </div>
                         </div>
 
-                        <div className="relative grid gap-4 xl:grid-cols-2 xl:gap-8">
-                            <div
-                                aria-hidden="true"
-                                className="absolute inset-y-0 left-1/2 hidden -translate-x-1/2 items-center xl:flex"
-                            >
-                                <span className="h-full w-px bg-slate-300 dark:bg-slate-600" />
-                                <span className="absolute left-1/2 flex h-7 w-7 -translate-x-1/2 items-center justify-center rounded-full border border-slate-300 bg-white text-[10px] font-bold text-slate-500 shadow-sm dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300">
-                                    Y
-                                </span>
-                            </div>
-
-                            <div className="space-y-3 rounded-lg border border-blue-100 bg-blue-50/30 p-3 dark:border-blue-950 dark:bg-blue-950/10">
-                                <div className="flex items-center gap-2">
-                                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
-                                        1
-                                    </span>
-                                    <div>
-                                        <label className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                                            Documento
-                                        </label>
-                                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                                            ¿Qué documento deseas emitir?
-                                        </p>
+                        <div className={`relative grid gap-4 ${canIssueDte ? "xl:grid-cols-2 xl:gap-8" : ""}`}>
+                            {canIssueDte && (
+                                <>
+                                    <div
+                                        aria-hidden="true"
+                                        className="absolute inset-y-0 left-1/2 hidden -translate-x-1/2 items-center xl:flex"
+                                    >
+                                        <span className="h-full w-px bg-slate-300 dark:bg-slate-600" />
+                                        <span className="absolute left-1/2 flex h-7 w-7 -translate-x-1/2 items-center justify-center rounded-full border border-slate-300 bg-white text-[10px] font-bold text-slate-500 shadow-sm dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300">
+                                            Y
+                                        </span>
                                     </div>
-                                </div>
-                                <div className="grid gap-2 sm:grid-cols-3" role="group" aria-label="Tipo de documento">
-                                    {saleTypeOptions.map((option) => {
-                                        const Icon = option.icon
-                                        const selected = saleType === option.value
-                                        const disabled = !canIssueDte && option.value !== "NOTA_VENTA"
 
-                                        return (
-                                            <button
-                                                key={option.value}
-                                                type="button"
-                                                aria-pressed={selected}
-                                                disabled={disabled}
-                                                onClick={() => setSaleType(option.value)}
-                                                className={`flex min-h-20 items-center gap-3 rounded-lg border px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 ${
-                                                    selected
-                                                        ? `${option.selectedClassName} ring-1`
-                                                        : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-                                                }`}
-                                            >
-                                                <span
-                                                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${
-                                                        selected
-                                                            ? "bg-white/70 dark:bg-slate-900/50"
-                                                            : "bg-slate-100 dark:bg-slate-800"
-                                                    }`}
-                                                >
-                                                    <Icon className="h-4 w-4" />
-                                                </span>
-                                                <span className="min-w-0">
-                                                    <span className="block text-sm font-semibold leading-tight">
-                                                        {option.label}
-                                                    </span>
-                                                    <span className="mt-1 block text-xs opacity-70">
-                                                        {option.description}
-                                                    </span>
-                                                </span>
-                                            </button>
-                                        )
-                                    })}
-                                </div>
-                                {!canIssueDte && (
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                                        Para emitir boletas o facturas, configura la API key de OpenFactura en la tienda.
-                                    </p>
-                                )}
-                            </div>
+                                    <div className="space-y-3 rounded-lg border border-blue-100 bg-blue-50/30 p-3 dark:border-blue-950 dark:bg-blue-950/10">
+                                        <div className="flex items-center gap-2">
+                                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                                                1
+                                            </span>
+                                            <div>
+                                                <label className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                                    Documento
+                                                </label>
+                                                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                                    ¿Qué documento deseas emitir?
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="grid gap-2 sm:grid-cols-3" role="group" aria-label="Tipo de documento">
+                                            {saleTypeOptions.map((option) => {
+                                                const Icon = option.icon
+                                                const selected = saleType === option.value
 
-                            <div className="flex items-center gap-3 xl:hidden" aria-hidden="true">
-                                <span className="h-px flex-1 bg-slate-300 dark:bg-slate-600" />
-                                <span className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-300 bg-white text-[10px] font-bold text-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300">
-                                    Y
-                                </span>
-                                <span className="h-px flex-1 bg-slate-300 dark:bg-slate-600" />
-                            </div>
+                                                return (
+                                                    <button
+                                                        key={option.value}
+                                                        type="button"
+                                                        aria-pressed={selected}
+                                                        onClick={() => setSaleType(option.value)}
+                                                        className={`flex min-h-20 items-center gap-3 rounded-lg border px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                                                            selected
+                                                                ? `${option.selectedClassName} ring-1`
+                                                                : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                                                        }`}
+                                                    >
+                                                        <span
+                                                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${
+                                                                selected
+                                                                    ? "bg-white/70 dark:bg-slate-900/50"
+                                                                    : "bg-slate-100 dark:bg-slate-800"
+                                                            }`}
+                                                        >
+                                                            <Icon className="h-4 w-4" />
+                                                        </span>
+                                                        <span className="min-w-0">
+                                                            <span className="block text-sm font-semibold leading-tight">
+                                                                {option.label}
+                                                            </span>
+                                                            <span className="mt-1 block text-xs opacity-70">
+                                                                {option.description}
+                                                            </span>
+                                                        </span>
+                                                    </button>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 xl:hidden" aria-hidden="true">
+                                        <span className="h-px flex-1 bg-slate-300 dark:bg-slate-600" />
+                                        <span className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-300 bg-white text-[10px] font-bold text-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300">
+                                            Y
+                                        </span>
+                                        <span className="h-px flex-1 bg-slate-300 dark:bg-slate-600" />
+                                    </div>
+                                </>
+                            )}
 
                             <div className="space-y-3 rounded-lg border border-amber-100 bg-amber-50/30 p-3 dark:border-amber-950 dark:bg-amber-950/10">
                                 <div className="flex items-center gap-2">
-                                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 text-xs font-bold text-white">
-                                        2
-                                    </span>
+                                    {canIssueDte && (
+                                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 text-xs font-bold text-white">
+                                            2
+                                        </span>
+                                    )}
                                     <div>
                                         <label className="text-sm font-semibold text-slate-800 dark:text-slate-100">
                                             Caja y medio de pago
@@ -665,14 +672,10 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                                                 size="sm"
                                                 className="bg-white"
                                                 onClick={() =>
-                                                    window.open(
-                                                        `/home/cajas?storeID=${effectiveStoreID}`,
-                                                        "_blank",
-                                                        "noopener,noreferrer",
-                                                    )
+                                                    router.push(`/home/cajas?${new URLSearchParams({ storeID: effectiveStoreID })}`)
                                                 }
                                             >
-                                                Abrir Cajas
+                                                Ir a Configuración de cajas
                                             </Button>
                                             <Button
                                                 type="button"
@@ -830,7 +833,7 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                                                         </div>
                                                     </div>
                                                 )}
-                                                {isSplitPaymentActive && (
+                                                {isSplitPaymentActive && canIssueDte && (
                                                     <div
                                                         className="flex gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100"
                                                         role="alert"
@@ -867,7 +870,7 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                         </div>
                     </div>
 
-                    {saleType === "NOTA_VENTA" && !showReceiverFields && (
+                    {saleType === "NOTA_VENTA" && !selectedClient && !showReceiverFields && (
                         <div className="rounded-lg border border-dashed border-emerald-300 bg-emerald-50/40 p-4 dark:border-emerald-900 dark:bg-emerald-950/10">
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
@@ -875,7 +878,9 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                                         Datos del receptor ocultos
                                     </h3>
                                     <p className="text-xs text-gray-600 dark:text-slate-400">
-                                        Puedes agregarlos si esta nota podría convertirse después en factura.
+                                        {canIssueDte
+                                            ? "Puedes agregarlos si esta nota podría convertirse después en factura."
+                                            : "Puedes agregar los datos del receptor al comprobante de venta."}
                                     </p>
                                 </div>
                                 <Button
@@ -885,7 +890,7 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                                     className="h-auto min-h-10 whitespace-normal border-emerald-300 py-2 text-left text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950 sm:text-center"
                                 >
                                     <UserPlus />
-                                    Agregar datos para futura factura
+                                    {canIssueDte ? "Agregar datos para futura factura" : "Agregar datos del receptor"}
                                 </Button>
                             </div>
                         </div>
@@ -900,7 +905,9 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                                     </h3>
                                     {saleType === "NOTA_VENTA" && (
                                         <p className="text-xs text-gray-600 dark:text-slate-400">
-                                            Opcional para notas. Si los guardas, el correo es obligatorio.
+                                            {canIssueDte
+                                                ? "Opcional para notas. Si los guardas, el correo es obligatorio."
+                                                : "Opcional para comprobantes. Si los guardas, el correo es obligatorio."}
                                         </p>
                                     )}
                                 </div>
@@ -992,9 +999,10 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                                 (requireClientForSale && !selectedClient)
                             }
                             onClick={handleSubmit}
-                            className="px-6 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition"
+                            className="h-auto flex-col gap-0.5 px-6 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition"
                         >
-                            {loading ? "Procesando..." : saleType === "NOTA_VENTA" ? "Crear nota" : "Emitir documento"}
+                            <span>{loading ? "Procesando..." : "Vender"}</span>
+                            <span className="text-xs font-normal">{saleActionDescription}</span>
                         </Button>
                     </div>
                 </div>
