@@ -2,6 +2,7 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { IUser } from "@/interfaces/users/IUser"
 import { useTienda } from "./tienda.store"
+import { useSaleStore } from "./sale.store"
 
 interface UserStore {
     user: IUser | null
@@ -21,6 +22,7 @@ export const useAuth = create(
             users: [],
             setUsers: (users) => set({ users }),
             logout: () => {
+                useSaleStore.getState().actions.clearCart()
                 const { cleanStores } = useTienda.getState()
                 cleanStores()
                 set({ user: null, token: null, users: [] })

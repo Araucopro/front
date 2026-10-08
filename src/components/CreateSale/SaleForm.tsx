@@ -140,7 +140,7 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
     const router = useRouter()
     const searchParams = useSearchParams()
     const { cartItems, actions } = useSaleStore()
-    const { clearCart, updateCartItemPricing } = actions
+    const { updateCartItemPricing } = actions
     const { storeSelected } = useTienda()
     const urlStoreID = searchParams.get("storeID")
     const effectiveStoreID =
@@ -485,12 +485,6 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
             setLoading(false)
         }
     }
-
-    useEffect(() => {
-        return () => {
-            clearCart()
-        }
-    }, [clearCart])
 
     useEffect(() => {
         setSaleType(getSaleTypeFromParam(searchParams.get("saleType")))
