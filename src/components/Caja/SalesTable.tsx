@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useMemo, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { ISaleProduct, ISaleResponse } from "@/interfaces/sales/ISale"
@@ -28,6 +28,8 @@ const saleTypeLabels: Record<string, string> = {
 
 interface Props {
     items: TableItem[]
+    highlightedSaleID: string | null
+    onSaleHighlightComplete: () => void
 }
 
 const normalizeText = (value: unknown) => {
@@ -216,16 +218,36 @@ const paymentClassName = (sale: ISaleResponse) => {
     return "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
 }
 
-const SalesTable: React.FC<Props> = ({ items }) => {
+const SalesTable: React.FC<Props> = ({ items, highlightedSaleID, onSaleHighlightComplete }) => {
     const router = useRouter()
     const [searchTerm, setSearchTerm] = useState("")
     const [selectedSale, setSelectedSale] = useState<ISaleResponse | null>(null)
+    const highlightedRowRef = useRef<HTMLTableRowElement>(null)
+
+    useEffect(() => {
+        if (highlightedSaleID) setSearchTerm("")
+    }, [highlightedSaleID])
 
     const filteredItems = useMemo(() => {
         const query = normalizeText(searchTerm)
         if (!query) return items
         return items.filter((item) => normalizeText(buildSearchText(item)).includes(query))
     }, [items, searchTerm])
+
+    const isHighlightedSaleVisible = filteredItems.some(
+        (item) => "saleID" in item && item.saleID === highlightedSaleID,
+    )
+
+    useEffect(() => {
+        if (!highlightedSaleID || !isHighlightedSaleVisible || !highlightedRowRef.current) return
+
+        highlightedRowRef.current.scrollIntoView({
+            behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+            block: "center",
+        })
+        const timeout = window.setTimeout(onSaleHighlightComplete, 3000)
+        return () => window.clearTimeout(timeout)
+    }, [highlightedSaleID, isHighlightedSaleVisible, onSaleHighlightComplete])
 
     const groupedItems = useMemo(() => {
         const groups = new Map<string, TableItem[]>()
@@ -249,6 +271,9 @@ const SalesTable: React.FC<Props> = ({ items }) => {
 
     return (
         <div className="overflow-hidden rounded-lg bg-transparent">
+            <p className="sr-only" role="status">
+                {isHighlightedSaleVisible ? "Venta registrada en el diario de ventas." : ""}
+            </p>
             <div className="mb-4 flex flex-col gap-3 sm:flex-row">
                 <div className="relative flex-1">
                     <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-500" />
@@ -312,6 +337,7 @@ const SalesTable: React.FC<Props> = ({ items }) => {
                                         const date = getItemDate(item)
 
                                         if ("saleID" in item) {
+                                            const isHighlighted = item.saleID === highlightedSaleID
                                             const { nulledProducts, totalNulledAmount } = getSaleTotals(item)
                                             const products = getActiveSaleProducts(item, nulledProducts)
                                             const visibleProducts = products.slice(0, 2)
@@ -326,7 +352,14 @@ const SalesTable: React.FC<Props> = ({ items }) => {
                                             return (
                                                 <TableRow
                                                     key={item.saleID}
-                                                    className="cursor-pointer border-slate-100 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/60"
+                                                    ref={isHighlighted ? highlightedRowRef : undefined}
+                                                    data-sale-id={item.saleID}
+                                                    data-highlighted={isHighlighted || undefined}
+                                                    className={`cursor-pointer border-slate-100 dark:border-slate-800 ${
+                                                        isHighlighted
+                                                            ? "bg-emerald-100 hover:bg-emerald-100 dark:bg-emerald-900/60 dark:hover:bg-emerald-900/60"
+                                                            : "hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                                                    }`}
                                                     onClick={() => urlRedirectToSingleSale(item)}
                                                 >
                                                     <TableCell className="align-top">
