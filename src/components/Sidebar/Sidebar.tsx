@@ -48,11 +48,12 @@ export default function Sidebar() {
     const { isDarkMode, setIsDarkMode } = useDarkMode()
 
     const [isCollapsed, setIsCollapsed] = useState(false)
-    const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
+    const [openSectionPath, setOpenSectionPath] = useState<string[] | null>(null)
     const [pendingRoute, setPendingRoute] = useState<string | null>(null)
 
     useEffect(() => {
         setPendingRoute(null)
+        setOpenSectionPath(null)
     }, [pathname, searchParamsKey])
 
     useEffect(() => {
@@ -130,10 +131,11 @@ export default function Sidebar() {
         return targetQuery ? `${path}?${targetQuery}` : path
     }
 
-    const handleNavClick = (route?: string) => {
+    const handleNavClick = (route?: string, parentSectionIDs: string[] = []) => {
         if (!route || route === "#") return
 
-        setPendingRoute(route)
+        setOpenSectionPath(parentSectionIDs)
+        setPendingRoute(isRouteActive(route) ? null : route)
         router.push(buildTargetRoute(route))
 
         if (isMobile) {
@@ -141,11 +143,8 @@ export default function Sidebar() {
         }
     }
 
-    const toggleSection = (sectionId: string) => {
-        setOpenSections((prev) => ({
-            ...prev,
-            [sectionId]: !prev[sectionId],
-        }))
+    const toggleSection = (sectionId: string, parentSectionIDs: string[], isOpen: boolean) => {
+        setOpenSectionPath(isOpen ? parentSectionIDs : [...parentSectionIDs, sectionId])
     }
 
     const PendingOverlay = () => (
@@ -187,21 +186,26 @@ export default function Sidebar() {
             </span>
         ) : null
 
-    const renderSubItem = (sub: NavigationItem): React.ReactNode => {
+    const renderSubItem = (sub: NavigationItem, parentSectionIDs: string[]): React.ReactNode => {
         const Icon = sub.icon
         const isSubActive = isRouteActive(sub.route)
         const isSubPending = pendingRoute === sub.route
         const hasSubItems = Boolean(sub.subItems?.length)
         const hasActiveChild = hasActiveDescendant(sub)
-        const isOpen = openSections[sub.id] ?? hasActiveChild
+        const isOpen = openSectionPath?.includes(sub.id) ?? hasActiveChild
         const isUnavailable = !sub.route && !hasSubItems
 
         return (
             <div key={sub.id}>
                 <button
-                    onClick={() => (hasSubItems ? toggleSection(sub.id) : handleNavClick(sub.route))}
+                    onClick={() =>
+                        hasSubItems
+                            ? toggleSection(sub.id, parentSectionIDs, isOpen)
+                            : handleNavClick(sub.route, parentSectionIDs)
+                    }
                     disabled={isSubPending}
                     aria-disabled={isUnavailable}
+                    aria-expanded={hasSubItems ? isOpen : undefined}
                     className={`relative flex min-h-10 w-full items-center gap-2 overflow-hidden py-2 pl-12 pr-3 text-left text-[13px] transition-colors ${
                         isSubPending
                             ? "cursor-progress bg-[#dcecfb] text-[#12395a] dark:bg-slate-800 dark:text-white"
@@ -233,7 +237,7 @@ export default function Sidebar() {
                 {hasSubItems && (
                     <Collapsible isOpen={isOpen}>
                         <div className="bg-[#f3f5f8] dark:bg-slate-950">
-                            {sub.subItems?.map(renderSubItem)}
+                            {sub.subItems?.map((child) => renderSubItem(child, [...parentSectionIDs, sub.id]))}
                         </div>
                     </Collapsible>
                 )}
@@ -303,7 +307,7 @@ export default function Sidebar() {
                                     const hasActiveChild = hasActiveDescendant(item)
                                     const isActive = isRouteActive(item.route)
                                     const isPending = pendingRoute === item.route
-                                    const isOpen = openSections[sectionId] ?? hasActiveChild
+                                    const isOpen = openSectionPath?.includes(sectionId) ?? hasActiveChild
                                     const isUnavailable = !item.route && !hasSubItems
 
                                     return (
@@ -311,8 +315,13 @@ export default function Sidebar() {
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <button
-                                                        onClick={() => (hasSubItems ? toggleSection(sectionId) : handleNavClick(item.route))}
+                                                        onClick={() =>
+                                                            hasSubItems
+                                                                ? toggleSection(sectionId, [], isOpen)
+                                                                : handleNavClick(item.route)
+                                                        }
                                                         disabled={isPending}
+                                                        aria-expanded={hasSubItems ? isOpen : undefined}
                                                         className={`relative flex h-11 w-full items-center gap-3 overflow-hidden border-l-[3px] px-5 text-left text-sm transition-colors ${
                                                             shouldShowCollapsed ? "justify-center px-0" : ""
                                                         } ${
@@ -361,7 +370,7 @@ export default function Sidebar() {
                                             {hasSubItems && (
                                                 <Collapsible isOpen={isOpen && !shouldShowCollapsed}>
                                                     <div className="border-l border-[#dbe3ec] bg-[#f8fafc] dark:border-slate-800 dark:bg-slate-950">
-                                                        {item.subItems?.map(renderSubItem)}
+                                                        {item.subItems?.map((sub) => renderSubItem(sub, [sectionId]))}
                                                     </div>
                                                 </Collapsible>
                                             )}

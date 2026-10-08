@@ -103,6 +103,13 @@ const paymentVisuals: Record<PaymentMethodType, { icon: typeof Banknote; selecte
     },
 }
 
+const paymentMethodPriority: Partial<Record<PaymentMethodType, number>> = {
+    CASH: 0,
+    DEBIT_CARD: 1,
+    CREDIT_CARD: 2,
+    BANK_TRANSFER: 3,
+}
+
 const paymentTypeDescriptions: Record<PaymentMethodType, string> = {
     CASH: "Efectivo",
     DEBIT_CARD: "Tarjeta de débito",
@@ -134,9 +141,10 @@ const isValidEmail = (value: string) => {
 type SaleFormProps = {
     initialProducts: IProduct[]
     storeSettings?: IStore
+    onSaleCreated: (saleID: string) => void
 }
 
-export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
+export const SaleForm = ({ initialProducts, storeSettings, onSaleCreated }: SaleFormProps) => {
     const router = useRouter()
     const searchParams = useSearchParams()
     const { cartItems, actions } = useSaleStore()
@@ -214,7 +222,9 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                 const nextOpenRegisters = registersWithSessions.flatMap(({ register, session }) => {
                     return session ? [{ register, session }] : []
                 })
-                const activeMethods = methods.filter((method) => method.active)
+                const activeMethods = methods
+                    .filter((method) => method.active)
+                    .sort((a, b) => (paymentMethodPriority[a.type] ?? 4) - (paymentMethodPriority[b.type] ?? 4))
                 const preferredMethod =
                     activeMethods.find((method) => method.type === "CASH") ?? activeMethods[0]
 
@@ -471,12 +481,15 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                     ? "Documento emitido exitosamente"
                     : canIssueDte ? "Nota de venta creada exitosamente" : "Comprobante de venta creado exitosamente")
                 actions.clearCart()
-                router.refresh()
-                router.push(
-                    createdSaleID
-                        ? `/home/${createdSaleID}?storeID=${effectiveStoreID}`
-                        : `/home?storeID=${effectiveStoreID}`,
+                setSelectedClient(null)
+                setReceiver({ rut: "", name: "", email: "", address: "", city: "", giro: "" })
+                setShowReceiverFields(saleType === "FACTURA")
+                setIsSplitPayment(false)
+                setPaymentAllocations((current) =>
+                    current.length > 0 ? [{ ...current[0], amount: "" }] : [],
                 )
+                onSaleCreated(createdSaleID)
+                router.refresh()
             }
         } catch (error) {
             const message = error instanceof Error ? error.message : "Falló al crear la venta :("
