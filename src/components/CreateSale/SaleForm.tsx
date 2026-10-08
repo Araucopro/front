@@ -134,9 +134,10 @@ const isValidEmail = (value: string) => {
 type SaleFormProps = {
     initialProducts: IProduct[]
     storeSettings?: IStore
+    onSaleCreated: (saleID: string) => void
 }
 
-export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
+export const SaleForm = ({ initialProducts, storeSettings, onSaleCreated }: SaleFormProps) => {
     const router = useRouter()
     const searchParams = useSearchParams()
     const { cartItems, actions } = useSaleStore()
@@ -471,12 +472,15 @@ export const SaleForm = ({ initialProducts, storeSettings }: SaleFormProps) => {
                     ? "Documento emitido exitosamente"
                     : canIssueDte ? "Nota de venta creada exitosamente" : "Comprobante de venta creado exitosamente")
                 actions.clearCart()
-                router.refresh()
-                router.push(
-                    createdSaleID
-                        ? `/home/${createdSaleID}?storeID=${effectiveStoreID}`
-                        : `/home?storeID=${effectiveStoreID}`,
+                setSelectedClient(null)
+                setReceiver({ rut: "", name: "", email: "", address: "", city: "", giro: "" })
+                setShowReceiverFields(saleType === "FACTURA")
+                setIsSplitPayment(false)
+                setPaymentAllocations((current) =>
+                    current.length > 0 ? [{ ...current[0], amount: "" }] : [],
                 )
+                onSaleCreated(createdSaleID)
+                router.refresh()
             }
         } catch (error) {
             const message = error instanceof Error ? error.message : "Falló al crear la venta :("
