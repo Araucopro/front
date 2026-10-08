@@ -103,6 +103,13 @@ const paymentVisuals: Record<PaymentMethodType, { icon: typeof Banknote; selecte
     },
 }
 
+const paymentMethodPriority: Partial<Record<PaymentMethodType, number>> = {
+    CASH: 0,
+    DEBIT_CARD: 1,
+    CREDIT_CARD: 2,
+    BANK_TRANSFER: 3,
+}
+
 const paymentTypeDescriptions: Record<PaymentMethodType, string> = {
     CASH: "Efectivo",
     DEBIT_CARD: "Tarjeta de débito",
@@ -215,7 +222,9 @@ export const SaleForm = ({ initialProducts, storeSettings, onSaleCreated }: Sale
                 const nextOpenRegisters = registersWithSessions.flatMap(({ register, session }) => {
                     return session ? [{ register, session }] : []
                 })
-                const activeMethods = methods.filter((method) => method.active)
+                const activeMethods = methods
+                    .filter((method) => method.active)
+                    .sort((a, b) => (paymentMethodPriority[a.type] ?? 4) - (paymentMethodPriority[b.type] ?? 4))
                 const preferredMethod =
                     activeMethods.find((method) => method.type === "CASH") ?? activeMethods[0]
 
