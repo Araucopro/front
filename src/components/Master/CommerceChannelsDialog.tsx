@@ -17,6 +17,7 @@ import type { ICommerceChannel, ICreateCommerceChannel, IUpdateCommerceChannel }
 import type { ITenant } from "@/interfaces/master/ITenant"
 import type { IStore } from "@/interfaces/stores/IStore"
 import { useMasterAuth } from "@/stores/master.store"
+import CommerceSalesFields from "./CommerceSalesFields"
 
 type TenantReference = Pick<ITenant, "tenantID" | "name" | "status">
 
@@ -26,7 +27,7 @@ interface CommerceChannelsDialogProps {
     onOpenChange: (open: boolean) => void
 }
 
-const EMPTY_FORM: ICreateCommerceChannel = { code: "", name: "", storeID: "", domain: "" }
+const EMPTY_FORM: ICreateCommerceChannel = { code: "", name: "", storeID: "", domain: "", salesEnabled: false, acceptTestPayments: false }
 const fieldClass = "flex h-10 w-full rounded-md border border-[#dfe2e7] bg-white px-3 text-sm text-[#122238] outline-none focus:ring-2 focus:ring-[#0e5c3b] disabled:bg-[#f5f6f8]"
 
 function channelError(error: unknown) {
@@ -94,6 +95,8 @@ export default function CommerceChannelsDialog({ open, tenant, onOpenChange }: C
             code: form.code.trim().toUpperCase(),
             name: form.name.trim(),
             storeID: form.storeID,
+            salesEnabled: form.salesEnabled === true,
+            acceptTestPayments: form.acceptTestPayments === true,
             ...(form.domain?.trim() ? { domain: form.domain.trim() } : {}),
         }
         if (!/^[A-Z][A-Z0-9_]{1,63}$/.test(payload.code)) {
@@ -122,7 +125,8 @@ export default function CommerceChannelsDialog({ open, tenant, onOpenChange }: C
 
     const beginEdit = (channel: ICommerceChannel) => {
         setEditingID(channel.channelID)
-        setEditForm({ name: channel.name, domain: channel.domain ?? "", storeID: channel.storeID })
+        setEditForm({ name: channel.name, domain: channel.domain ?? "", storeID: channel.storeID,
+            salesEnabled: channel.salesEnabled === true, acceptTestPayments: channel.acceptTestPayments === true })
         setConfirmRotationID("")
     }
 
@@ -133,6 +137,8 @@ export default function CommerceChannelsDialog({ open, tenant, onOpenChange }: C
             name: editForm.name?.trim(),
             domain: editForm.domain?.trim() ?? "",
             storeID: editForm.storeID,
+            salesEnabled: editForm.salesEnabled === true,
+            acceptTestPayments: editForm.acceptTestPayments === true,
         }
         if (!payload.name || !payload.storeID) {
             toast.error("Completa nombre y tienda")
@@ -244,6 +250,10 @@ export default function CommerceChannelsDialog({ open, tenant, onOpenChange }: C
                                                 <p className="mt-1 break-all font-mono text-[10px] text-[#758296]">{channel.code} · {channel.channelID}</p>
                                                 <p className="mt-2 flex items-center gap-1.5 text-xs text-[#536174]"><Store className="h-3.5 w-3.5" />{stores.find((store) => store.storeID === channel.storeID)?.name ?? channel.storeID}</p>
                                                 {channel.domain && <p className="mt-1 text-xs text-[#536174]">Dominio: {channel.domain}</p>}
+                                                <dl className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#536174]">
+                                                    <div><dt className="inline">Registro de ventas: </dt><dd className="inline font-semibold">{channel.salesEnabled ? "Habilitado" : "Deshabilitado"}</dd></div>
+                                                    <div><dt className="inline">Pagos de prueba: </dt><dd className="inline font-semibold">{channel.acceptTestPayments ? "Permitidos" : "Bloqueados"}</dd></div>
+                                                </dl>
                                             </div>
                                             {canManage && (
                                                 <div className="flex flex-wrap gap-2">
@@ -258,6 +268,7 @@ export default function CommerceChannelsDialog({ open, tenant, onOpenChange }: C
                                                 <div><Label htmlFor="channel-edit-name">Nombre</Label><Input id="channel-edit-name" maxLength={160} required value={editForm.name ?? ""} onChange={(event) => setEditForm((current) => ({ ...current, name: event.target.value }))} /></div>
                                                 <div><Label htmlFor="channel-edit-domain">Dominio opcional</Label><Input id="channel-edit-domain" maxLength={255} value={editForm.domain ?? ""} onChange={(event) => setEditForm((current) => ({ ...current, domain: event.target.value }))} /></div>
                                                 <div className="sm:col-span-2"><Label htmlFor="channel-edit-store">Tienda de origen</Label><select id="channel-edit-store" className={fieldClass} required value={editForm.storeID ?? ""} onChange={(event) => setEditForm((current) => ({ ...current, storeID: event.target.value }))}>{stores.map((store) => <option key={store.storeID} value={store.storeID}>{store.name}</option>)}</select></div>
+                                                <div className="sm:col-span-2"><CommerceSalesFields idPrefix="channel-edit" value={editForm} disabled={isSaving} onChange={(patch) => setEditForm((current) => ({ ...current, ...patch }))} /></div>
                                                 <div className="flex gap-2 sm:col-span-2"><button type="submit" disabled={isSaving} className="rounded-md bg-[#0e5c3b] px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">Guardar cambios</button><button type="button" onClick={() => setEditingID("")} className="rounded-md border border-[#dfe2e7] px-4 py-2 text-xs">Cancelar</button></div>
                                             </form>
                                         )}
@@ -283,6 +294,7 @@ export default function CommerceChannelsDialog({ open, tenant, onOpenChange }: C
                                 <div><Label htmlFor="channel-store">Tienda de origen</Label><select id="channel-store" className={fieldClass} required value={form.storeID} onChange={(event) => setForm((current) => ({ ...current, storeID: event.target.value }))}><option value="">Selecciona una tienda</option>{stores.map((store) => <option key={store.storeID} value={store.storeID}>{store.name}</option>)}</select></div>
                                 <div><Label htmlFor="channel-domain">Dominio opcional</Label><Input id="channel-domain" placeholder="www.ejemplo.cl" maxLength={255} value={form.domain ?? ""} onChange={(event) => setForm((current) => ({ ...current, domain: event.target.value }))} /></div>
                             </div>
+                            <div className="mt-4"><CommerceSalesFields idPrefix="channel-create" value={form} disabled={isSaving} onChange={(patch) => setForm((current) => ({ ...current, ...patch }))} /></div>
                             <button type="submit" disabled={isSaving || isLoading || !stores.length || !!error || !!issuedToken} className="mt-4 inline-flex items-center gap-2 rounded-md bg-[#0e5c3b] px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">{isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Crear canal y generar token</button>
                             {!stores.length && !isLoading && !error && <p className="mt-2 text-xs text-amber-800">Este tenant necesita una tienda antes de asignar un ecommerce.</p>}
                         </form>

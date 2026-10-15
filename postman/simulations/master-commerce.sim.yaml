@@ -1,0 +1,5 @@
+simulation: master-commerce-settings
+routing: path
+mocks:
+  - routeKey: erp
+    path: ../mocks/master-commerce.js
