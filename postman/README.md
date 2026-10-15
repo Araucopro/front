@@ -44,3 +44,21 @@ La prueba de navegador del 15 de octubre verificó:
 
 En la interfaz real: **Master → Ecommerce del tenant → Editar → Guardar cambios**.
 Los pagos de prueba permitidos también pueden modificar stock e ingresos.
+
+## Origen web en ventas
+
+El contrato publicado de ventas se consulto el 15 de octubre de 2026. La fixture
+`sale-payments.js` incluye la ampliacion aditiva `sale.commerce` definida en
+`SaleDto` del ERP: `{origin: "WEB", paymentProvider, isTest}` o `null`.
+Esta ampliacion necesita desplegar el backend; no requiere migracion.
+
+Ejecuta la API simulada y luego las acciones reales del frontend:
+
+```powershell
+postman simulation run postman/simulations/sale-payments.sim.yaml --port 4901 --output ndjson
+# En otra terminal del mismo repo:
+node postman/checks/sale-payment-labels.cjs
+```
+
+Comprueba listado mixto, detalle, importe y desglose; no genera pagos de caja
+para ventas web. La tarjeta credito/debito aun no se almacena en el ERP.
