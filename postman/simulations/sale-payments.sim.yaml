@@ -1,0 +1,5 @@
+simulation: sale-payment-labels
+routing: path
+mocks:
+  - routeKey: erp
+    path: ../mocks/sale-payments.js

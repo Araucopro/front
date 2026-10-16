@@ -102,6 +102,7 @@ export type RawSale = {
     payments?: RawSalePayment[]
     Payments?: RawSalePayment[]
     paymentType?: ISaleResponse["paymentType"]
+    commerce?: ISaleResponse["commerce"]
     saleType?: ISaleResponse["saleType"]
     folio?: number | string | null
     issueDate?: string
@@ -308,6 +309,7 @@ export const normalizeSale = (raw: RawSale, fallbackStoreID = "", dte?: RawSaleD
         fmaPago: raw.fmaPago,
         payments: pickArray(raw.payments, raw.Payments).map(normalizeSalePayment),
         paymentType: raw.paymentType,
+        commerce: raw.commerce ?? null,
         saleType: raw.saleType,
         folio: parsedFolio !== null && Number.isFinite(parsedFolio) ? parsedFolio : null,
         issueDate: raw.issueDate,

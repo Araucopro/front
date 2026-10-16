@@ -59,6 +59,12 @@ export interface ISalePaymentMethod {
     type: PaymentMethodType
 }
 
+export interface ISaleCommerce {
+    origin: "WEB"
+    paymentProvider: string
+    isTest: boolean
+}
+
 export interface ISalePayment {
     paymentID: string
     paymentMethodID: string
@@ -156,6 +162,7 @@ export interface ISaleResponse {
     createdAt: string
     fmaPago?: FmaPago
     payments: ISalePayment[]
+    commerce?: ISaleCommerce | null
     /** Compatibilidad temporal con ventas antiguas previas a payments[]. */
     paymentType?: string
     saleType?: SaleType

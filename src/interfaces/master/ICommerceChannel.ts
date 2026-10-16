@@ -6,6 +6,8 @@ export interface ICommerceChannel {
     name: string
     domain: string | null
     active: boolean
+    salesEnabled: boolean
+    acceptTestPayments: boolean
     createdAt: string
     updatedAt: string
 }
@@ -19,6 +21,8 @@ export interface ICreateCommerceChannel {
     name: string
     storeID: string
     domain?: string
+    salesEnabled?: boolean
+    acceptTestPayments?: boolean
 }
 
 export interface IUpdateCommerceChannel {
@@ -26,4 +30,6 @@ export interface IUpdateCommerceChannel {
     storeID?: string
     domain?: string
     active?: boolean
+    salesEnabled?: boolean
+    acceptTestPayments?: boolean
 }
