@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import { deleteClient } from "@/actions/clients/deleteClient"
 import { getClients } from "@/actions/clients/getClients"
 import ClientDialog from "@/components/Clientes/ClientDialog"
+import ClientNotes from "@/components/Clientes/ClientNotes"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -184,13 +185,14 @@ export default function ClientsClient({ initialData, loadError }: ClientsClientP
                                 <TableHead>Dirección</TableHead>
                                 <TableHead>Email</TableHead>
                                 <TableHead>Teléfono</TableHead>
+                                <TableHead className="min-w-[200px]">Notas</TableHead>
                                 <TableHead className="w-[150px] text-right">Acción</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {clients.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={8} className="py-12 text-center text-slate-500 dark:text-slate-300">
+                                    <TableCell colSpan={9} className="py-12 text-center text-slate-500 dark:text-slate-300">
                                         <Building2 className="mx-auto mb-3 h-10 w-10 text-slate-300" />
                                         No hay clientes registrados.
                                     </TableCell>
@@ -220,6 +222,9 @@ export default function ClientsClient({ initialData, loadError }: ClientsClientP
                                         </TableCell>
                                         <TableCell className="text-blue-600">{client.email || "Sin email"}</TableCell>
                                         <TableCell>{client.phone || "Sin teléfono"}</TableCell>
+                                        <TableCell className="min-w-[200px] max-w-xs">
+                                            <ClientNotes notes={client.notes} clientName={client.name} />
+                                        </TableCell>
                                         <TableCell>
                                             <div className="flex justify-end gap-2">
                                                 {confirmingDeleteId === client.clientID ? (
