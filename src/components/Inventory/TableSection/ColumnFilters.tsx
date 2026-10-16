@@ -5,6 +5,7 @@ import { Search, X, ChevronUp, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import type { ICategory } from "@/interfaces/categories/ICategory"
+import type { IProductVariationRaw } from "@/interfaces/products/IRawProduct"
 import { getProductCategoryName } from "@/utils/categoryName"
 
 interface ColumnFiltersProps {
@@ -100,7 +101,7 @@ export function ColumnFilters({ filters, onFilterChange, onClearFilters }: Colum
             <div className="flex items-center px-2 py-2 gap-1 overflow-x-auto min-w-max">
                 {/* PRODUCTO */}
                 <div className="flex-1 w-64 px-1">
-                    <Label className="text-xs text-slate-500 ml-2">Buscar por producto, SKU, género...</Label>
+                    <Label className="text-xs text-slate-500 ml-2">Buscar por producto, SKU, SKU proveedor, EAN, variante...</Label>
                     <div className="relative">
                         <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400 z-10" />
                         <Input
@@ -187,14 +188,23 @@ export function ColumnFilters({ filters, onFilterChange, onClearFilters }: Colum
 // Helper function to apply filters - ACTUALIZADA para búsqueda exacta en campos numéricos
 export function applyColumnFilters(products: any[], filters: any, categories: ICategory[] = []) {
     const filteredProducts = products.filter((product) => {
-        // PRODUCTO filter (name, sku, genre)
+        // Búsqueda general en los campos de producto y variantes, sin filtrar por stock.
         if (filters.producto.trim()) {
             const searchTokens = getSearchTokens(filters.producto)
             const productSearchValue = [
                 product.name,
                 product.genre,
                 product.brand,
-                ...(product.variations || []).map((variation: any) => variation.sku),
+                getProductCategoryName(product, categories),
+                ...(product.variations || []).flatMap((variation: IProductVariationRaw) => [
+                    variation.sku,
+                    variation.supplierSku,
+                    variation.barcode,
+                    variation.variation,
+                    variation.size,
+                    variation.subVariation,
+                    variation.color,
+                ]),
             ].join(" ")
 
             if (!matchesAllTokens(productSearchValue, searchTokens)) return false
