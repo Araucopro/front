@@ -7,7 +7,7 @@ export const getCompletedSalePayments = (sale: Pick<ISaleResponse, "payments">):
     sale.payments.filter((payment) => payment.status === "COMPLETED")
 
 export const getSalePaymentLabel = (
-    sale: Pick<ISaleResponse, "payments" | "paymentType">,
+    sale: Pick<ISaleResponse, "payments" | "paymentType" | "commerce">,
     fallback = "Sin dato",
 ): string => {
     const names = sale.payments
@@ -15,12 +15,14 @@ export const getSalePaymentLabel = (
         .filter((name): name is string => Boolean(name))
 
     const uniqueNames = [...new Set(names)]
-    if (uniqueNames.length > 0) return uniqueNames.join(" + ")
-    return sale.paymentType?.trim() || fallback
+    const provider = sale.commerce?.paymentProvider
+    const providerLabel = provider === "mercadopago" ? "Mercado Pago" : provider
+    const paymentLabel = uniqueNames.join(" + ") || sale.paymentType?.trim() || providerLabel || fallback
+    return sale.commerce?.origin === "WEB" ? `Venta web · ${paymentLabel}` : paymentLabel
 }
 
 export const getSalePaymentBreakdown = (
-    sale: Pick<ISaleResponse, "payments" | "paymentType" | "total">,
+    sale: Pick<ISaleResponse, "payments" | "paymentType" | "total" | "commerce">,
 ): Array<{ label: string; amount: number }> => {
     if (sale.payments.length > 0) {
         return sale.payments.map((payment) => ({
@@ -29,5 +31,5 @@ export const getSalePaymentBreakdown = (
         }))
     }
 
-    return [{ label: sale.paymentType?.trim() || "Sin dato", amount: sale.total }]
+    return [{ label: getSalePaymentLabel(sale), amount: sale.total }]
 }
