@@ -1,6 +1,7 @@
 "use client"
 
 import React from "react"
+import { ProductPhotoField } from "../ProductPhotoField"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -41,6 +42,7 @@ export function ProductCard({ productIndex, product, categories, onCategoriesCha
                     {useProductFormStore.getState().products.length > 1 && (
                         <Button
                             type="button"
+                            disabled={useProductFormStore.getState().uploadingPhotos > 0}
                             onClick={() => removeProduct(productIndex)}
                             className="p-3 rounded-xl text-white hover:bg-white/20 transition-colors backdrop-blur-sm"
                             title="Eliminar producto"
@@ -80,21 +82,11 @@ export function ProductCard({ productIndex, product, categories, onCategoriesCha
                     <div className="space-y-3">
                         <Label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
                             <ImageIcon className="w-4 h-4" />
-                            URL de imagen
+                            Fotos del producto
                         </Label>
-                        <Input
-                            type="url"
-                            inputMode="url"
-                            value={product.image}
-                            onChange={(e) => handleProductChange(productIndex, "image", e.target.value)}
-                            placeholder="https://ejemplo.com/imagen.jpg"
-                            aria-invalid={Boolean(error?.image)}
-                            className={`h-12 text-base border-2 transition-all duration-200 ${
-                                error?.image
-                                    ? "border-red-300 focus:border-red-500 focus:ring-red-500"
-                                    : "border-gray-200 dark:border-slate-600 focus:border-blue-500 focus:ring-blue-500"
-                            }`}
-                        />
+                        <ProductPhotoField value={product.image}
+                            onChange={(value) => handleProductChange(productIndex, "image", value)}
+                            onBusyChange={(busy) => useProductFormStore.getState().setPhotoUploading(busy)} />
                         {error?.image && (
                             <div className="text-red-500 text-sm flex items-center gap-2 mt-2">
                                 <div className="w-2 h-2 bg-red-500 rounded-full"></div>

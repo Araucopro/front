@@ -81,6 +81,9 @@ export default function CreateProductForm({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        if (useProductFormStore.getState().uploadingPhotos > 0) {
+            toast.error("Espera a que terminen de subir las fotos"); return
+        }
         useProductFormStore.getState().validate() // Run validation
         const currentErrors = useProductFormStore.getState().errors
 

@@ -1,5 +1,6 @@
 "use client"
 
+import { primaryProductImage } from "@/utils/product-images"
 import { useState } from "react"
 import NextImage, { type ImageProps } from "next/image"
 
@@ -26,7 +27,7 @@ const remoteHostSuffixes = [
 export const getSafeImageSrc = (source?: ImageProps["src"] | null): ImageProps["src"] => {
     if (typeof source !== "string") return source ?? FALLBACK_IMAGE
 
-    const value = source.trim()
+    const value = primaryProductImage(source)
     if (!value) return FALLBACK_IMAGE
     if (value.startsWith("/")) return value
 
