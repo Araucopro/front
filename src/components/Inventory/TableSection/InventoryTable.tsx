@@ -1,5 +1,6 @@
 "use client"
 
+import { ProductContentDialog } from "../ProductContentDialog"
 import { Tag, Trash2 } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
@@ -51,6 +52,7 @@ const calculateMarkup = (priceCost: number, priceList: number): string => {
 }
 
 export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProduct, handleDeleteVariation, categories, visibleColumns }: InventoryTableProps) {
+    const [contentProduct, setContentProduct] = useState<IRawProduct | null>(null)
     const { user } = useAuth()
     const { editingField, setEditingField, editValue, setEditValue } = inventoryStore()
     const { storeSelected } = useTienda()
@@ -161,6 +163,9 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                                             <p className="font-medium text-base text-center">
                                                                 {product.name}
                                                             </p>
+                                                            {user?.role === Role.Admin && <button type="button"
+                                                                onClick={() => setContentProduct(product)}
+                                                                className="mb-2 w-full text-sm text-blue-600 underline">Fotos y ficha web</button>}
                                                             {product.slug && <p className="text-center text-xs text-slate-500">/{product.slug}</p>}
                                                             {product.description && <p className="max-w-52 text-center text-xs text-slate-500" title={product.description}>{product.description}</p>}
                                                             <div className="flex justify-center gap-2 mt-2">
@@ -513,6 +518,7 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                 </div>
             </div>
             {/* Modal de Pricing */}
+            {contentProduct && <ProductContentDialog key={contentProduct.productID} product={contentProduct} onClose={() => setContentProduct(null)} />}
             <PricingModalWrapper
                 pricingVariation={pricingVariation}
                 setPricingVariation={setPricingVariation}

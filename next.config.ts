@@ -6,6 +6,7 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 const nextConfig: NextConfig = {
+    experimental: { serverActions: { bodySizeLimit: "8mb" } },
     images: {
         remotePatterns: [
             {

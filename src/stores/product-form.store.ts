@@ -3,6 +3,8 @@ import type { CreateProductFormData, ErrorState, Size } from "@/interfaces/produ
 import { generateRandomSku, isValidImageUrl } from "@/utils/product-form.utils"
 
 interface ProductFormState {
+    uploadingPhotos: number
+    setPhotoUploading: (uploading: boolean) => void
     products: CreateProductFormData[]
     errors: ErrorState[]
     setProducts: (products: CreateProductFormData[]) => void
@@ -47,15 +49,19 @@ const getInitialErrors = (): ErrorState => ({
 })
 
 export const useProductFormStore = create<ProductFormState>((set, get) => ({
+    uploadingPhotos: 0,
+    setPhotoUploading: (uploading) => set((state) => ({ uploadingPhotos: Math.max(0, state.uploadingPhotos + (uploading ? 1 : -1)) })),
     products: [getInitialProduct()],
     errors: [getInitialErrors()],
 
     setProducts: (products) => {
+        if (get().uploadingPhotos > 0) return
         set({ products })
         get().validate()
     },
 
     addProduct: () => {
+        if (get().uploadingPhotos > 0) return
         set((state) => ({
             products: [...state.products, getInitialProduct()],
             errors: [...state.errors, getInitialErrors()],
@@ -63,6 +69,7 @@ export const useProductFormStore = create<ProductFormState>((set, get) => ({
     },
 
     removeProduct: (productIndex) => {
+        if (get().uploadingPhotos > 0) return
         if (get().products.length === 1) return
         set((state) => ({
             products: state.products.filter((_, i) => i !== productIndex),
@@ -139,7 +146,7 @@ export const useProductFormStore = create<ProductFormState>((set, get) => ({
             if (!product.name.trim()) productErrors.name = "Falta llenar este campo"
             if (!isValidImageUrl(product.image)) {
                 productErrors.image =
-                    "Ingresa una URL directa a una imagen (.jpg, .jpeg, .png, .webp, .gif, .avif o .svg)"
+                    "Ingresa hasta 5 URLs HTTP/HTTPS separadas por comas (maximo 10000 caracteres)"
             }
             if (!product.categoryID.trim() && !product.categoryName?.trim()) {
                 productErrors.category = "Falta seleccionar o indicar una categoría"
@@ -162,9 +169,7 @@ export const useProductFormStore = create<ProductFormState>((set, get) => ({
     },
 
     resetForm: () => {
-        set({
-            products: [getInitialProduct()],
-            errors: [getInitialErrors()],
-        })
+        if (get().uploadingPhotos > 0) return
+        set({ products: [getInitialProduct()], errors: [getInitialErrors()] })
     },
 }))

@@ -1,4 +1,6 @@
 "use client"
+
+import { serializeProductImages } from "@/utils/product-images"
 // src/utils/exportInventoryToExcel.ts
 import * as XLSX from "xlsx"
 import type { IProduct } from "@/interfaces/products/IProduct"
@@ -155,7 +157,7 @@ export function exportInventoryToExcel(products: ExportableProduct[], categories
                 "SKU Proveedor": variation.supplierSku ?? "",
                 "SKU Tienda": variation.sku,
                 "Código EAN": variation.barcode ?? "",
-                Imagen: product.image,
+                Imagen: serializeProductImages(product.image),
                 Slug: product.slug ?? "",
             })
         })

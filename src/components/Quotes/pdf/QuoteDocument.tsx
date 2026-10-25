@@ -1,3 +1,4 @@
+import { primaryProductImage } from "@/utils/product-images"
 import React from "react"
 import { Document, Page, Text, View, Image } from "@react-pdf/renderer"
 import { IProduct } from "@/interfaces/products/IProduct"
@@ -179,7 +180,7 @@ export const QuoteDocument: React.FC<QuoteDocumentProps> = ({
                                 return (
                                     <View key={product.productID} style={pdfStyles.imageItem}>
                                         {/* eslint-disable-next-line jsx-a11y/alt-text */}
-                                        <Image style={pdfStyles.productImage} src={productImage.image} cache={false} />
+                                        <Image style={pdfStyles.productImage} src={primaryProductImage(productImage.image)} cache={false} />
                                         <Text style={pdfStyles.imageLabel}>
                                             {product.name.length > 20
                                                 ? `${product.name.substring(0, 20)}...`

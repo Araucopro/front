@@ -6,6 +6,7 @@ import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useProductFormStore } from "@/stores/product-form.store"
+import { isValidProductImageList, serializeProductImages } from "@/utils/product-images"
 import { normalize } from "@/utils/product-form.utils"
 import type { CreateProductFormData } from "@/interfaces/products/ICreateProductForm"
 import type { ICategory } from "@/interfaces/categories/ICategory"
@@ -179,6 +180,9 @@ function validateExcelRows(rows: Record<string, unknown>[]): string | null {
             return `Fila ${i + 2}: Stock central inválido.`
         }
 
+        if (!isValidProductImageList(String(row["Imagen"] ?? ""))) {
+            return `Fila ${i + 2}: Imagen debe contener hasta 5 URLs HTTP/HTTPS separadas por comas.`
+        }
         const sku = excelValue(row, "SKU Tienda", "Código EAN")
         if (!sku) return `Fila ${i + 2}: falta SKU Tienda o Código EAN; el backend exige un SKU.`
         const previousRow = skuRows.get(sku)
@@ -252,7 +256,7 @@ export function ExcelImporter({ categories, disabled = false, onCategoriesChange
                     const catId = resolvedCategory.category.categoryID
 
                     const defaultImage = ""
-                    const image = normalizeExcelText(row["Imagen"]) || defaultImage
+                    const image = serializeProductImages(normalizeExcelText(row["Imagen"])) || defaultImage
                     const productName = normalizeExcelText(row["Producto"])
                     const key = normalizeExcelText(productName).toLocaleLowerCase("es-CL")
                     if (resolvedCategory.usedOther) productsAssignedToOther.add(key)

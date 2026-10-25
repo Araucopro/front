@@ -16,6 +16,7 @@ export interface IProduct {
     productID: string
     name: string
     slug?: string
+    /** Hasta cinco URLs separadas por comas; la primera es la portada. */
     image: string
     totalProducts: number
     createdAt: string
