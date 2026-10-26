@@ -9,11 +9,11 @@ type ProductContent = { image: string; description: string; slug: string }
 
 export async function updateProductContent(productID: string, content: ProductContent): Promise<ProductContent> {
     if (!isValidProductImageList(content.image)) throw new Error("Ingresa hasta 5 URLs HTTP/HTTPS validas")
-    const payload = { image: serializeProductImages(content.image), description: content.description.trim(), slug: content.slug.trim() }
-    if (!payload.slug) throw new Error("El slug es obligatorio")
+    const slug = content.slug.trim()
+    const payload = { image: serializeProductImages(content.image), description: content.description.trim(), ...(slug ? { slug } : {}) }
     const result = await fetcher<ProductContent>(`${API_URL}/products/${productID}`, {
         method: "PATCH", body: JSON.stringify(payload),
     })
     revalidatePath("/home/inventory")
-    return { image: result.image ?? "", description: result.description ?? "", slug: result.slug }
+    return { image: result.image ?? "", description: result.description ?? "", slug: result.slug ?? "" }
 }
