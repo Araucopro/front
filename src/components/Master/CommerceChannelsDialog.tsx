@@ -27,7 +27,7 @@ interface CommerceChannelsDialogProps {
     onOpenChange: (open: boolean) => void
 }
 
-const EMPTY_FORM: ICreateCommerceChannel = { code: "", name: "", storeID: "", domain: "", salesEnabled: false, acceptTestPayments: false }
+const EMPTY_FORM: ICreateCommerceChannel = { code: "", name: "", storeID: "", domain: "", salesEnabled: false, acceptTestPayments: false, requireProductPhoto: true }
 const fieldClass = "flex h-10 w-full rounded-md border border-[#dfe2e7] bg-white px-3 text-sm text-[#122238] outline-none focus:ring-2 focus:ring-[#0e5c3b] disabled:bg-[#f5f6f8]"
 
 function channelError(error: unknown) {
@@ -97,6 +97,7 @@ export default function CommerceChannelsDialog({ open, tenant, onOpenChange }: C
             storeID: form.storeID,
             salesEnabled: form.salesEnabled === true,
             acceptTestPayments: form.acceptTestPayments === true,
+            requireProductPhoto: form.requireProductPhoto !== false,
             ...(form.domain?.trim() ? { domain: form.domain.trim() } : {}),
         }
         if (!/^[A-Z][A-Z0-9_]{1,63}$/.test(payload.code)) {
@@ -126,7 +127,8 @@ export default function CommerceChannelsDialog({ open, tenant, onOpenChange }: C
     const beginEdit = (channel: ICommerceChannel) => {
         setEditingID(channel.channelID)
         setEditForm({ name: channel.name, domain: channel.domain ?? "", storeID: channel.storeID,
-            salesEnabled: channel.salesEnabled === true, acceptTestPayments: channel.acceptTestPayments === true })
+            salesEnabled: channel.salesEnabled === true, acceptTestPayments: channel.acceptTestPayments === true,
+            requireProductPhoto: channel.requireProductPhoto !== false })
         setConfirmRotationID("")
     }
 
@@ -139,6 +141,7 @@ export default function CommerceChannelsDialog({ open, tenant, onOpenChange }: C
             storeID: editForm.storeID,
             salesEnabled: editForm.salesEnabled === true,
             acceptTestPayments: editForm.acceptTestPayments === true,
+            requireProductPhoto: editForm.requireProductPhoto !== false,
         }
         if (!payload.name || !payload.storeID) {
             toast.error("Completa nombre y tienda")
@@ -253,6 +256,7 @@ export default function CommerceChannelsDialog({ open, tenant, onOpenChange }: C
                                                 <dl className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#536174]">
                                                     <div><dt className="inline">Registro de ventas: </dt><dd className="inline font-semibold">{channel.salesEnabled ? "Habilitado" : "Deshabilitado"}</dd></div>
                                                     <div><dt className="inline">Pagos de prueba: </dt><dd className="inline font-semibold">{channel.acceptTestPayments ? "Permitidos" : "Bloqueados"}</dd></div>
+                                                    <div><dt className="inline">Foto para publicar: </dt><dd className="inline font-semibold">{channel.requireProductPhoto !== false ? "Obligatoria" : "Opcional"}</dd></div>
                                                 </dl>
                                             </div>
                                             {canManage && (

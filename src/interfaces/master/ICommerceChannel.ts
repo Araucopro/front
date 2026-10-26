@@ -8,6 +8,7 @@ export interface ICommerceChannel {
     active: boolean
     salesEnabled: boolean
     acceptTestPayments: boolean
+    requireProductPhoto: boolean
     createdAt: string
     updatedAt: string
 }
@@ -23,6 +24,7 @@ export interface ICreateCommerceChannel {
     domain?: string
     salesEnabled?: boolean
     acceptTestPayments?: boolean
+    requireProductPhoto?: boolean
 }
 
 export interface IUpdateCommerceChannel {
@@ -32,4 +34,5 @@ export interface IUpdateCommerceChannel {
     active?: boolean
     salesEnabled?: boolean
     acceptTestPayments?: boolean
+    requireProductPhoto?: boolean
 }
