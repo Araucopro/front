@@ -58,7 +58,7 @@ export function ProductContentDialog({ product, onClose }: { product: IRawProduc
                     <section className="space-y-4 border-t border-slate-200 pt-6 dark:border-slate-800" aria-labelledby="product-web-content-heading">
                         <div className="space-y-1">
                             <h3 id="product-web-content-heading" className="text-sm font-semibold text-slate-900 dark:text-slate-100">Información del producto</h3>
-                            <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">Completa la descripción y el enlace para la ficha de tu tienda.</p>
+                            <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">La descripción y el enlace son opcionales. El producto puede mostrarse en la web sin completarlos.</p>
                         </div>
                         <div className="space-y-2">
                             <label htmlFor="product-web-description" className="text-sm font-medium text-slate-700 dark:text-slate-300">Descripción del producto</label>
@@ -68,11 +68,11 @@ export function ProductContentDialog({ product, onClose }: { product: IRawProduc
                         </div>
                         <div className="space-y-2">
                             <label htmlFor="product-web-slug" className="text-sm font-medium text-slate-700 dark:text-slate-300">Enlace del producto (slug)</label>
-                            <Input id="product-web-slug" required maxLength={255} value={slug}
+                            <Input id="product-web-slug" maxLength={255} value={slug}
                                 className="h-11 rounded-lg border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950"
                                 placeholder="nombre-del-producto" onChange={(event) => setSlug(event.target.value)} disabled={busy}
                                 aria-describedby="product-web-slug-help" />
-                            <p id="product-web-slug-help" className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">Se usa en la dirección de la ficha. Consérvalo al cambiar el nombre del producto.</p>
+                            <p id="product-web-slug-help" className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">Si lo dejas vacío se conserva el enlace existente; si no hay uno, la web genera una dirección desde el ID del producto.</p>
                         </div>
                     </section>
                 </div>

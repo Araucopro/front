@@ -1,0 +1,5 @@
+simulation: product-photo-upload
+routing: path
+mocks:
+  - routeKey: upload
+    path: ../mocks/product-photo-upload.js
