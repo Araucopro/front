@@ -55,31 +55,72 @@ export function ProductCard({ productIndex, product, categories, onCategoriesCha
             </div>
 
             <div className="p-8 space-y-8">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="space-y-3">
-                        <Label className="flex items-center gap-2 text-sm font-semibold">
-                            <Shirt className="w-4 h-4" />
-                            Nombre del producto
-                        </Label>
-                        <Input
-                            value={product.name}
-                            onChange={(e) => handleProductChange(productIndex, "name", e.target.value)}
-                            placeholder="Ej: Zapatillas deportivas"
-                            className={`h-12 text-base border-2 transition-all duration-200 ${
-                                error?.name
-                                    ? "border-red-300 focus:border-red-500 focus:ring-red-500"
-                                    : "border-gray-200 dark:border-slate-600 focus:border-blue-500 focus:ring-blue-500"
-                            }`}
-                        />
-                        {error?.name && (
-                            <div className="text-red-500 text-sm flex items-center gap-2 mt-2">
-                                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                                {error.name}
-                            </div>
-                        )}
+                <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-2">
+                    <div className="min-w-0 space-y-6">
+                        <div className="space-y-3">
+                            <Label className="flex items-center gap-2 text-sm font-semibold">
+                                <Shirt className="w-4 h-4" />
+                                Nombre del producto
+                            </Label>
+                            <Input
+                                value={product.name}
+                                onChange={(e) => handleProductChange(productIndex, "name", e.target.value)}
+                                placeholder="Ej: Zapatillas deportivas"
+                                className={`h-12 text-base border-2 transition-all duration-200 ${
+                                    error?.name
+                                        ? "border-red-300 focus:border-red-500 focus:ring-red-500"
+                                        : "border-gray-200 dark:border-slate-600 focus:border-blue-500 focus:ring-blue-500"
+                                }`}
+                            />
+                            {error?.name && (
+                                <div className="text-red-500 text-sm flex items-center gap-2 mt-2">
+                                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                    {error.name}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="space-y-3">
+                            <Label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                <Users className="w-4 h-4" />
+                                Género
+                            </Label>
+                            <Select
+                                value={product.genre}
+                                onValueChange={(value) => handleProductChange(productIndex, "genre", value)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecciona género" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Hombre">Hombre</SelectItem>
+                                    <SelectItem value="Mujer">Mujer</SelectItem>
+                                    <SelectItem value="Unisex">Unisex</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            {error?.genre && (
+                                <div className="text-red-500 text-sm flex items-center gap-2 mt-2">
+                                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                    {error.genre}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="space-y-3">
+                            <Label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                <Package className="w-4 h-4" />
+                                Marca
+                            </Label>
+                            <Input
+                                value={product.brand}
+                                onChange={(e) => handleProductChange(productIndex, "brand", e.target.value)}
+                                placeholder="Ej: D3SI, Otro..."
+                                className="h-12 text-base border-2 transition-all duration-200 border-gray-200 dark:border-slate-600 focus:border-blue-500 focus:ring-blue-500"
+                            />
+                        </div>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="min-w-0 space-y-3">
                         <Label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
                             <ImageIcon className="w-4 h-4" />
                             Fotos del producto
@@ -93,45 +134,6 @@ export function ProductCard({ productIndex, product, categories, onCategoriesCha
                                 {error.image}
                             </div>
                         )}
-                    </div>
-
-                    <div className="space-y-3">
-                        <Label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                            <Users className="w-4 h-4" />
-                            Género
-                        </Label>
-                        <Select
-                            value={product.genre}
-                            onValueChange={(value) => handleProductChange(productIndex, "genre", value)}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Selecciona género" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="Hombre">Hombre</SelectItem>
-                                <SelectItem value="Mujer">Mujer</SelectItem>
-                                <SelectItem value="Unisex">Unisex</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        {error?.genre && (
-                            <div className="text-red-500 text-sm flex items-center gap-2 mt-2">
-                                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                                {error.genre}
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="space-y-3">
-                        <Label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                            <Package className="w-4 h-4" />
-                            Marca
-                        </Label>
-                        <Input
-                            value={product.brand}
-                            onChange={(e) => handleProductChange(productIndex, "brand", e.target.value)}
-                            placeholder="Ej: D3SI, Otro..."
-                            className="h-12 text-base border-2 transition-all duration-200 border-gray-200 dark:border-slate-600 focus:border-blue-500 focus:ring-blue-500"
-                        />
                     </div>
                 </div>
 

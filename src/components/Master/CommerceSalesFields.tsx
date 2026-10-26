@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import type { ICreateCommerceChannel } from "@/interfaces/master/ICommerceChannel"
 
-type SalesSettings = Pick<ICreateCommerceChannel, "salesEnabled" | "acceptTestPayments">
+type SalesSettings = Pick<ICreateCommerceChannel, "salesEnabled" | "acceptTestPayments" | "requireProductPhoto">
 
 interface Props {
     idPrefix: string
@@ -33,6 +33,15 @@ export default function CommerceSalesFields({ idPrefix, value, disabled, onChang
                 <Switch className="data-[state=checked]:bg-[#0e5c3b]" id={`${idPrefix}-test-payments`} checked={value.acceptTestPayments === true} disabled={disabled}
                     aria-describedby={`${idPrefix}-test-description`}
                     onCheckedChange={(checked) => onChange({ acceptTestPayments: checked })} />
+            </div>
+            <div className="flex items-start justify-between gap-4 border-t border-[#dfe2e7] pt-3">
+                <div className="space-y-1">
+                    <Label htmlFor={`${idPrefix}-require-photo`} className="text-xs font-semibold text-[#122238]">Exigir foto para publicar</Label>
+                    <p id={`${idPrefix}-photo-description`} className="text-xs text-[#536174]">Desactívalo para publicar productos sin foto con una imagen provisional. Descripción, slug y precio válido siguen siendo necesarios.</p>
+                </div>
+                <Switch className="data-[state=checked]:bg-[#0e5c3b]" id={`${idPrefix}-require-photo`} checked={value.requireProductPhoto !== false} disabled={disabled}
+                    aria-describedby={`${idPrefix}-photo-description`}
+                    onCheckedChange={(checked) => onChange({ requireProductPhoto: checked })} />
             </div>
         </div>
     )
