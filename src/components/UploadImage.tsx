@@ -1,10 +1,8 @@
 "use client"
 
-import { uploadImageCDN } from "@/actions/upload/image"
-import { CDN_KEY, CDN_NAME } from "@/lib/enviroments"
-import { fileToArrayBuffer } from "@/utils/file-to-buffer"
+import { uploadProductPhoto } from "@/actions/upload/uploadProductPhoto"
 import Image from "next/image"
-import { useState, useTransition } from "react"
+import { useState } from "react"
 import { toast } from "sonner"
 
 const UploadImageToCloudinary = () => {
@@ -12,7 +10,6 @@ const UploadImageToCloudinary = () => {
     const [imageUrl, setImageUrl] = useState("")
     const [uploading, setUploading] = useState(false)
     const [resultUrl, setResultUrl] = useState("")
-    const [isPending, startTransition] = useTransition()
 
     const handleUpload = async () => {
         try {
@@ -20,14 +17,12 @@ const UploadImageToCloudinary = () => {
                 toast("Selecciona un archivo")
                 return
             }
-            startTransition(async () => {
-                const buffer = await fileToArrayBuffer(file)
-                const upload = await uploadImageCDN(buffer)
-                setImageUrl(upload.url)
-            })
+            setUploading(true)
+            const url = await uploadProductPhoto(file, file.name)
+            setImageUrl(url)
+            setResultUrl(url)
         } catch (error) {
-            console.error(error)
-            toast("Error de red al subir imagen")
+            toast.error(error instanceof Error ? error.message : "No se pudo subir la foto")
         } finally {
             setUploading(false)
         }
@@ -65,7 +60,7 @@ const UploadImageToCloudinary = () => {
             {resultUrl && (
                 <div className="mt-4">
                     <p className="text-sm">Imagen subida:</p>
-                    <Image src={resultUrl} alt="Imagen subida" className="w-48 mt-2" />
+                    <Image src={resultUrl} alt="Imagen subida" width={192} height={240} className="w-48 mt-2 object-contain" />
                     <a href={resultUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
                         Ver imagen
                     </a>

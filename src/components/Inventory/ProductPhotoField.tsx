@@ -2,12 +2,13 @@
 
 import { useId, useRef, useState } from "react"
 import { ArrowLeft, ArrowRight, Crop, ExternalLink, GripVertical, ImagePlus, Link2, Loader2, Star, Trash2, Upload } from "lucide-react"
-import { uploadImageCDN } from "@/actions/upload/image"
+import { uploadProductPhoto } from "@/actions/upload/uploadProductPhoto"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { SafeImage } from "@/components/ui/safe-image"
 import { productImages, isValidProductImageList, moveProductImage } from "@/utils/product-images"
 import { formatProductPhoto } from "@/utils/product-photo-format"
+import { isSupportedProductPhoto } from "@/utils/product-photo-file"
 import { ProductPhotoEditor } from "./ProductPhotoEditor"
 import { toast } from "sonner"
 
@@ -39,8 +40,8 @@ export function ProductPhotoField({ value, onChange, onBusyChange, disabled = fa
 
     async function applyPhoto(photo: Blob) {
         if (editing === null) return
-        const result = await uploadImageCDN(await photo.arrayBuffer(), "foto-1080x1350.jpg")
-        onChange(photos.map((current, index) => index === editing ? result.secure_url : current).join(", "))
+        const url = await uploadProductPhoto(photo)
+        onChange(photos.map((current, index) => index === editing ? url : current).join(", "))
         toast.success("Foto ajustada a 1080 × 1350 px. Guarda la ficha para aplicar el cambio.")
     }
 
@@ -48,7 +49,7 @@ export function ProductPhotoField({ value, onChange, onBusyChange, disabled = fa
         if (!files?.length || uploading.current || locked || invalid) return
         const selected = Array.from(files)
         if (photos.length + selected.length > 5) { toast.error("Puedes guardar hasta 5 fotos por producto"); return }
-        if (selected.some((file) => !/^image\/(jpeg|png|webp|avif|gif)$/.test(file.type) || file.size > 5 * 1024 * 1024)) {
+        if (selected.some((file) => !isSupportedProductPhoto(file))) {
             toast.error("Usa fotos JPG, PNG, WEBP, AVIF o GIF de hasta 5 MB"); return
         }
         uploading.current = true; setBusy(true); onBusyChange?.(true)
@@ -56,8 +57,8 @@ export function ProductPhotoField({ value, onChange, onBusyChange, disabled = fa
         try {
             for (const file of selected) {
                 const formatted = await formatProductPhoto(file)
-                const result = await uploadImageCDN(await formatted.arrayBuffer(), "foto-1080x1350.jpg")
-                uploaded.push(result.secure_url)
+                const url = await uploadProductPhoto(formatted)
+                uploaded.push(url)
                 // Preserve successful uploads even if a later file fails.
                 onChange(uploaded.join(", "))
             }
@@ -148,7 +149,7 @@ export function ProductPhotoField({ value, onChange, onBusyChange, disabled = fa
                     {busy ? "Subiendo..." : "Seleccionar fotos"}
                 </Button>
             </div>
-            <input ref={fileInput} type="file" multiple accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
+            <input ref={fileInput} type="file" multiple accept="image/jpeg,image/png,image/webp,image/avif,image/gif,.jpg,.jpeg,.png,.webp,.avif,.gif"
                 aria-label="Seleccionar archivos de fotos" disabled={locked || invalid || !remaining} className="hidden"
                 onChange={(event) => { void upload(event.target.files); event.target.value = "" }} />
         </div>

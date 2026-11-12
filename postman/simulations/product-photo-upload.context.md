@@ -32,6 +32,24 @@ Stop the simulation with Ctrl+C. Use only the local fixture's fake credentials.
 ## Observations
 
 <!-- begin:observations -->
+- 2026-11-12 (Mac upload follow-up): The upload action now accepts FormData
+  and returns safe serializable results rather than throwing expected service
+  errors. Re-read live Scalar GET /stores, Store.tenantID and the product image
+  contract; no backend DTO changed. The HTTP harness passed tenant/support
+  isolation, invalid/expired sessions, ambiguous companies, empty/oversized
+  files, unsupported formats, missing MIME, CDN 400/503 and sanitized errors
+  with references. The original ArrayBuffer action observations below describe
+  the earlier implementation and remain as history.
+- 2026-11-12 (browser transport): `scripts/check-product-photo-browser.cjs`
+  passed using Chromium/Edge and WebKit on Windows against a production Next
+  build and these local stand-ins. A 3.1 MB synthetic JPEG with EXIF orientation
+  traversed FormData/React transport; the real gallery's canvas output reached
+  the receiver as JPEG 1080 x 1350. Reordering, editor upload, a readable
+  production failure, retry, a partially successful batch and rejected
+  size/session were verified. Simulation request events showed GET /stores and
+  Cloudinary SDK multipart POSTs, including injected 400/503 responses. No real
+  CDN, native Mac browser, user image or product PATCH was exercised. See
+  `docs/product-photo-upload.md` for setup/cleanup and remaining diagnosis.
 - 2026-11-12: Re-ran `node postman/checks/product-photo-upload.cjs` against the
   local simulation using CLI 1.74.0. Tenant/support folder isolation, rejected
   sessions, empty/mixed/missing tenant data, file-size checks and the surfaced
