@@ -34,37 +34,63 @@ const { cloudinary } = require(path.join(src, 'lib/cdn-setup.ts'))
 // Test-process SDK routing only; production CDN configuration is untouched.
 cloudinary.config({ upload_prefix: base, disable_promise: true })
 const png = Uint8Array.from(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6ZgAAAABJRU5ErkJggg==', 'base64')).buffer
+const form = (bytes = png, name = 'foto.png', type = 'image/png') => {
+  const data = new FormData()
+  data.append('file', new Blob([bytes], { type }), name)
+  return data
+}
+const failure = async (data, message, withReference = false) => {
+  const result = await uploadImageCDN(data)
+  assert.equal(result.ok, false)
+  assert.match(result.error, message)
+  if (withReference) assert.match(result.reference, /^[0-9a-f-]{36}$/)
+  assert.doesNotMatch(JSON.stringify(result), /fake-secret|fake-key|Invalid or expired token|Server Components/)
+  return result
+}
 const state = async () => (await fetch(base + '/__state')).json()
 const mode = async value => fetch(base + '/__control', { method: 'POST', headers: {
   'content-type': 'application/json' }, body: JSON.stringify({ mode: value }) })
 ;(async () => {
   const initial = (await state()).uploads.length
   token = ''
-  await assert.rejects(uploadImageCDN(png), /Inicia sesion/)
+  await failure(form(), /Inicia sesión/)
   token = 'invalid'
-  await assert.rejects(uploadImageCDN(png), /Invalid or expired token/)
+  await failure(form(), /verificar tu acceso/, true)
   token = 'master-without-company'
-  await assert.rejects(uploadImageCDN(png), /Tenant context is required/)
+  await failure(form(), /verificar tu acceso/, true)
   token = 'tenant-demo'
-  await assert.rejects(uploadImageCDN(new ArrayBuffer(0)), /5 MB/)
-  await assert.rejects(uploadImageCDN(new ArrayBuffer(5 * 1024 * 1024 + 1)), /5 MB/)
+  await failure(form(new ArrayBuffer(0)), /5 MB/)
+  await failure(form(new ArrayBuffer(5 * 1024 * 1024 + 1)), /5 MB/)
+  await failure(new FormData(), /5 MB/)
+  await failure(form(png, 'foto.heic', 'image/heic'), /JPG/)
   for (const value of ['empty', 'mixed', 'missing-tenant']) {
     await mode(value)
-    await assert.rejects(uploadImageCDN(png), /No se pudo verificar la empresa/)
+    await failure(form(), /No se pudo verificar la empresa/)
   }
   assert.equal((await state()).uploads.length, initial, 'Rejected requests must not upload files')
   await mode('ok')
-  const tenantUpload = await uploadImageCDN(png, 'foto.png')
+  const tenantUpload = await uploadImageCDN(form())
+  assert.equal(tenantUpload.ok, true)
+  assert.deepEqual(Object.keys(tenantUpload).sort(), ['ok', 'secure_url'])
   assert.match(tenantUpload.secure_url, /^https:\/\/res.cloudinary.com\//)
   token = 'support-demo'
-  await uploadImageCDN(png, 'soporte.png')
+  assert.equal((await uploadImageCDN(form(png, 'soporte.png'))).ok, true)
   let uploads = (await state()).uploads.slice(initial)
   assert.equal(uploads[0].folder, 'desi_v2/00000000-0000-4000-8000-000000000001/products')
   assert.equal(uploads[1].folder, 'desi_v2/00000000-0000-4000-8000-000000000099/products')
   assert.ok(uploads.every(item => item.hasPng && item.overwrite === '0' && item.unique_filename === '1'))
   await mode('cdn-failure')
-  await assert.rejects(uploadImageCDN(png), /No se pudo subir la foto a Cloudinary/)
+  await failure(form(), /no pudo procesar la imagen/, true)
+  await mode('ok')
+  token = 'tenant-demo'
+  for (const type of ['', 'application/octet-stream']) {
+    assert.equal((await uploadImageCDN(form(png, 'FOTO.PNG', type))).ok, true)
+  }
+  await failure(form(png, 'foto.exe', ''), /JPG/)
+  await mode('cdn-unavailable')
+  await failure(form(), /no está disponible/, true)
   await mode('ok')
   console.log(JSON.stringify({ tenantUpload: true, supportUpload: true, authRequired: true,
-    ambiguousTenantRejected: true, fileSizeEnforced: true, cloudinaryFailureHandled: true }))
+    ambiguousTenantRejected: true, fileSizeEnforced: true, cloudinaryFailureHandled: true,
+    multipart: true, missingMime: true, safeSerializableErrors: true }))
 })().catch(error => { console.error(error); process.exitCode = 1 })
