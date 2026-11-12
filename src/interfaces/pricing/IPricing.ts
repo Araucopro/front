@@ -2,6 +2,12 @@ export type PriceType = "list" | "cost"
 export type DiscountType = "PERCENTAGE" | "FIXED_AMOUNT" | "FIXED_PRICE" | "BUY_X_GET_Y" | "BUNDLE"
 export type DiscountScope = "UNIT" | "TOTAL"
 export type DiscountTargetScope = "VARIATION" | "STORE" | "PRODUCT" | "CATEGORY" | "BRAND" | "MODEL"
+export type OfferSalesChannel = "PHYSICAL" | "ONLINE"
+
+export interface IOfferOptions {
+    stores: Array<{ storeID: string; name: string; onlineEnabled: boolean }>
+    salesChannels: OfferSalesChannel[]
+}
 
 // ─── Actualización de precio ──────────────────────────────────────────────────
 
@@ -58,6 +64,8 @@ export interface ICreateOfferBundleItemPayload {
 }
 
 export interface ICreateOfferPayload {
+    salesChannels?: OfferSalesChannel[]
+    storeIDs?: string[]
     storeProductID?: string
     targetScope?: DiscountTargetScope
     storeID?: string
@@ -84,6 +92,9 @@ export interface ICreateOfferPayload {
 export type IUpdateOfferPayload = Partial<ICreateOfferPayload>
 
 export interface IOffer {
+    salesChannels?: OfferSalesChannel[]
+    storeIDs?: string[]
+    productTargets?: Array<{ productID: string; product?: { productID: string; name: string } | null }>
     offerID: string
     storeProductID?: string | null
     targetScope?: DiscountTargetScope
@@ -161,4 +172,24 @@ export interface IPriceCheck {
     discountType?: DiscountType
     activeOffer?: IOffer
     hasActiveOffer: boolean
+}
+
+export interface ICalculateCartPayload {
+    storeID: string
+    items: Array<{ storeProductID: string; quantity: number }>
+}
+
+export interface ICartPricingItem {
+    storeProductID: string
+    quantity: number
+    baseUnitPrice: number
+    finalUnitPrice: number
+    lineTotal: number
+    discountsApplied: Array<{ source: "AUTO" | "MANUAL"; applied: boolean; offerID?: string; description?: string }>
+}
+
+export interface ICartPricing {
+    items: ICartPricingItem[]
+    totals: { subtotal: number; discount: number; total: number }
+    pricingContext: { storeID?: string; pricingDate: string }
 }

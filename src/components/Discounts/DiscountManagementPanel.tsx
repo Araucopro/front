@@ -12,6 +12,7 @@ import { IStoreProduct } from "@/interfaces/products/IProductVariation"
 import { ISpecialOffer } from "@/interfaces/pricing/IPricing"
 import { AlertTriangle, Box, Plus } from "lucide-react"
 import { toast } from "sonner"
+import { useDiscountManagement } from "@/hooks/useDiscountManagement"
 
 interface DiscountManagementPanelProps {
     products: IProduct[]
@@ -31,6 +32,7 @@ type DiscountOfferRow = {
     storeProductID?: string
     productName: string
     detail: string
+    coverageLabel?: string
     type: string
     typeTone: string
     valueLabel: string
@@ -132,6 +134,7 @@ const getValidityLabel = (startDate: string, endDate?: string) => {
 }
 
 export function DiscountManagementPanel({ products, offers }: DiscountManagementPanelProps) {
+    const canManage = useDiscountManagement()
     const router = useRouter()
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [initialStoreProduct, setInitialStoreProduct] = useState<string>()
@@ -147,7 +150,6 @@ export function DiscountManagementPanel({ products, offers }: DiscountManagement
             product.ProductVariations.forEach((variation) => {
                 variation.StoreProducts?.forEach((storeProduct) => {
                     const stockQuantity = getStoreProductStock(storeProduct)
-                    if (stockQuantity <= 0) return
 
                     flattened.push({
                         storeProductID: storeProduct.storeProductID,
@@ -192,6 +194,7 @@ export function DiscountManagementPanel({ products, offers }: DiscountManagement
             rowsById.set(offer.offerID, {
                 offerID: offer.offerID,
                 storeProductID,
+                coverageLabel: `${(offer.salesChannels ?? ["PHYSICAL", "ONLINE"]).map((channel) => channel === "ONLINE" ? "Online" : "Tienda física").join(" · ")} · ${offer.storeIDs?.length ? `${offer.storeIDs.length} sucursal${offer.storeIDs.length === 1 ? "" : "es"}` : offer.store?.name ?? option?.storeName ?? getStoreName(offer)}`,
                 productName: option?.productName ?? getProductName(offer),
                 detail:
                     offer.targetScope === "CATEGORY"
@@ -255,12 +258,14 @@ export function DiscountManagementPanel({ products, offers }: DiscountManagement
     }, [mockActiveById, realOfferRows])
 
     const handleOpenModal = (storeProductID?: string, offer?: ISpecialOffer | null) => {
+        if (!canManage) return
         setInitialStoreProduct(storeProductID)
         setSelectedOffer(offer ?? null)
         setIsModalOpen(true)
     }
 
     const handleToggleOffer = async (offer: DiscountOfferRow, checked: boolean) => {
+        if (!canManage) return
         if (offer.isMock) {
             setMockActiveById((current) => new Map(current).set(offer.offerID, checked))
             toast.message("Tipo de descuento mock: falta contrato backend.")
@@ -306,14 +311,14 @@ export function DiscountManagementPanel({ products, offers }: DiscountManagement
                         Revisa todas las ofertas creadas y crea nuevas promociones desde un solo lugar.
                     </p>
                 </div>
-                <Button
+                {canManage && <Button
                     variant="outline"
                     className="h-9 rounded-lg border-slate-400 bg-white px-4 font-bold text-slate-950 hover:bg-slate-50"
                     onClick={() => handleOpenModal(storeProductOptions[0]?.storeProductID)}
                 >
                     <Plus className="h-4 w-4" />
                     Crear descuento
-                </Button>
+                </Button>}
             </header>
 
             {storeProductOptions.length === 0 && realOfferRows.length === 0 ? (
@@ -386,6 +391,7 @@ export function DiscountManagementPanel({ products, offers }: DiscountManagement
                                             <p className="font-mono text-xs text-slate-500">
                                                 {offer.mockNote ?? offer.detail}
                                             </p>
+                                            {offer.coverageLabel && <p className="text-xs text-blue-700 dark:text-blue-300">{offer.coverageLabel}</p>}
                                         </div>
                                     </TableCell>
                                     <TableCell>
@@ -411,7 +417,7 @@ export function DiscountManagementPanel({ products, offers }: DiscountManagement
                                     <TableCell onClick={(event) => event.stopPropagation()}>
                                         <Switch
                                             checked={offer.isActive}
-                                            disabled={savingOfferID === offer.offerID}
+                                            disabled={!canManage || savingOfferID === offer.offerID}
                                             onCheckedChange={(checked) => handleToggleOffer(offer, checked)}
                                             className="data-[state=checked]:bg-blue-950 data-[state=unchecked]:bg-slate-300"
                                         />
