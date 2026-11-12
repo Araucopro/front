@@ -13,10 +13,15 @@ import {
     DiscountTargetScope,
     DiscountType,
     ICreateOfferPayload,
+    IOfferOptions,
+    OfferSalesChannel,
     ISpecialOffer,
 } from "@/interfaces/pricing/IPricing"
 import { createOffer } from "@/actions/pricing/createOffer"
 import { updateOffer } from "@/actions/pricing/updateOffer"
+import { getOfferOptions } from "@/actions/pricing/getOfferOptions"
+import { DiscountCoverageField } from "./DiscountCoverageField"
+import { useDiscountManagement } from "@/hooks/useDiscountManagement"
 import { normalize } from "@/utils/product-form.utils"
 import { useTienda } from "@/stores/tienda.store"
 import { toast } from "sonner"
@@ -175,7 +180,7 @@ const getKindFromOffer = (offer?: ISpecialOffer | null) => {
     return (
         discountKinds.find((kind) => kind.discountType === "BUY_X_GET_Y" && offer.discountType === "BUY_X_GET_Y") ??
         discountKinds.find((kind) => kind.discountType === "BUNDLE" && offer.discountType === "BUNDLE") ??
-        discountKinds.find((kind) => kind.targetScope && kind.targetScope === offer.targetScope) ??
+        discountKinds.find((kind) => kind.discountType === offer.discountType && kind.targetScope && kind.targetScope === offer.targetScope) ??
         discountKinds.find(
             (kind) =>
                 kind.supported &&
@@ -200,6 +205,12 @@ const buildForm = (
 
     return {
         storeProductID,
+        targetScope: (offer?.targetScope ?? selectedKind.targetScope ?? "VARIATION") as DiscountTargetScope,
+        productIDs: offer?.productIDs ?? offer?.productTargets?.map((target) => target.productID) ??
+            options.filter((option) => option.storeProductID === storeProductID && option.productID).map((option) => option.productID!),
+        storeIDs: offer?.storeIDs?.length ? offer.storeIDs : [offer?.storeID ?? offer?.storeProduct?.store?.storeID ??
+            options.find((option) => option.storeProductID === storeProductID)?.storeID ?? ""].filter(Boolean),
+        salesChannels: (offer?.salesChannels ?? (offer ? ["PHYSICAL", "ONLINE"] : ["PHYSICAL"])) as OfferSalesChannel[],
         secondaryStoreProductID: options.find((option) => option.storeProductID !== storeProductID)?.storeProductID ?? "",
         kindID: selectedKind.id,
         discountType: (offer?.discountType ?? selectedKind.discountType ?? "PERCENTAGE") as DiscountType,
@@ -230,6 +241,7 @@ export function DiscountModal({
     onOfferCreated,
     onOfferUpdated,
 }: DiscountModalProps) {
+    const canManage = useDiscountManagement()
     const { storeSelected, storesFromUser, stores } = useTienda()
     const options = useMemo(() => {
         const storeNames = new Map(
@@ -244,6 +256,9 @@ export function DiscountModal({
         }))
     }, [productOptions, storeSelected, storesFromUser, stores])
     const [saving, setSaving] = useState(false)
+    const [coverageOptions, setCoverageOptions] = useState<IOfferOptions | null>(null)
+    const [coverageError, setCoverageError] = useState("")
+    const [coverageRevision, setCoverageRevision] = useState(0)
     const [isProductOpen, setIsProductOpen] = useState(false)
     const [productQuery, setProductQuery] = useState("")
     const [form, setForm] = useState(() => buildForm(options, initialStoreProductID, initialOffer))
@@ -255,6 +270,31 @@ export function DiscountModal({
         setIsProductOpen(false)
     }, [isOpen, initialStoreProductID, initialOffer, options])
 
+    useEffect(() => {
+        if (!canManage) {
+            setCoverageOptions(null)
+            setCoverageError("")
+            return
+        }
+        if (!isOpen) return
+        let active = true
+        setCoverageOptions(null)
+        setCoverageError("")
+        void getOfferOptions().then((result) => {
+            if (!active) return
+            setCoverageOptions(result)
+            setForm((current) => ({
+                ...current,
+                salesChannels: current.salesChannels.filter((channel) => result.salesChannels.includes(channel)),
+                storeIDs: current.storeIDs.length ? current.storeIDs :
+                    [storeSelected?.storeID ?? result.stores[0]?.storeID ?? ""].filter(Boolean),
+            }))
+        }).catch((error: unknown) => {
+            if (active) setCoverageError(error instanceof Error ? error.message : "No se pudieron cargar los canales y sucursales")
+        })
+        return () => { active = false }
+    }, [isOpen, canManage, coverageRevision, storeSelected?.storeID])
+
     const selectedKind = discountKinds.find((kind) => kind.id === form.kindID) ?? discountKinds[1]
     const selectedProduct = useMemo(
         () => options.find((option) => option.storeProductID === form.storeProductID),
@@ -264,6 +304,17 @@ export function DiscountModal({
         () => options.find((option) => option.storeProductID === form.secondaryStoreProductID),
         [form.secondaryStoreProductID, options],
     )
+    const targetScope = form.targetScope
+    const needsVariant = targetScope === "VARIATION" || form.discountType === "BUNDLE"
+    const singleStore = needsVariant
+    const productTargets = useMemo(() => {
+        const products = new Map<string, string>()
+        options.forEach((option) => { if (option.productID) products.set(option.productID, option.productName) })
+        initialOffer?.productTargets?.forEach((target) => {
+            if (!products.has(target.productID)) products.set(target.productID, target.product?.name ?? target.productID)
+        })
+        return Array.from(products, ([productID, name]) => ({ productID, name }))
+    }, [options, initialOffer])
 
     const categoryOptions = useMemo(() => {
         const categories = new Map<string, string>()
@@ -285,16 +336,17 @@ export function DiscountModal({
 
     const filteredOptions = useMemo(() => {
         const query = normalizeSearchText(productQuery)
-        if (!query) return options
+        const candidates = needsVariant ? options.filter((option) => option.storeID === form.storeIDs[0]) : options
+        if (!query) return candidates
         const tokens = query.split(" ").filter(Boolean)
 
-        return options.filter((option) => {
+        return candidates.filter((option) => {
             const searchable = normalizeSearchText(
                 `${option.productName} ${option.variationName} ${option.storeName} ${option.sku ?? ""} ${option.storeProductID}`,
             )
             return tokens.every((token) => searchable.includes(token))
         })
-    }, [options, productQuery])
+    }, [options, productQuery, needsVariant, form.storeIDs])
 
     const editingOffer = !!initialOffer?.offerID
     const actionLabel = editingOffer ? "Actualizar Descuento" : "Crear Descuento"
@@ -303,6 +355,9 @@ export function DiscountModal({
         setForm((prev) => ({
             ...prev,
             kindID: kind.id,
+            targetScope: kind.id === "two-for-one" ? "PRODUCT" : kind.targetScope ?? prev.targetScope,
+            storeIDs: kind.targetScope === "VARIATION" || kind.discountType === "BUNDLE" ? prev.storeIDs.slice(0, 1) : prev.storeIDs,
+            allowBelowMargin: kind.discountType === "BUY_X_GET_Y" || kind.discountType === "BUNDLE" ? true : prev.allowBelowMargin,
             discountType: (kind.discountType ?? prev.discountType) as DiscountType,
             scope: (kind.scope ?? prev.scope) as DiscountScope,
             categoryID: prev.categoryID || selectedProduct?.categoryID || "",
@@ -321,13 +376,24 @@ export function DiscountModal({
             return
         }
 
-        if (!selectedProduct) {
-            toast.error("Selecciona un producto de referencia")
+        if (!canManage || !coverageOptions) {
+            toast.error("No se puede gestionar este descuento con la sesión actual o sin cargar su alcance")
             return
         }
-
-        if ((selectedProduct?.stockQuantity ?? 1) <= 0) {
-            toast.error("El producto seleccionado no tiene stock disponible")
+        if (!form.salesChannels.length || !form.storeIDs.length) {
+            toast.error("Selecciona al menos un canal y una sucursal")
+            return
+        }
+        if (form.salesChannels.includes("ONLINE") && !coverageOptions.stores.some((store) => form.storeIDs.includes(store.storeID) && store.onlineEnabled)) {
+            toast.error("Selecciona una sucursal vinculada al ecommerce")
+            return
+        }
+        if (needsVariant && (!selectedProduct || selectedProduct.storeID !== form.storeIDs[0])) {
+            toast.error("Selecciona un producto de la sucursal elegida")
+            return
+        }
+        if (targetScope === "PRODUCT" && form.discountType !== "BUNDLE" && !form.productIDs.length) {
+            toast.error("Selecciona al menos un producto")
             return
         }
 
@@ -352,22 +418,22 @@ export function DiscountModal({
             return
         }
 
-        if (selectedKind.targetScope === "CATEGORY" && !form.categoryID) {
+        if (targetScope === "CATEGORY" && !form.categoryID) {
             toast.error("Selecciona una categoria para este descuento")
             return
         }
 
-        if (selectedKind.targetScope === "BRAND" && !form.brand) {
+        if (targetScope === "BRAND" && !form.brand) {
             toast.error("Selecciona una marca para este descuento")
             return
         }
 
-        if (selectedKind.targetScope === "MODEL" && !form.model) {
+        if (targetScope === "MODEL" && !form.model) {
             toast.error("Selecciona un modelo para este descuento")
             return
         }
 
-        if (form.discountType === "BUNDLE" && !secondaryProduct) {
+        if (form.discountType === "BUNDLE" && (!secondaryProduct || secondaryProduct.storeID !== form.storeIDs[0] || secondaryProduct.storeProductID === selectedProduct?.storeProductID)) {
             toast.error("Selecciona un segundo producto para el combo")
             return
         }
@@ -375,8 +441,10 @@ export function DiscountModal({
         setSaving(true)
         try {
             const payload: ICreateOfferPayload = {
-                targetScope: selectedKind.targetScope ?? "VARIATION",
-                storeID: selectedProduct.storeID,
+                targetScope,
+                storeID: form.storeIDs[0],
+                storeIDs: form.storeIDs,
+                salesChannels: form.salesChannels,
                 discountType: form.discountType,
                 value: requiresValue ? parsedValue : 0,
                 description: form.name || form.brief || undefined,
@@ -389,28 +457,24 @@ export function DiscountModal({
                 allowBelowMargin: form.allowBelowMargin,
             }
 
-            if (selectedKind.targetScope === "VARIATION") {
+            if (targetScope === "VARIATION") {
                 payload.storeProductID = form.storeProductID
             }
 
-            if (selectedKind.targetScope === "STORE") {
-                payload.storeID = selectedProduct.storeID
+            if (targetScope === "PRODUCT" && form.discountType !== "BUNDLE") {
+                payload.productIDs = form.productIDs
             }
 
-            if (selectedKind.targetScope === "PRODUCT" && form.discountType !== "BUNDLE") {
-                payload.productIDs = selectedProduct.productID ? [selectedProduct.productID] : undefined
-            }
-
-            if (selectedKind.targetScope === "CATEGORY") {
+            if (targetScope === "CATEGORY") {
                 payload.categoryID = form.categoryID
                 payload.includeSubcategories = form.includeSubcategories
             }
 
-            if (selectedKind.targetScope === "BRAND") {
+            if (targetScope === "BRAND") {
                 payload.brand = form.brand
             }
 
-            if (selectedKind.targetScope === "MODEL") {
+            if (targetScope === "MODEL") {
                 payload.model = form.model
             }
 
@@ -422,8 +486,8 @@ export function DiscountModal({
             if (form.discountType === "BUNDLE") {
                 payload.bundleItems = [
                     {
-                        storeProductID: selectedProduct.storeProductID,
-                        productID: selectedProduct.productID,
+                        storeProductID: selectedProduct!.storeProductID,
+                        productID: selectedProduct!.productID,
                         requiredQuantity: 1,
                     },
                     {
@@ -443,8 +507,8 @@ export function DiscountModal({
                 onOfferCreated?.(form.storeProductID)
             }
             onClose()
-        } catch {
-            toast.error("No se pudo guardar el descuento")
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : "No se pudo guardar el descuento")
         } finally {
             setSaving(false)
         }
@@ -505,7 +569,7 @@ export function DiscountModal({
 
                         <div className="space-y-2">
                             <Label className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                                Alcance / descripcion breve
+                                Descripción breve
                             </Label>
                             <Input
                                 value={form.brief}
@@ -515,14 +579,63 @@ export function DiscountModal({
                             />
                         </div>
 
-                        <section className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+                        {coverageOptions ? <DiscountCoverageField options={coverageOptions} channels={form.salesChannels}
+                            storeIDs={form.storeIDs} singleStore={singleStore}
+                            onChange={(salesChannels, storeIDs) => setForm((current) => ({
+                                ...current, salesChannels, storeIDs,
+                                ...(singleStore && selectedProduct?.storeID !== storeIDs[0] ? {
+                                    storeProductID: options.find((option) => option.storeID === storeIDs[0])?.storeProductID ?? "",
+                                } : {}),
+                            }))} /> : <div className="rounded-xl border border-slate-200 p-4 text-sm text-slate-500">
+                            {coverageError ? <><p role="alert">No se pudieron cargar los canales y sucursales. {coverageError}</p>
+                                <Button type="button" variant="outline" className="mt-2" onClick={() => setCoverageRevision((revision) => revision + 1)}>Reintentar</Button></>
+                                : canManage ? "Cargando canales y sucursales..." : "Accede a una empresa con permisos de administración para gestionar descuentos."}
+                        </div>}
+
+                        {form.discountType !== "BUNDLE" && <section className="space-y-3" aria-label="Productos incluidos en el descuento">
+                            <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Aplicar a</h3>
+                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                {([
+                                    ["CATEGORY", "Categoría"], ["BRAND", "Marca"], ["PRODUCT", "Productos específicos"],
+                                    ...(form.discountType === "BUY_X_GET_Y" ? [] : [
+                                        ["VARIATION", "Variante / talla"], ["STORE", "Toda la tienda"], ["MODEL", "Modelo"],
+                                    ]),
+                                ] as Array<[DiscountTargetScope, string]>).map(([target, label]) => <button key={target} type="button"
+                                    aria-pressed={targetScope === target}
+                                    onClick={() => setForm((current) => ({ ...current, targetScope: target,
+                                        storeIDs: target === "VARIATION" ? current.storeIDs.slice(0, 1) : current.storeIDs }))}
+                                    className={`rounded-xl border p-3 text-left text-xs font-semibold ${targetScope === target ? "border-blue-600 bg-blue-50 text-blue-900 dark:bg-blue-950/30 dark:text-blue-200" : "border-slate-200 dark:border-slate-700"}`}>
+                                    {label}
+                                </button>)}
+                            </div>
+                            {form.discountType === "BUY_X_GET_Y" && <p className="rounded-lg bg-orange-50 p-3 text-xs leading-relaxed text-orange-900 dark:bg-orange-950/30 dark:text-orange-200">
+                                Por cada 2 unidades participantes se cobra la más cara y la más barata queda gratis. Puedes combinar productos distintos de la categoría, marca o selección elegida. Una unidad sin pareja se cobra a su precio correspondiente.
+                            </p>}
+                        </section>}
+
+                        {targetScope === "PRODUCT" && form.discountType !== "BUNDLE" && <section className="space-y-2">
+                            <Label className="text-xs font-bold uppercase tracking-wide text-slate-500">Productos participantes</Label>
+                            <Input value={productQuery} onChange={(event) => setProductQuery(event.target.value)} placeholder="Buscar productos..." />
+                            <div className="max-h-48 space-y-1 overflow-y-auto rounded-xl border border-slate-200 p-2 dark:border-slate-700">
+                                {productTargets.filter((product) => normalizeSearchText(product.name).includes(normalizeSearchText(productQuery))).map((product) => <label key={product.productID} className="flex cursor-pointer items-center gap-3 rounded-lg p-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800">
+                                    <input type="checkbox" checked={form.productIDs.includes(product.productID)}
+                                        onChange={(event) => setForm((current) => ({ ...current, productIDs: event.target.checked ? [...current.productIDs, product.productID] : current.productIDs.filter((id) => id !== product.productID) }))}
+                                        className="h-4 w-4 accent-blue-600" />
+                                    {product.name}
+                                </label>)}
+                                {productTargets.length === 0 && <p className="p-2 text-xs text-slate-500">No hay productos disponibles para seleccionar.</p>}
+                            </div>
+                            <p className="text-xs text-slate-500">{form.productIDs.length} seleccionados. Incluye todas sus tallas y variantes en las sucursales elegidas.</p>
+                        </section>}
+
+                        {needsVariant && <section className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/60">
                             <div className="mb-3 flex items-center justify-between gap-3">
                                 <div>
                                     <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                                        Producto conectado al API
+                                        Producto y variante
                                     </p>
                                     <p className="text-xs text-slate-500">
-                                        Requerido por el contrato actual para descuentos reales.
+                                        Elige la variante de la sucursal seleccionada.
                                     </p>
                                 </div>
                                 {selectedProduct && (
@@ -608,9 +721,9 @@ export function DiscountModal({
                                     </div>
                                 </div>
                             )}
-                        </section>
+                        </section>}
 
-                        {selectedKind.targetScope === "CATEGORY" && (
+                        {targetScope === "CATEGORY" && (
                             <section className="grid gap-4 rounded-xl border border-orange-200 bg-orange-50/60 p-4 dark:border-orange-900 dark:bg-orange-950/20 sm:grid-cols-2">
                                 <div className="space-y-2">
                                     <Label className="text-xs font-bold uppercase tracking-wide text-slate-500">
@@ -648,7 +761,7 @@ export function DiscountModal({
                             </section>
                         )}
 
-                        {selectedKind.targetScope === "BRAND" && (
+                        {targetScope === "BRAND" && (
                             <section className="space-y-2 rounded-xl border border-cyan-200 bg-cyan-50/60 p-4 dark:border-cyan-900 dark:bg-cyan-950/20">
                                 <Label className="text-xs font-bold uppercase tracking-wide text-slate-500">Marca</Label>
                                 <select
@@ -666,7 +779,7 @@ export function DiscountModal({
                             </section>
                         )}
 
-                        {selectedKind.targetScope === "MODEL" && (
+                        {targetScope === "MODEL" && (
                             <section className="space-y-2 rounded-xl border border-pink-200 bg-pink-50/60 p-4 dark:border-pink-900 dark:bg-pink-950/20">
                                 <Label className="text-xs font-bold uppercase tracking-wide text-slate-500">Modelo</Label>
                                 <select
@@ -701,7 +814,7 @@ export function DiscountModal({
                                 >
                                     <option value="">Selecciona producto</option>
                                     {options
-                                        .filter((option) => option.storeProductID !== form.storeProductID)
+                                        .filter((option) => option.storeProductID !== form.storeProductID && option.storeID === form.storeIDs[0])
                                         .map((option) => (
                                             <option key={option.storeProductID} value={option.storeProductID}>
                                                 {option.productName} - {option.variationName}
@@ -748,7 +861,7 @@ export function DiscountModal({
                                 )}
                                 {(form.discountType === "BUY_X_GET_Y" || form.discountType === "BUNDLE") && (
                                     <p className="text-xs text-slate-500">
-                                        Para 2x1/combo el contrato usa cantidades; el valor puede quedar vacio.
+                                        La promoción usa las cantidades de los productos; no necesitas ingresar un valor.
                                     </p>
                                 )}
                             </div>
@@ -855,7 +968,7 @@ export function DiscountModal({
                                     Oferta exclusiva
                                 </span>
                                 <span className="block text-xs text-slate-500">
-                                    Funcionalidad existente del API: evita combinaciones con otras promociones.
+                                    Evita combinaciones con otras promociones.
                                 </span>
                             </span>
                         </label>
@@ -869,7 +982,7 @@ export function DiscountModal({
                     <Button
                         type="button"
                         onClick={handleSave}
-                        disabled={saving || !options.length}
+                        disabled={saving || !canManage || !coverageOptions || !form.salesChannels.length || !form.storeIDs.length}
                         className="bg-blue-950 text-white hover:bg-blue-900"
                     >
                         {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}

@@ -1,0 +1,44 @@
+purpose:
+  stands_in_for: ERP discount options, offer writes and cart pricing HTTP responses.
+  unblocks: Frontend action transport and local browser checks without live writes.
+assumptions:
+  - id: additive-coverage-contract
+    status: supported
+    claim: This branch defines salesChannels and storeIDs as additive offer fields and a tenant-view offer-options endpoint.
+    reason: Current remote Scalar was read; the extension is defined by the authorized backend changes and Swagger DTOs in the paired branch, not yet deployed.
+    verification: On 2026-11-12, read remote docs-json in memory and backend CreateSpecialOfferDto, OfferOptionsResponseDto and PricingController. Local frontend action checks preserved both arrays and productIDs over HTTP.
+    source: https://araucopro-back-multitenant.up.railway.app/docs; ../desi-backend-nest/src/pricing/dto/create-special-offer.dto.ts; postman/checks/discount-coverage.cjs
+    updated_at: "2026-11-12"
+  - id: frontend-transport
+    status: supported
+    claim: The exercised frontend actions serialize coverage and products and propagate save rejections against this local stand-in.
+    reason: Real actions and fetcher made HTTP requests served by the Postman member; no HTTP client was stubbed.
+    verification: On 2026-11-12, node postman/checks/discount-coverage.cjs passed creation, partial update, cart response, rejection and impersonation scenarios. Request events confirmed the tested routes ran.
+    source: postman/checks/discount-coverage.cjs; postman/mocks/discount-coverage.js
+    updated_at: "2026-11-12"
+  - id: live-rollout
+    status: unknown
+    claim: The deployed ERP and its databases support the new coverage fields.
+    reason: No migration or deployment was performed. Local stand-ins and unit tests cannot establish live schema state.
+    verification: Development and production migration:show and behavioral checks remain pending, independently for each environment.
+    source: docs/descuentos-alcance.md; ../desi-backend-nest/src/datasource/migrations/1794500000000-AddOfferSalesChannels.ts
+    updated_at: "2026-11-12"
+  - id: browser-interactions
+    status: supported
+    claim: The exercised frontend cards, save/edit flows, session visibility and cart quote hook held against this local stand-in in desktop and mobile Chrome.
+    reason: An isolated Next development build rendered the real DiscountModal and useCartPricing hook. The local QA route and its instrumentation were removed after the run.
+    verification: On 2026-11-12, headless Chrome passed physical/online cards, multiple branches and products, failed-save selection preservation, editing to brand/online-only, mobile overflow, impersonated master access, unscoped master rejection, stale quote suppression and failure/retry. A slow obsolete one-item quote did not overwrite a newer two-item total. No live ERP was used.
+    source: src/components/Discounts/DiscountModal.tsx; src/components/Discounts/DiscountCoverageField.tsx; src/hooks/useCartPricing.ts; postman/mocks/discount-coverage.js
+    updated_at: "2026-11-12"
+  - id: fixture-provenance
+    status: supported
+    claim: This is a locally authored stand-in, not the owning team's published mock.
+    reason: It models the checked published contracts and the local additive extension. No owner workspace mock search was performed.
+    verification: Inspected the fixture handler and real backend discount-coverage.spec.ts scenarios. The CLI available in this environment does not expose the skill's postman status command.
+    source: postman/mocks/discount-coverage.js; ../desi-backend-nest/src/pricing/discount-coverage.spec.ts
+    updated_at: "2026-11-12"
+fingerprints:
+  - id: local-discount-coverage-2026-11-12
+    date: "2026-11-12"
+    commit: "frontend b541c4f3fcd0f26ec002d44c45ec7e07a76032b1 and backend 35be70186c157cd5a4c9bab62f1e0af32ee9f3c4, both with uncommitted feature changes"
+    cli: "1.74.0"

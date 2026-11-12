@@ -5,10 +5,24 @@ import { Input } from "../ui/input"
 import { toPrice } from "@/utils/priceFormat"
 import { ShoppingCart, Trash2 } from "lucide-react"
 import { toast } from "sonner"
+import type { ICartPricingItem } from "@/interfaces/pricing/IPricing"
 
-export const CartTable = ({ allowNegativeStock = false }: { allowNegativeStock?: boolean }) => {
+export const CartTable = ({ allowNegativeStock = false, pricingItems }: { allowNegativeStock?: boolean; pricingItems?: ICartPricingItem[] }) => {
     const { cartItems, actions } = useSaleStore()
     const { removeProduct, updateQuantity } = actions
+    const pricingByID = new Map(pricingItems?.map((item) => [item.storeProductID, item]))
+    const displayedItems = cartItems.map((item) => {
+        const pricing = pricingByID.get(item.storeProductID)
+        const offer = pricing?.discountsApplied.find((discount) => discount.source === "AUTO" && discount.applied)
+        const finalPrice = pricing?.finalUnitPrice ?? (pricingItems ? undefined : item.finalPrice)
+        return {
+            ...item,
+            priceList: pricing?.baseUnitPrice ?? item.priceList,
+            finalPrice,
+            lineTotal: pricing?.lineTotal ?? (finalPrice ?? item.priceList) * item.quantity,
+            activeOffer: pricingItems ? offer : item.activeOffer,
+        }
+    })
 
     if (cartItems.length === 0) {
         return (
@@ -33,7 +47,7 @@ export const CartTable = ({ allowNegativeStock = false }: { allowNegativeStock?:
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {cartItems.map((item) => (
+                    {displayedItems.map((item) => (
                         <TableRow className="hover:bg-muted/50 dark:hover:bg-gray-700/50" key={item.storeProductID}>
                             <TableCell className="flex items-center gap-3 p-2">
                                 <Image
@@ -106,7 +120,7 @@ export const CartTable = ({ allowNegativeStock = false }: { allowNegativeStock?:
                                 )}
                             </TableCell>
                             <TableCell className="p-2 text-right font-semibold">
-                                ${toPrice((item.finalPrice ?? item.priceList) * item.quantity)}
+                                ${toPrice(item.lineTotal)}
                             </TableCell>
                             <TableCell className="p-2 text-center">
                                 <button
