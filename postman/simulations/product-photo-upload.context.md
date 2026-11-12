@@ -32,6 +32,21 @@ Stop the simulation with Ctrl+C. Use only the local fixture's fake credentials.
 ## Observations
 
 <!-- begin:observations -->
+- 2026-11-12: Re-ran `node postman/checks/product-photo-upload.cjs` against the
+  local simulation using CLI 1.74.0. Tenant/support folder isolation, rejected
+  sessions, empty/mixed/missing tenant data, file-size checks and the surfaced
+  CDN failure all passed. Request events confirmed the real ERP fetcher and
+  Cloudinary SDK reached the fixture. Upload actions and API payloads are
+  unchanged; this does not establish live CDN or product PATCH behavior.
+- 2026-11-12: Read the current remote Scalar `UpdateProductDto.image` and
+  `PATCH /products/{id}` contract in memory: image URLs are ordered, comma
+  separated, and the first is the cover. No OpenAPI snapshot was saved.
+  `scripts/check-product-photos.cjs` passed ordering/cover, Excel round-trip,
+  4:5 placement, crop positioning and zoom checks. An ephemeral headless Chrome
+  check exercised the real browser canvas helpers: decoded JPEG dimensions
+  were 1080 x 1350, whole-image fitting retained both sides with white padding,
+  crop positioning selected either side, and zoom could crop an already padded
+  image. The browser check did not upload images or exercise the React form.
 - 2026-10-26: The real upload action, stores fetcher and Cloudinary SDK passed
   for tenant and support sessions with distinct company folders. Both ERP GET
   and CDN multipart POST paths served traffic in the upload member. Invalid

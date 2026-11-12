@@ -19,3 +19,12 @@ export function isValidProductImageList(value: string): boolean {
 
 export const serializeProductImages = (value?: string | null): string => productImages(value).join(", ")
 export const primaryProductImage = (value?: string | null): string => productImages(value)[0] ?? ""
+
+export function moveProductImage(value: string, from: number, to: number): string {
+    const photos = productImages(value)
+    if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || to < 0 ||
+        from >= photos.length || to >= photos.length || from === to) return value
+    const [photo] = photos.splice(from, 1)
+    photos.splice(to, 0, photo)
+    return photos.join(", ")
+}
