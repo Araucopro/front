@@ -19,7 +19,8 @@ import { getPaymentMethods } from "@/actions/cash-registers/cashCatalogs"
 import { getCashRegistersWithActiveSessions } from "@/actions/cash-registers/cashRegisters"
 import { toast } from "sonner"
 import { DiscountModal, DiscountStoreProductOption } from "@/components/Discounts/DiscountModal"
-import { getPriceCheck } from "@/actions/pricing/getPriceCheck"
+import { useCartPricing } from "@/hooks/useCartPricing"
+import { useDiscountManagement } from "@/hooks/useDiscountManagement"
 import { getChileYYYYMMDD } from "@/utils/chile-date"
 import { normalizeRutValue } from "@/utils/rut"
 import { AlertTriangle, Banknote, Building2, CreditCard, FileText, LockKeyhole, Receipt, Repeat2, UserPlus, WalletCards, X } from "lucide-react"
@@ -148,7 +149,8 @@ export const SaleForm = ({ initialProducts, storeSettings, onSaleCreated }: Sale
     const router = useRouter()
     const searchParams = useSearchParams()
     const { cartItems, actions } = useSaleStore()
-    const { updateCartItemPricing } = actions
+    const canManageDiscounts = useDiscountManagement()
+    const [pricingRevision, setPricingRevision] = useState(0)
     const { storeSelected } = useTienda()
     const urlStoreID = searchParams.get("storeID")
     const effectiveStoreID =
@@ -184,12 +186,16 @@ export const SaleForm = ({ initialProducts, storeSettings, onSaleCreated }: Sale
 
     const requireClientForSale = activeStore?.requireClientForSale ?? false
     const allowNegativeStock = activeStore?.allowNegativeStock ?? false
-    const total = useMemo(() => {
+    const { pricing: cartPricing, loading: pricingLoading, error: pricingError } = useCartPricing(
+        effectiveStoreID, cartItems.map(({ storeProductID, quantity }) => ({ storeProductID, quantity })), pricingRevision,
+    )
+    const estimatedTotal = useMemo(() => {
         return cartItems.reduce((acc, item) => {
             const price = item.finalPrice ?? item.priceList
             return acc + item.quantity * price
         }, 0)
     }, [cartItems])
+    const total = cartPricing?.totals.total ?? estimatedTotal
     const canSplitPayment = saleType === "NOTA_VENTA"
     const isSplitPaymentActive = canSplitPayment && isSplitPayment
 
@@ -352,31 +358,31 @@ export const SaleForm = ({ initialProducts, storeSettings, onSaleCreated }: Sale
                 seen.add(item.storeProductID)
                 return true
             })
-            .map((item) => ({
-                storeProductID: item.storeProductID,
-                productName: item.productName,
-                variationName: item.sizeNumber,
-                storeName: item.storeName ?? item.storeID,
-                storeID: item.storeID,
-                priceList: item.priceList,
-            }))
-    }, [cartItems])
+            .map((item) => {
+                const product = initialProducts.find((product) => product.ProductVariations.some((variation) => variation.variationID === item.variationID))
+                return {
+                    storeProductID: item.storeProductID,
+                    productName: item.productName,
+                    variationName: item.sizeNumber,
+                    storeName: item.storeName ?? item.storeID,
+                    storeID: item.storeID,
+                    priceList: item.priceList,
+                    productID: product?.productID,
+                    brand: product?.brand,
+                    categoryID: product?.categoryID ?? undefined,
+                    categoryName: product?.Category?.name,
+                    model: product?.name,
+                    stockQuantity: item.stockQuantity,
+                }
+            })
+    }, [cartItems, initialProducts])
 
     const hasDiscountableProducts = discountableStoreProducts.length > 0
-    const handleDiscountCreated = async (storeProductID: string) => {
-        try {
-            const priceCheck = await getPriceCheck(storeProductID)
-            updateCartItemPricing(storeProductID, {
-                finalPrice: priceCheck.finalPrice,
-                activeOffer: priceCheck.activeOffer ?? undefined,
-            })
-        } catch (error) {
-            console.error("SaleForm: error refreshing pricing", error)
-            toast.error("No se pudo actualizar el precio del producto")
-        }
-    }
+    const handleDiscountCreated = () => setPricingRevision((revision) => revision + 1)
 
     const handleSubmit = async () => {
+        if (pricingLoading) return toast.error("Espera mientras se calculan las promociones")
+        if (pricingError || !cartPricing) return toast.error(pricingError ?? "No se pudo calcular el carrito")
         try {
             const receiverEmail = receiver.email?.trim() ?? ""
             const hasReceiverData = Boolean(
@@ -517,7 +523,11 @@ export const SaleForm = ({ initialProducts, storeSettings, onSaleCreated }: Sale
             <div className="p-4">
                 <ScanInput initialProducts={initialProducts} allowNegativeStock={allowNegativeStock} />
 
-                <CartTable allowNegativeStock={allowNegativeStock} />
+                <CartTable allowNegativeStock={allowNegativeStock} pricingItems={cartPricing?.items ?? []} />
+                {pricingLoading && <p role="status" className="mb-4 text-sm text-slate-500">Calculando precios y promociones...</p>}
+                {pricingError && <div role="alert" className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                    <p>{pricingError}</p><Button type="button" variant="outline" className="mt-2" onClick={() => setPricingRevision((revision) => revision + 1)}>Reintentar cálculo</Button>
+                </div>}
                 <div className="mt-4 flex flex-col gap-6">
                     <SaleClientSelector
                         required={requireClientForSale}
@@ -537,7 +547,7 @@ export const SaleForm = ({ initialProducts, storeSettings, onSaleCreated }: Sale
                                 </p>
                             </div>
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                                <Button
+                                {canManageDiscounts && <Button
                                     type="button"
                                     variant="outline"
                                     size="sm"
@@ -551,7 +561,7 @@ export const SaleForm = ({ initialProducts, storeSettings, onSaleCreated }: Sale
                                     }
                                 >
                                     Crear descuento
-                                </Button>
+                                </Button>}
                                 <div
                                     className="flex shrink-0 items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-emerald-950 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100 sm:justify-end"
                                     aria-live="polite"
@@ -996,6 +1006,9 @@ export const SaleForm = ({ initialProducts, storeSettings, onSaleCreated }: Sale
                         <Button
                             disabled={
                                 loading ||
+                                pricingLoading ||
+                                !!pricingError ||
+                                !cartPricing ||
                                 cashSetupLoading ||
                                 cartItems.length === 0 ||
                                 !cashRegisterID ||
@@ -1019,7 +1032,7 @@ export const SaleForm = ({ initialProducts, storeSettings, onSaleCreated }: Sale
                 onClose={() => setIsDiscountModalOpen(false)}
                 options={discountableStoreProducts}
                 initialStoreProductID={discountableStoreProducts[0]?.storeProductID}
-                onOfferCreated={(storeProductID) => handleDiscountCreated(storeProductID)}
+                onOfferCreated={handleDiscountCreated}
             />
             <CashSessionDialog
                 open={isCashSessionDialogOpen}
