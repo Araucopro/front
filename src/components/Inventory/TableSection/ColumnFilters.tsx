@@ -98,9 +98,9 @@ export function ColumnFilters({ filters, onFilterChange, onClearFilters }: Colum
     return (
         <div className="bg-gray-50 dark:bg-slate-800 border-b sticky top-0 z-10">
             {/* Filter Row */}
-            <div className="flex items-center px-2 py-2 gap-1 overflow-x-auto min-w-max">
+            <div className="flex w-full items-center px-2 py-2 gap-1 overflow-x-auto min-w-max">
                 {/* PRODUCTO */}
-                <div className="flex-1 w-64 px-1">
+                <div className="flex-1 min-w-56 px-1">
                     <Label className="text-xs text-slate-500 ml-2">Buscar por producto, SKU, SKU proveedor, EAN, variante...</Label>
                     <div className="relative">
                         <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400 z-10" />
