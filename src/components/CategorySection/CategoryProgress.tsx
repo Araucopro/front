@@ -34,7 +34,7 @@ export function CategoryProgress({ products, categories }: CategoryProgressProps
 
     if (!hasData) {
         return (
-            <Card className="mb-6">
+            <Card className="mb-6 w-full min-w-0">
                 <CardHeader>
                     <CategoryProgressHeader
                         viewMode={viewMode}
@@ -57,7 +57,7 @@ export function CategoryProgress({ products, categories }: CategoryProgressProps
     }
 
     return (
-        <Card className="mb-6">
+        <Card className="mb-6 w-full min-w-0">
             <CardHeader>
                 <CategoryProgressHeader
                     viewMode={viewMode}
@@ -73,7 +73,7 @@ export function CategoryProgress({ products, categories }: CategoryProgressProps
                         }`}
                     >
                         {/* Cara frontal */}
-                        <div className="backface-hidden">
+                        <div className="backface-hidden min-w-0">
                             <CategoryPieChart
                                 data={pieData}
                                 viewMode={viewMode}
@@ -81,7 +81,7 @@ export function CategoryProgress({ products, categories }: CategoryProgressProps
                                 onPieClick={handlePieClick}
                             />
                         </div>
-                        <div className="backface-hidden max-h-[400px] overflow-y-auto pr-1">
+                        <div className="backface-hidden min-w-0 max-h-[400px] overflow-y-auto pr-1">
                             <CategoryProgressBars
                                 data={progressData ?? []}
                                 viewMode={viewMode}

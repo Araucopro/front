@@ -29,7 +29,7 @@ export default function SalesWorkspace({ initialProducts, storeSettings, items }
 
     return (
         <>
-            <section className="space-y-3">
+            <section className="w-full min-w-0 space-y-3">
                 <div className="flex items-center gap-2 px-1 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
                     <span>✦</span>
                     <span>Punto de venta</span>
@@ -43,7 +43,7 @@ export default function SalesWorkspace({ initialProducts, storeSettings, items }
                 </div>
             </section>
 
-            <section ref={diaryRef} className="scroll-mt-4 space-y-3">
+            <section ref={diaryRef} className="w-full min-w-0 scroll-mt-4 space-y-3">
                 <div className="flex items-center gap-3 py-2">
                     <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
                     <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">

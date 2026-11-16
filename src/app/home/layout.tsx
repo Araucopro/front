@@ -39,11 +39,11 @@ export default async function HomeLayout({ children }: { children: React.ReactNo
     }
 
     return (
-        <div className="flex h-svh overflow-hidden bg-gray-100 dark:bg-gray-900">
+        <div className="flex h-svh w-full overflow-hidden bg-gray-100 dark:bg-gray-900">
             <Suspense fallback={"...cargando"}>
                 <Sidebar />
             </Suspense>
-            <section className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto pl-2 lg:p-6">
+            <section className="min-h-0 min-w-0 w-full max-w-full flex-1 overflow-x-hidden overflow-y-auto pl-2 lg:p-6">
                 {impersonationInfo && <ImpersonationBanner info={impersonationInfo} />}
                 <Navbar />
                 <InitialCashOpeningDialog />

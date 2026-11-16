@@ -14,7 +14,7 @@ export function SidebarTransition({ children, isCollapsed }: SidebarTransitionPr
       initial={{ width: 256 }}
       animate={{ width: isCollapsed ? 64 : 256 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
-      className="flex h-full flex-col text-white"
+      className="flex h-full shrink-0 flex-col text-white"
     >
       {children}
     </motion.aside>

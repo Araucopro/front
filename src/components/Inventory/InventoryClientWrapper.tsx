@@ -278,14 +278,14 @@ export default function UnifiedInventoryClientWrapper({ initialProducts, categor
     }
 
     return (
-        <main className="lg:p-6 flex-1 flex flex-col h-screen">
+        <main className="flex min-h-0 w-full min-w-0 flex-1 flex-col">
             {user?.role !== Role.Vendedor && user?.role !== Role.Tercero && (
-                <MotionItem delay={1}>
+                <MotionItem delay={1} className="w-full min-w-0">
                     <CategoryProgress products={filteredProducts} categories={categories} />
                 </MotionItem>
             )}
 
-            <MotionItem delay={0}>
+            <MotionItem delay={0} className="w-full min-w-0">
                 <InventoryHeader
                     totalStockCentral={totalStockShown}
                     filteredStockTotal={filteredStockTotal}
@@ -308,9 +308,9 @@ export default function UnifiedInventoryClientWrapper({ initialProducts, categor
                 </div>
             </MotionItem>
 
-            <div className="flex-1 flex flex-col">
-                <MotionItem delay={2} className="flex-1">
-                    <div className="flex-1 dark:bg-slate-900 bg-white shadow rounded overflow-hidden">
+            <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col">
+                <MotionItem delay={2} className="flex min-h-0 w-full min-w-0 flex-1">
+                    <div className="flex-1 min-w-0 w-full dark:bg-slate-900 bg-white shadow rounded overflow-hidden">
                         <ColumnFilters
                             filters={columnFilters}
                             onFilterChange={handleFilterChange}
