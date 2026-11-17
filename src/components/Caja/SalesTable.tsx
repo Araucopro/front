@@ -270,7 +270,7 @@ const SalesTable: React.FC<Props> = ({ items, highlightedSaleID, onSaleHighlight
     }
 
     return (
-        <div className="overflow-hidden rounded-lg bg-transparent">
+        <div className="w-full min-w-0 overflow-hidden rounded-lg bg-transparent">
             <p className="sr-only" role="status">
                 {isHighlightedSaleVisible ? "Venta registrada en el diario de ventas." : ""}
             </p>
@@ -301,8 +301,8 @@ const SalesTable: React.FC<Props> = ({ items, highlightedSaleID, onSaleHighlight
                 </div>
             </div>
 
-            <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
-                <Table>
+            <div className="w-full min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+                <Table className="min-w-[860px]">
                     <TableHeader>
                         <TableRow className="bg-slate-50 dark:bg-slate-950">
                             <TableHead className="w-[180px] text-[11px] uppercase tracking-[0.12em]">Hora</TableHead>
@@ -375,7 +375,7 @@ const SalesTable: React.FC<Props> = ({ items, highlightedSaleID, onSaleHighlight
                                                             {getStoreName(item)}
                                                         </span>
                                                     </TableCell>
-                                                    <TableCell className="max-w-[520px] align-middle text-sm">
+                                                    <TableCell className="max-w-[320px] break-words align-middle text-sm xl:max-w-[520px]">
                                                         <div className="space-y-1">
                                                             {visibleProducts.map((product) => (
                                                                 <p key={product.key}>

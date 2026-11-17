@@ -11,6 +11,7 @@ import { IProduct } from "@/interfaces/products/IProduct"
 import { IProductVariation, IStoreProduct } from "@/interfaces/products/IProductVariation"
 import { useSaleStore } from "@/stores/sale.store"
 import { useTienda } from "@/stores/tienda.store"
+import { getOfferShortLabel } from "@/utils/offerLabel"
 import { Search } from "lucide-react"
 
 interface Props {
@@ -256,6 +257,14 @@ export const ScanInput = ({ initialProducts, allowNegativeStock = false }: Props
                                         <span className="block text-sm font-medium text-slate-900 dark:text-white">
                                             {option.product.name} - {option.variation.sizeNumber}
                                         </span>
+                                        {option.storeProduct.activeOffer && (
+                                            <span className="mt-1 inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-semibold text-orange-700 dark:bg-orange-900 dark:text-orange-200">
+                                                Promo activa
+                                                {option.storeProduct.activeOffer.discountType
+                                                    ? `: ${getOfferShortLabel(option.storeProduct.activeOffer)}`
+                                                    : ""}
+                                            </span>
+                                        )}
                                         <span className="block text-xs text-slate-500 dark:text-slate-300">
                                             SKU {option.variation.sku} - Stock {option.stockQuantity}
                                         </span>

@@ -73,7 +73,7 @@ export function CategoryProgressBars({
                         Costo Neto Total: ${toPrice(totalParentCost)}
                     </div>
                 </div>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {parentCategories.map((category) => (
                         <div key={category.id} className="bg-white dark:bg-gray-700 p-3 rounded-md shadow-sm">
                             <div className="font-medium text-gray-800 dark:text-gray-200">{category.name}</div>

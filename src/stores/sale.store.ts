@@ -3,10 +3,17 @@ import { toast } from "sonner"
 import { useTienda } from "./tienda.store"
 import { IStoreProduct } from "@/interfaces/products/IProductVariation"
 import { IVariationWithQuantity } from "@/interfaces/orders/IOrder"
+import type { DiscountType } from "@/interfaces/pricing/IPricing"
 
 type SaleItemOffer = {
     offerID: string
     description?: string
+    // Datos de visualización que ya trae el price-check al agregar el producto.
+    // El backend sigue decidiendo la oferta vigente y el precio final.
+    discountType?: DiscountType
+    buyQuantity?: number | null
+    payQuantity?: number | null
+    value?: number
 }
 
 interface SaleItem {

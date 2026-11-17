@@ -11,6 +11,7 @@ export const inventoryColumns = [
     { id: "subvariant", label: "Subvariante" },
     { id: "stock", label: "Stock" },
     { id: "aggregateStock", label: "Stock agregado" },
+    { id: "offers", label: "Ofertas" },
 ] as const
 
 export type InventoryColumnId = (typeof inventoryColumns)[number]["id"]

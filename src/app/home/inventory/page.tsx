@@ -57,7 +57,7 @@ export default async function InventoryPage({ searchParams }: InventoryPageProps
      */
 
     return (
-        <main className="p-6 flex-1 flex flex-col h-screen">
+        <main className="flex min-h-0 w-full min-w-0 flex-1 flex-col p-3 sm:p-4 lg:p-6">
             <InventoryClientWrapper initialProducts={productsData} categories={categoriesData} stores={storesData} storeID={storeID} />
         </main>
     )

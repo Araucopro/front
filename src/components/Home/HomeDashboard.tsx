@@ -44,7 +44,7 @@ export default function HomeDashboard({
     const bankDepositSummary = salesToBankDepositSummary(allSalesForResume, dateRef)
 
     return (
-        <div className="space-y-4 px-4 py-3 sm:px-6 md:px-8">
+        <div className="w-full min-w-0 space-y-4 px-4 py-3 sm:px-6 md:px-8">
             <FilterControls stores={stores} variant="channel" />
 
             <Suspense fallback={<SalesAndResumeSkeleton />}>
@@ -72,13 +72,19 @@ export default function HomeDashboard({
                                     <ChartBarIcon className="h-5 w-5" />
                                     <span>Panel de estadísticas globales</span>
                                 </div>
-                                <div className="block space-y-4 lg:grid lg:grid-cols-3 lg:items-start lg:gap-4 lg:space-y-0">
-                                    <ResumeLeftSideChart saleResume={resume} />
-                                    <TotalSalesResumeGraph resume={resume} date={date} />
-                                    <ResumeRightSideChart
-                                        saleResume={resume}
-                                        bankDepositSummary={bankDepositSummary}
-                                    />
+                                <div className="block space-y-4 xl:grid xl:grid-cols-3 xl:items-start xl:gap-4 xl:space-y-0">
+                                    <div className="min-w-0">
+                                        <ResumeLeftSideChart saleResume={resume} />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <TotalSalesResumeGraph resume={resume} date={date} />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <ResumeRightSideChart
+                                            saleResume={resume}
+                                            bankDepositSummary={bankDepositSummary}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </AccordionContent>

@@ -28,6 +28,7 @@ import type { IStoreProduct } from "@/interfaces/products/IProductVariation"
 import type { IUpdatePriceResponse } from "@/interfaces/pricing/IPricing"
 import { PricingModal } from "./PricingModal"
 import { getProductCategoryName } from "@/utils/categoryName"
+import { getOfferShortLabel } from "@/utils/offerLabel"
 import type { InventoryColumnId } from "./inventory-columns"
 
 interface InventoryTableProps {
@@ -68,10 +69,10 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
     const showColumn = (column: InventoryColumnId) => visibleColumns.includes(column)
 
     return (
-        <div className="flex-1 flex flex-col">
-            <div className="flex-1 dark:bg-slate-900 bg-white shadow rounded-t-none overflow-hidden">
-                <div className="overflow-x-auto h-full">
-                    <Table>
+        <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col">
+            <div className="flex-1 min-w-0 w-full dark:bg-slate-900 bg-white shadow rounded-t-none overflow-hidden">
+                <div className="min-w-0 w-full overflow-x-auto">
+                    <Table className="min-w-[1120px]">
                         <TableHeader className="sticky top-0 bg-gray-50 dark:bg-slate-800">
                             <TableRow>
                                 {showColumn("product") && <TableHead className="whitespace-nowrap text-center font-semibold text-gray-700 dark:text-gray-200">
@@ -107,6 +108,9 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                 {showColumn("aggregateStock") && <TableHead className="whitespace-nowrap text-center font-semibold text-gray-700 dark:text-gray-200">
                                     Stock agregado
                                 </TableHead>}
+                                {showColumn("offers") && <TableHead className="whitespace-nowrap text-center font-semibold text-gray-700 dark:text-gray-200">
+                                    OFERTAS
+                                </TableHead>}
                                 {user?.role === Role.Admin && (
                                     <TableHead className="w-12 text-center font-semibold text-gray-700 dark:text-gray-200" />
                                 )}
@@ -129,6 +133,12 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                 const priceCost = currentSp?.priceCost || 0
                                 const priceList = currentSp?.priceList || 0
                                 const stockQuantity = currentSp?.stock || 0
+                                // Etiqueta de ofertas: usa la oferta activa que trae el
+                                // stock de la tienda (ver getStoreStockProducts).
+                                const activeOffer = currentSp?.activeOffer ?? null
+                                const offerLabel = activeOffer?.discountType
+                                    ? getOfferShortLabel(activeOffer)
+                                    : null
 
                                 const profitMargin = priceList > 0 ? ((priceList - priceCost) / priceList) * 100 : 0
                                 return (
@@ -142,11 +152,11 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                     >
                                         {showColumn("product") && isFirst && (
                                             <TableCell
-                                                className="py-2 px-3 text-left w-1/4"
+                                                className="min-w-[200px] w-[240px] px-3 py-2 text-left"
                                                 rowSpan={rowSpan}
                                             >
                                                 <MotionItem key={`product-${product.productID}`} delay={index + 2}>
-                                                    <div className="flex flex-col relative w-full items-center gap-4">
+                                                    <div className="flex min-w-0 w-full flex-col relative items-center gap-3">
                                                         <div className="relative">
                                                             <div className="relative group transition-transform transform hover:scale-105">
                                                                 <Image
@@ -154,20 +164,20 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                                                     alt={product.name}
                                                                     width={200}
                                                                     height={200}
-                                                                    className="w-48 h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm"
+                                                                    className="h-20 w-20 object-cover rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm lg:h-24 lg:w-24"
                                                                     style={{ objectFit: "cover" }}
                                                                 />
                                                             </div>
                                                         </div>
                                                         <div>
-                                                            <p className="font-medium text-base text-center">
+                                                            <p className="font-medium text-base text-center line-clamp-2 break-words">
                                                                 {product.name}
                                                             </p>
                                                             {user?.role === Role.Admin && <button type="button"
                                                                 onClick={() => setContentProduct(product)}
                                                                 className="mb-2 w-full text-sm text-blue-600 underline">Fotos y ficha web</button>}
                                                             {product.slug && <p className="text-center text-xs text-slate-500">/{product.slug}</p>}
-                                                            {product.description && <p className="max-w-52 text-center text-xs text-slate-500" title={product.description}>{product.description}</p>}
+                                                            {product.description && <p className="line-clamp-3 max-w-56 break-words text-center text-xs text-slate-500" title={product.description}>{product.description}</p>}
                                                             <div className="flex justify-center gap-2 mt-2">
                                                                 <span className="text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full font-medium">
                                                                     {product.variations?.reduce(
@@ -489,6 +499,18 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                                     )}
                                                 </TooltipContent>
                                             </Tooltip>
+                                        </TableCell>}
+                                        {showColumn("offers") && <TableCell className="px-3 py-1 text-center">
+                                            {activeOffer ? (
+                                                <span
+                                                    className="inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-semibold text-orange-700 dark:bg-orange-900 dark:text-orange-200"
+                                                    title={activeOffer.description ?? undefined}
+                                                >
+                                                    {offerLabel ?? "Promo activa"}
+                                                </span>
+                                            ) : (
+                                                <span className="text-xs text-slate-400">—</span>
+                                            )}
                                         </TableCell>}
                                         {user?.role === Role.Admin && (
                                             <TableCell className="text-center py-2">

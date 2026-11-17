@@ -251,7 +251,7 @@ export default function Sidebar() {
             <MobileOverlay />
             <TooltipProvider>
                 <div
-                    className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out lg:relative lg:z-auto lg:translate-x-0 ${
+                    className={`fixed inset-y-0 left-0 z-50 shrink-0 transform transition-transform duration-300 ease-in-out lg:relative lg:z-auto lg:translate-x-0 ${
                         isMobileOpen ? "translate-x-0" : "-translate-x-full"
                     }`}
                 >
