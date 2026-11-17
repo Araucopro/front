@@ -1,5 +1,6 @@
 import type { ICategory } from "../categories/ICategory"
 import type { IStore } from "../stores/IStore"
+import type { IStoreProductActiveOffer } from "./IProductVariation"
 
 export interface IStoreProductRaw {
     storeProductID: string
@@ -12,6 +13,9 @@ export interface IStoreProductRaw {
     updatedAt: string
     store?: IStore
     Store?: IStore
+    // Oferta activa que devuelve el stock de la tienda, cuando viene.
+    // Solo se usa para mostrar la etiqueta de ofertas en inventario.
+    activeOffer?: IStoreProductActiveOffer | null
 }
 
 export interface IProductVariationRaw {

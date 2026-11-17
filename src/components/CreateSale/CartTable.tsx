@@ -3,6 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { SafeImage as Image } from "@/components/ui/safe-image"
 import { Input } from "../ui/input"
 import { toPrice } from "@/utils/priceFormat"
+import { getBuyXGetYHint, getOfferShortLabel } from "@/utils/offerLabel"
 import { ShoppingCart, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import type { ICartPricingItem } from "@/interfaces/pricing/IPricing"
@@ -13,14 +14,26 @@ export const CartTable = ({ allowNegativeStock = false, pricingItems }: { allowN
     const pricingByID = new Map(pricingItems?.map((item) => [item.storeProductID, item]))
     const displayedItems = cartItems.map((item) => {
         const pricing = pricingByID.get(item.storeProductID)
-        const offer = pricing?.discountsApplied.find((discount) => discount.source === "AUTO" && discount.applied)
+        const pricingOffer = pricing?.discountsApplied.find((discount) => discount.source === "AUTO" && discount.applied)
         const finalPrice = pricing?.finalUnitPrice ?? (pricingItems ? undefined : item.finalPrice)
+        // La oferta del price-check (al agregar el producto) trae el tipo y las
+        // cantidades del 2x1; la del cálculo del carrito solo trae descripción.
+        // Se muestra el distintivo aunque el descuento aún no se aplique en el
+        // precio (p. ej. 2x1 con 1 unidad: falta agregar una para llevarse la
+        // segunda gratis). El backend sigue decidiendo el precio final.
+        const displayOffer =
+            item.activeOffer ??
+            (pricingOffer?.offerID
+                ? { offerID: pricingOffer.offerID, description: pricingOffer.description }
+                : undefined)
         return {
             ...item,
             priceList: pricing?.baseUnitPrice ?? item.priceList,
             finalPrice,
             lineTotal: pricing?.lineTotal ?? (finalPrice ?? item.priceList) * item.quantity,
-            activeOffer: pricingItems ? offer : item.activeOffer,
+            activeOffer: displayOffer,
+            offerLabel: displayOffer?.discountType ? getOfferShortLabel(displayOffer) : null,
+            offerHint: getBuyXGetYHint(displayOffer),
         }
     })
 
@@ -57,9 +70,28 @@ export const CartTable = ({ allowNegativeStock = false, pricingItems }: { allowN
                                     alt={item.productName}
                                     className="h-10 w-10 rounded object-cover"
                                 />
-                                <span>
-                                    {item.productName} - {item.sizeNumber}
-                                </span>
+                                <div className="flex flex-col items-start gap-1">
+                                    <span>
+                                        {item.productName} - {item.sizeNumber}
+                                    </span>
+                                    {item.activeOffer && (
+                                        <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-semibold text-orange-700 dark:bg-orange-900 dark:text-orange-200">
+                                            Promo activa{item.offerLabel ? `: ${item.offerLabel}` : ""}
+                                        </span>
+                                    )}
+                                    {item.activeOffer &&
+                                        (item.offerHint ? (
+                                            <span className="text-[11px] text-orange-600 dark:text-orange-400">
+                                                {item.offerHint}
+                                            </span>
+                                        ) : (
+                                            item.activeOffer.description && (
+                                                <span className="text-[11px] italic text-orange-600 dark:text-orange-400">
+                                                    {item.activeOffer.description}
+                                                </span>
+                                            )
+                                        ))}
+                                </div>
                             </TableCell>
                             <TableCell className="p-2 text-center">
                                 <div>
