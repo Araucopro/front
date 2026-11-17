@@ -28,6 +28,7 @@ import type { IStoreProduct } from "@/interfaces/products/IProductVariation"
 import type { IUpdatePriceResponse } from "@/interfaces/pricing/IPricing"
 import { PricingModal } from "./PricingModal"
 import { getProductCategoryName } from "@/utils/categoryName"
+import { getOfferShortLabel } from "@/utils/offerLabel"
 import type { InventoryColumnId } from "./inventory-columns"
 
 interface InventoryTableProps {
@@ -107,6 +108,9 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                 {showColumn("aggregateStock") && <TableHead className="whitespace-nowrap text-center font-semibold text-gray-700 dark:text-gray-200">
                                     Stock agregado
                                 </TableHead>}
+                                {showColumn("offers") && <TableHead className="whitespace-nowrap text-center font-semibold text-gray-700 dark:text-gray-200">
+                                    OFERTAS
+                                </TableHead>}
                                 {user?.role === Role.Admin && (
                                     <TableHead className="w-12 text-center font-semibold text-gray-700 dark:text-gray-200" />
                                 )}
@@ -129,6 +133,12 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                 const priceCost = currentSp?.priceCost || 0
                                 const priceList = currentSp?.priceList || 0
                                 const stockQuantity = currentSp?.stock || 0
+                                // Etiqueta de ofertas: usa la oferta activa que trae el
+                                // stock de la tienda (ver getStoreStockProducts).
+                                const activeOffer = currentSp?.activeOffer ?? null
+                                const offerLabel = activeOffer?.discountType
+                                    ? getOfferShortLabel(activeOffer)
+                                    : null
 
                                 const profitMargin = priceList > 0 ? ((priceList - priceCost) / priceList) * 100 : 0
                                 return (
@@ -489,6 +499,18 @@ export function InventoryTable({ currentItems, handleSaveEdit, handleDeleteProdu
                                                     )}
                                                 </TooltipContent>
                                             </Tooltip>
+                                        </TableCell>}
+                                        {showColumn("offers") && <TableCell className="px-3 py-1 text-center">
+                                            {activeOffer ? (
+                                                <span
+                                                    className="inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-semibold text-orange-700 dark:bg-orange-900 dark:text-orange-200"
+                                                    title={activeOffer.description ?? undefined}
+                                                >
+                                                    {offerLabel ?? "Promo activa"}
+                                                </span>
+                                            ) : (
+                                                <span className="text-xs text-slate-400">—</span>
+                                            )}
                                         </TableCell>}
                                         {user?.role === Role.Admin && (
                                             <TableCell className="text-center py-2">

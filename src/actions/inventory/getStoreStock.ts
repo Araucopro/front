@@ -6,6 +6,7 @@ import type { ICategory } from "@/interfaces/categories/ICategory"
 import type { IStore } from "@/interfaces/stores/IStore"
 import type { IProductVariationRaw, IRawProduct, IStoreProductRaw } from "@/interfaces/products/IRawProduct"
 import { normalizeProduct, normalizeStoreProductList, type RawStoreProduct } from "@/lib/normalize-product"
+import type { IStoreProductActiveOffer } from "@/interfaces/products/IProductVariation"
 
 type RawCategoryFromStock = Partial<ICategory> & {
     children?: RawCategoryFromStock[]
@@ -84,6 +85,28 @@ const buildStoreProduct = (
     variationID: string,
 ): IStoreProductRaw => {
     const store = raw.store ?? raw.Store ?? undefined
+    // La oferta activa ya viene en la respuesta de stock cuando el ERP la
+    // devuelve; antes se descartaba en este mapeo y por eso inventario no
+    // podía mostrarla. No se hace price-check por fila: sería una petición
+    // por producto en cada carga de inventario.
+    const activeOffer: IStoreProductActiveOffer | null = raw.activeOffer
+        ? {
+              ...raw.activeOffer,
+              offerID: raw.activeOffer.offerID ?? "",
+              storeProductID: raw.activeOffer.storeProductID ?? raw.storeProductID ?? "",
+              discountType: raw.activeOffer.discountType ?? "PERCENTAGE",
+              value: raw.activeOffer.value ?? 0,
+              startDate: raw.activeOffer.startDate ?? "",
+              isActive: raw.activeOffer.isActive ?? false,
+              createdAt: raw.activeOffer.createdAt ?? "",
+              updatedAt: raw.activeOffer.updatedAt ?? "",
+              applied: raw.activeOffer.applied,
+              source: raw.activeOffer.source,
+              previousPrice: raw.activeOffer.previousPrice,
+              resultingPrice: raw.activeOffer.resultingPrice,
+              priority: raw.activeOffer.priority,
+          }
+        : null
 
     return {
         storeProductID: raw.storeProductID ?? "",
@@ -96,6 +119,7 @@ const buildStoreProduct = (
         updatedAt: raw.updatedAt ?? "",
         store,
         Store: store,
+        activeOffer,
     }
 }
 
