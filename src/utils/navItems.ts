@@ -178,9 +178,9 @@ export const navItems: NavigationItem[] = [
     {
         id: "expenses",
         label: "Egresos",
+        route: "/home/expenses",
         icon: FaMoneyBillWave,
         iconClassName: "text-[#16a66a]",
-        status: "in-development",
     },
     {
         id: "kpis",
