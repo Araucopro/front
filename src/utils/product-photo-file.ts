@@ -1,4 +1,5 @@
-export const MAX_PRODUCT_PHOTO_BYTES = 5 * 1024 * 1024
+export const MAX_PRODUCT_PHOTO_MB = 25
+export const MAX_PRODUCT_PHOTO_BYTES = MAX_PRODUCT_PHOTO_MB * 1024 * 1024
 
 // Some file pickers omit the MIME type or use JPEG aliases. The decoder and
 // Cloudinary still validate the actual image; the extension is only a UX hint.
