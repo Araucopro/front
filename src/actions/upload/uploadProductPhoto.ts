@@ -1,11 +1,11 @@
 "use client"
 
 import { uploadImageCDN } from "@/actions/upload/image"
-import { MAX_PRODUCT_PHOTO_BYTES } from "@/utils/product-photo-file"
+import { MAX_PRODUCT_PHOTO_BYTES, MAX_PRODUCT_PHOTO_MB } from "@/utils/product-photo-file"
 
 export async function uploadProductPhoto(photo: Blob, name = "foto-1080x1350.jpg"): Promise<string> {
     if (!photo.size || photo.size > MAX_PRODUCT_PHOTO_BYTES) {
-        throw new Error("La imagen debe pesar entre 1 byte y 5 MB")
+        throw new Error(`La imagen debe pesar entre 1 byte y ${MAX_PRODUCT_PHOTO_MB} MB`)
     }
     const data = new FormData()
     data.append("file", photo, name)

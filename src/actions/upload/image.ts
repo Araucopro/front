@@ -6,7 +6,7 @@ import { getAllStores } from "@/actions/stores/getAllStores"
 import { cookies } from "next/headers"
 import { randomUUID } from "node:crypto"
 import type { UploadImageResult } from "@/interfaces/upload/IUploadImage"
-import { isSupportedProductPhoto } from "@/utils/product-photo-file"
+import { isSupportedProductPhoto, MAX_PRODUCT_PHOTO_MB } from "@/utils/product-photo-file"
 
 export const uploadImageCDN = async (data: FormData): Promise<UploadImageResult> => {
     let stage = "session"
@@ -14,7 +14,7 @@ export const uploadImageCDN = async (data: FormData): Promise<UploadImageResult>
         if (!(await cookies()).get("auth_token")?.value) return { ok: false, error: "Inicia sesión para subir fotos" }
         const file = data instanceof FormData ? data.get("file") : null
         if (!(file instanceof File) || !isSupportedProductPhoto(file)) {
-            return { ok: false, error: "Usa fotos JPG, PNG, WEBP, AVIF o GIF de entre 1 byte y 5 MB" }
+            return { ok: false, error: `Usa fotos JPG, PNG, WEBP, AVIF o GIF de entre 1 byte y ${MAX_PRODUCT_PHOTO_MB} MB` }
         }
         // /auth/check-status omits tenantID and expects a tenant user, not a Master.
         // Use the stores returned for the current Bearer session, validated by the ERP.

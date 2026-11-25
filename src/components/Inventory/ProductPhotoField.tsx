@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { SafeImage } from "@/components/ui/safe-image"
 import { productImages, isValidProductImageList, moveProductImage } from "@/utils/product-images"
 import { formatProductPhoto } from "@/utils/product-photo-format"
-import { isSupportedProductPhoto } from "@/utils/product-photo-file"
+import { isSupportedProductPhoto, MAX_PRODUCT_PHOTO_MB } from "@/utils/product-photo-file"
 import { ProductPhotoEditor } from "./ProductPhotoEditor"
 import { toast } from "sonner"
 
@@ -50,7 +50,7 @@ export function ProductPhotoField({ value, onChange, onBusyChange, disabled = fa
         const selected = Array.from(files)
         if (photos.length + selected.length > 5) { toast.error("Puedes guardar hasta 5 fotos por producto"); return }
         if (selected.some((file) => !isSupportedProductPhoto(file))) {
-            toast.error("Usa fotos JPG, PNG, WEBP, AVIF o GIF de hasta 5 MB"); return
+            toast.error(`Usa fotos JPG, PNG, WEBP, AVIF o GIF de hasta ${MAX_PRODUCT_PHOTO_MB} MB`); return
         }
         uploading.current = true; setBusy(true); onBusyChange?.(true)
         const uploaded = [...photos]
@@ -140,7 +140,7 @@ export function ProductPhotoField({ value, onChange, onBusyChange, disabled = fa
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0 space-y-1">
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{remaining === 0 ? "Galería completa" : "Sube fotos desde tu computadora"}</p>
-                    <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">{remaining === 0 ? "Quita una foto para agregar otra." : "JPG, PNG, WEBP, AVIF o GIF. Hasta 5 MB por foto."}</p>
+                    <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">{remaining === 0 ? "Quita una foto para agregar otra." : `JPG, PNG, WEBP, AVIF o GIF. Hasta ${MAX_PRODUCT_PHOTO_MB} MB por foto.`}</p>
                     <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">Se convierten a JPG de 1080 × 1350 px (4:5), con la foto completa y fondo blanco. Los GIF se guardan como imagen fija.</p>
                 </div>
                 <Button type="button" variant="outline" disabled={locked || invalid || !remaining}
