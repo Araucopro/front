@@ -19,10 +19,10 @@ interface GestionGastosFormProps {
     onSave: (gasto: IExpense) => void
 }
 
-// Mapeo: label visible ↔ valor que espera la API
+// Mapeo: label visible ↔ valor que espera la API (CreateExpenseDto de Scalar)
 const CATEGORIAS: { value: ExpenseType; label: string }[] = [
     { value: "operational", label: "Gastos de operación" },
-    { value: "sales", label: "Gastos de ventas" },
+    { value: "financial", label: "Gastos financieros" },
     { value: "administrative", label: "Gastos de administración" },
 ]
 
@@ -30,7 +30,8 @@ export default function GestionGastosForm({ isOpen, onClose, onSave }: GestionGa
     const { storeSelected } = useTienda()
     const [nombre, setNombre] = useState("")
     const [categoria, setCategoria] = useState<ExpenseType | "">("")
-    const [monto, setMonto] = useState("")
+    const [montoNeto, setMontoNeto] = useState("")
+    const [montoIva, setMontoIva] = useState("")
     const [isLoading, setIsLoading] = useState(false)
     const [fechaFactura, setFechaFactura] = useState(new Date().toISOString().split("T")[0])
     const [isEditingFecha, setIsEditingFecha] = useState(false)
@@ -48,8 +49,10 @@ export default function GestionGastosForm({ isOpen, onClose, onSave }: GestionGa
                 toast.error("Debes seleccionar una categoría")
                 return
             }
-            if (!monto || parseFloat(monto) <= 0) {
-                toast.error("El monto debe ser mayor a 0")
+            const neto = parseFloat(montoNeto)
+            const iva = parseFloat(montoIva)
+            if (Number.isNaN(neto) || neto < 0 || Number.isNaN(iva) || iva < 0 || neto + iva <= 0) {
+                toast.error("El monto total debe ser mayor a 0")
                 return
             }
             if (!storeSelected?.storeID) {
@@ -60,7 +63,8 @@ export default function GestionGastosForm({ isOpen, onClose, onSave }: GestionGa
             const nuevoGasto = await createExpense({
                 name: nombre.trim(),
                 deductibleDate: new Date(fechaFactura).toISOString(),
-                amount: parseFloat(monto),
+                netAmount: neto,
+                taxAmount: iva,
                 type: categoria as ExpenseType,
                 storeID: storeSelected.storeID,
             })
@@ -70,7 +74,8 @@ export default function GestionGastosForm({ isOpen, onClose, onSave }: GestionGa
 
             setNombre("")
             setCategoria("")
-            setMonto("")
+            setMontoNeto("")
+            setMontoIva("")
             setFechaFactura(new Date().toISOString().split("T")[0])
         } catch (error) {
             toast.error("Error al agregar gasto")
@@ -83,11 +88,33 @@ export default function GestionGastosForm({ isOpen, onClose, onSave }: GestionGa
     const handleClose = () => {
         setNombre("")
         setCategoria("")
-        setMonto("")
+        setMontoNeto("")
+        setMontoIva("")
         onClose()
     }
 
-    const validateForm = () => nombre.trim() !== "" && categoria !== "" && monto !== "" && parseFloat(monto) > 0
+    const validateForm = () => {
+        const neto = parseFloat(montoNeto)
+        const iva = parseFloat(montoIva)
+        return (
+            nombre.trim() !== "" &&
+            categoria !== "" &&
+            !Number.isNaN(neto) &&
+            !Number.isNaN(iva) &&
+            neto >= 0 &&
+            iva >= 0 &&
+            neto + iva > 0
+        )
+    }
+
+    const aplicarIva19 = () => {
+        const neto = parseFloat(montoNeto)
+        if (Number.isNaN(neto) || neto <= 0) {
+            toast.error("Primero ingresa el monto neto para calcular el IVA")
+            return
+        }
+        setMontoIva(String(Math.round(neto * 0.19)))
+    }
 
     const formatearFecha = (fecha: string) =>
         new Date(fecha).toLocaleDateString("es-CL", {
@@ -174,28 +201,51 @@ export default function GestionGastosForm({ isOpen, onClose, onSave }: GestionGa
                             <p className="text-xs text-gray-500 mt-1">Fecha automática, haz clic para modificar.</p>
                         </div>
 
-                        {/* Monto */}
+                        {/* Monto neto */}
                         <div>
                             <Label className="text-sm font-medium mb-2 flex items-center gap-1">
                                 <DollarSign className="w-4 h-4" />
-                                Monto *
+                                Monto neto (sin IVA) *
                             </Label>
                             <CurrencyInput
-                                id="monto"
-                                value={monto}
-                                onValueChange={setMonto}
+                                id="monto-neto"
+                                value={montoNeto}
+                                onValueChange={setMontoNeto}
                                 placeholder="$ 0"
                                 allowDecimals
                                 required
                                 className="bg-slate-100 dark:border-sky-50 dark:bg-slate-800"
                             />
-                            <p className="text-xs text-gray-500 mt-1">Ingresa el monto en pesos chilenos (CLP)</p>
+                            <p className="text-xs text-gray-500 mt-1">Ingresa el monto neto en pesos chilenos (CLP)</p>
+                        </div>
+
+                        {/* IVA */}
+                        <div>
+                            <Label className="text-sm font-medium mb-2 flex items-center gap-1">
+                                <DollarSign className="w-4 h-4" />
+                                IVA *
+                            </Label>
+                            <div className="flex gap-2">
+                                <CurrencyInput
+                                    id="monto-iva"
+                                    value={montoIva}
+                                    onValueChange={setMontoIva}
+                                    placeholder="$ 0"
+                                    allowDecimals
+                                    required
+                                    className="bg-slate-100 dark:border-sky-50 dark:bg-slate-800"
+                                />
+                                <Button type="button" variant="outline" onClick={aplicarIva19}>
+                                    IVA 19%
+                                </Button>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">El total es neto + IVA y lo calcula el sistema.</p>
                         </div>
                     </div>
                 </div>
 
                 {/* Vista previa */}
-                {nombre && categoria && monto && (
+                {nombre && categoria && montoNeto && (
                     <div className="bg-blue-50 dark:bg-slate-700 p-4 rounded-lg border border-blue-200 dark:border-slate-600">
                         <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
                             Vista Previa del Gasto:
@@ -211,11 +261,25 @@ export default function GestionGastosForm({ isOpen, onClose, onSave }: GestionGa
                                 <span className="font-medium">Fecha Factura:</span> {formatearFecha(fechaFactura)}
                             </p>
                             <p>
-                                <span className="font-medium">Monto:</span>{" "}
+                                <span className="font-medium">Monto neto:</span>{" "}
                                 {new Intl.NumberFormat("es-CL", {
                                     style: "currency",
                                     currency: "CLP",
-                                }).format(parseFloat(monto))}
+                                }).format(parseFloat(montoNeto) || 0)}
+                            </p>
+                            <p>
+                                <span className="font-medium">IVA:</span>{" "}
+                                {new Intl.NumberFormat("es-CL", {
+                                    style: "currency",
+                                    currency: "CLP",
+                                }).format(parseFloat(montoIva) || 0)}
+                            </p>
+                            <p>
+                                <span className="font-medium">Total:</span>{" "}
+                                {new Intl.NumberFormat("es-CL", {
+                                    style: "currency",
+                                    currency: "CLP",
+                                }).format((parseFloat(montoNeto) || 0) + (parseFloat(montoIva) || 0))}
                             </p>
                         </div>
                     </div>
