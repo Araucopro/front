@@ -39,10 +39,30 @@ http.createServer(async (request, response) => {
     if (request.url === '/pricing/offers' && request.method === 'GET') return send(200, offer ? [offer] : [])
     if ((request.url === '/pricing/offers' || request.url === '/pricing/offers/' + id(20)) && request.method === 'POST') {
         writes.push({ method: request.method, path: request.url, body })
-        offer = { ...offer, ...body, offerID: id(20), createdAt: '2026-11-12T00:00:00Z', updatedAt: '2026-11-12T00:00:00Z' }
+        offer = { ...(request.url === '/pricing/offers' ? {} : offer), ...body, offerID: id(20), createdAt: '2026-11-12T00:00:00Z', updatedAt: '2026-11-12T00:00:00Z' }
         return send(201, offer)
     }
     if (request.url === '/pricing/calculate-cart' && request.method === 'POST') {
+        // Recorded second-unit responses, not an alternative pricing engine.
+        // Prices and expected results are established by the paired backend tests.
+        if (body.items.some((item) => item.storeProductID === id(41) || item.storeProductID === id(42))) {
+            const single = body.items.length === 1 && body.items[0].storeProductID === id(41) && body.items[0].quantity === 1
+            const pair = body.items.length === 2 && body.items.every((item) => [id(41), id(42)].includes(item.storeProductID) && item.quantity === 1)
+            if (!single && !pair) return send(501, 'Second-unit scenario not recorded')
+            const recordedCheapPrice = offer?.value === 80 ? 4000 : offer?.value === 50 ? 10000 : null
+            if (!single && (offer?.discountType !== 'SECOND_UNIT_PERCENTAGE' || recordedCheapPrice === null)) return send(501, 'Second-unit percentage not recorded')
+            const items = body.items.map((item) => {
+                const expensive = item.storeProductID === id(41)
+                const baseUnitPrice = expensive ? 30000 : 20000
+                const lineTotal = expensive ? 30000 : recordedCheapPrice
+                return { ...item, baseUnitPrice, finalUnitPrice: lineTotal, lineTotal,
+                    discountsApplied: expensive ? [] : [{ source: 'AUTO', applied: true, offerID: id(20),
+                        description: 'Segunda unidad de prueba', discountType: 'SECOND_UNIT_PERCENTAGE', value: offer.value }] }
+            })
+            const subtotal = single ? 30000 : 50000
+            const total = single ? 30000 : 30000 + recordedCheapPrice
+            return send(201, { items, totals: { subtotal, total, discount: subtotal - total }, pricingContext: { storeID: body.storeID, pricingDate: '2026-11-26T12:00:00Z' } })
+        }
         // Recorded totals for scenarios covered by the real backend service tests.
         const quantities = new Map(body.items.map((item) => [item.storeProductID, item.quantity]))
         const pair = quantities.get(id(11)) === 1 && quantities.get(id(12)) === 1
