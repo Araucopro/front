@@ -1,5 +1,5 @@
 export type PriceType = "list" | "cost"
-export type DiscountType = "PERCENTAGE" | "FIXED_AMOUNT" | "FIXED_PRICE" | "BUY_X_GET_Y" | "BUNDLE"
+export type DiscountType = "PERCENTAGE" | "FIXED_AMOUNT" | "FIXED_PRICE" | "BUY_X_GET_Y" | "SECOND_UNIT_PERCENTAGE" | "BUNDLE"
 export type DiscountScope = "UNIT" | "TOTAL"
 export type DiscountTargetScope = "VARIATION" | "STORE" | "PRODUCT" | "CATEGORY" | "BRAND" | "MODEL"
 export type OfferSalesChannel = "PHYSICAL" | "ONLINE"
