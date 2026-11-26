@@ -46,5 +46,38 @@ const id = (value) => `00000000-0000-4000-8000-${String(value).padStart(12, '0')
     const state = (await (await fetch(base + '/__state')).json()).data
     assert.deepEqual(state.writes[0].body, payload)
     assert.equal(state.writes.length, 2, 'Rejected writes must not be recorded')
-    console.log(JSON.stringify({ createAndUpdateTransport: true, coverageAndProductsPreserved: true, cartResponse: true, rejectionSurfaced: true, masterImpersonation: true }))
+    for (const selection of [
+        { targetScope: 'STORE' },
+        { targetScope: 'CATEGORY', categoryID: id(30), includeSubcategories: true },
+        { targetScope: 'BRAND', brand: 'Marca de prueba' },
+        { targetScope: 'PRODUCT', productIDs: [id(31), id(32)] },
+    ]) {
+        const secondUnit = { ...selection, storeID: id(1), storeIDs: [id(1), id(2)],
+            salesChannels: ['PHYSICAL', 'ONLINE'], discountType: 'SECOND_UNIT_PERCENTAGE', value: 80,
+            exclusive: true, allowBelowMargin: false, isActive: true, startDate: '2026-11-26T00:00:00Z' }
+        const saved = await createOffer(secondUnit)
+        assert.equal(saved.discountType, 'SECOND_UNIT_PERCENTAGE')
+        assert.equal(saved.value, 80)
+        assert.equal(saved.targetScope, selection.targetScope)
+        const cart = { storeID: id(1), items: [{ storeProductID: id(41), quantity: 1 }, { storeProductID: id(42), quantity: 1 }] }
+        const quote80 = await calculateCart(cart)
+        assert.deepEqual(quote80.totals, { subtotal: 50000, total: 34000, discount: 16000 })
+        assert.equal(quote80.items[0].lineTotal, 30000)
+        assert.equal(quote80.items[1].lineTotal, 4000)
+        const edited = await updateOffer(saved.offerID, { value: 50 })
+        assert.equal(edited.value, 50)
+        assert.equal(edited.targetScope, selection.targetScope)
+        assert.equal((await calculateCart(cart)).totals.total, 40000)
+        const single = await calculateCart({ ...cart, items: [cart.items[0]] })
+        assert.equal(single.totals.total, 30000)
+    }
+    const secondUnitState = (await (await fetch(base + '/__state')).json()).data
+    const newWrites = secondUnitState.writes.slice(2)
+    assert.equal(newWrites.length, 8)
+    for (const write of newWrites.filter((_, index) => index % 2 === 0)) {
+        assert.equal(write.body.discountType, 'SECOND_UNIT_PERCENTAGE')
+        assert.equal(write.body.value, 80)
+        assert.ok(!('buyQuantity' in write.body) && !('payQuantity' in write.body))
+    }
+    console.log(JSON.stringify({ createAndUpdateTransport: true, coverageAndProductsPreserved: true, cartResponse: true, rejectionSurfaced: true, masterImpersonation: true, secondUnitScopes: 4, editablePercentage: true, recordedPairAndSingleResponses: true }))
 })().catch((error) => { console.error(error); process.exitCode = 1 })

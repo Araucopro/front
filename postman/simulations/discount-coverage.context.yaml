@@ -37,7 +37,32 @@ assumptions:
     verification: Inspected the fixture handler and real backend discount-coverage.spec.ts scenarios. The CLI available in this environment does not expose the skill's postman status command.
     source: postman/mocks/discount-coverage.js; ../desi-backend-nest/src/pricing/discount-coverage.spec.ts
     updated_at: "2026-11-12"
+  - id: second-unit-published-contract
+    status: supported
+    claim: Both published backend schemas advertise SECOND_UNIT_PERCENTAGE with configurable value and the existing offer target scopes.
+    reason: Remote docs-json was queried in memory during this task; no OpenAPI snapshot was saved.
+    verification: On 2026-11-26, checked both published schemas for the new enum, percentage range and precision, create/update routes, and cart item fields. This establishes the published contract, not database migration state.
+    source: https://araucopro-back-multitenant.up.railway.app/docs-json; https://araucopro-multitenant-prod.up.railway.app/docs-json
+    updated_at: "2026-11-26"
+  - id: second-unit-frontend-transport
+    status: supported
+    claim: The exercised frontend actions preserve the second-unit type, editable percentage and STORE/CATEGORY/BRAND/PRODUCT selections over local HTTP.
+    reason: Real domain actions and fetcher called the Postman member. Responses are recorded examples, not a second implementation of backend pricing.
+    verification: On 2026-11-26, node postman/checks/discount-coverage.cjs passed creation at 80%, partial updates to 50%, all four scopes, recorded two-item totals of 34000 and 40000, and a single-item total of 30000. Postman request events confirmed the offer and cart routes ran. Earlier transport and permission checks also passed.
+    source: postman/checks/discount-coverage.cjs; postman/mocks/discount-coverage.js; ../desi-backend-nest/src/pricing/discount-engine.spec.ts
+    updated_at: "2026-11-26"
+  - id: second-unit-browser-interactions
+    status: supported
+    claim: The real discount form supports configurable second-unit promotions in the desktop and mobile scenarios exercised against the local stand-in.
+    reason: Headless Chrome rendered the real DiscountModal, DiscountManagementPanel and useCartPricing through a temporary Next route, removed after testing.
+    verification: On 2026-11-26, Chrome checks passed default STORE/80%, rejection of 0/101/80.555 without writes, creation, editing to 50%, category/brand/product scope changes without losing the percentage, row labels, quoted pair/single/edited totals, failed-save state preservation, and a 390px viewport without horizontal modal overflow. No live campaigns were created.
+    source: src/components/Discounts/DiscountModal.tsx; src/components/Discounts/DiscountManagementPanel.tsx; src/hooks/useCartPricing.ts; postman/mocks/discount-coverage.js
+    updated_at: "2026-11-26"
 fingerprints:
+  - id: second-unit-frontend-2026-11-26
+    date: "2026-11-26"
+    commit: "frontend e1dee71e3079df53eb9472b116a4fe2156bd360e with uncommitted second-unit frontend changes"
+    cli: "1.74.0"
   - id: local-discount-coverage-2026-11-12
     date: "2026-11-12"
     commit: "frontend b541c4f3fcd0f26ec002d44c45ec7e07a76032b1 and backend 35be70186c157cd5a4c9bab62f1e0af32ee9f3c4, both with uncommitted feature changes"

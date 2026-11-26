@@ -141,6 +141,15 @@ const discountKinds: DiscountKind[] = [
         buyQuantity: 2,
         payQuantity: 1,
     },
+    {
+        id: "second-unit-percentage",
+        label: "2.ª unidad %",
+        tone: "text-violet-700",
+        supported: true,
+        discountType: "SECOND_UNIT_PERCENTAGE",
+        scope: "TOTAL",
+        targetScope: "STORE",
+    },
     { id: "cascade", label: "Cascada", tone: "text-teal-700", supported: false },
     { id: "season", label: "Temporada", tone: "text-blue-950", supported: false },
     {
@@ -305,6 +314,8 @@ export function DiscountModal({
         [form.secondaryStoreProductID, options],
     )
     const targetScope = form.targetScope
+    const isSecondUnit = form.discountType === "SECOND_UNIT_PERCENTAGE"
+    const isPercentage = form.discountType === "PERCENTAGE" || isSecondUnit
     const needsVariant = targetScope === "VARIATION" || form.discountType === "BUNDLE"
     const singleStore = needsVariant
     const productTargets = useMemo(() => {
@@ -359,6 +370,8 @@ export function DiscountModal({
             storeIDs: kind.targetScope === "VARIATION" || kind.discountType === "BUNDLE" ? prev.storeIDs.slice(0, 1) : prev.storeIDs,
             allowBelowMargin: kind.discountType === "BUY_X_GET_Y" || kind.discountType === "BUNDLE" ? true : prev.allowBelowMargin,
             discountType: (kind.discountType ?? prev.discountType) as DiscountType,
+            value: kind.discountType === "SECOND_UNIT_PERCENTAGE" && prev.discountType !== "SECOND_UNIT_PERCENTAGE" ? "80" : prev.value,
+            exclusive: kind.discountType === "SECOND_UNIT_PERCENTAGE" ? true : prev.exclusive,
             scope: (kind.scope ?? prev.scope) as DiscountScope,
             categoryID: prev.categoryID || selectedProduct?.categoryID || "",
             brand: prev.brand || selectedProduct?.brand || "",
@@ -399,13 +412,18 @@ export function DiscountModal({
 
         const parsedValue = parseFloat(form.value)
         const requiresValue = form.discountType !== "BUY_X_GET_Y" && form.discountType !== "BUNDLE"
-        if (requiresValue && (isNaN(parsedValue) || parsedValue <= 0)) {
+        if (requiresValue && (!Number.isFinite(parsedValue) || parsedValue <= 0)) {
             toast.error("El descuento debe ser mayor a 0")
             return
         }
 
-        if (form.discountType === "PERCENTAGE" && parsedValue > 100) {
+        if (isPercentage && parsedValue > 100) {
             toast.error("El porcentaje no puede ser mayor a 100%")
+            return
+        }
+
+        if (isSecondUnit && Math.round(parsedValue * 100) / 100 !== parsedValue) {
+            toast.error("El porcentaje admite hasta 2 decimales")
             return
         }
 
@@ -598,7 +616,7 @@ export function DiscountModal({
                                 {([
                                     ["CATEGORY", "Categoría"], ["BRAND", "Marca"], ["PRODUCT", "Productos específicos"],
                                     ...(form.discountType === "BUY_X_GET_Y" ? [] : [
-                                        ["VARIATION", "Variante / talla"], ["STORE", "Toda la tienda"], ["MODEL", "Modelo"],
+                                        ["VARIATION", "Variante / talla"], ["STORE", "Todo el inventario"], ["MODEL", "Modelo"],
                                     ]),
                                 ] as Array<[DiscountTargetScope, string]>).map(([target, label]) => <button key={target} type="button"
                                     aria-pressed={targetScope === target}
@@ -611,6 +629,11 @@ export function DiscountModal({
                             {form.discountType === "BUY_X_GET_Y" && <p className="rounded-lg bg-orange-50 p-3 text-xs leading-relaxed text-orange-900 dark:bg-orange-950/30 dark:text-orange-200">
                                 Por cada 2 unidades participantes se cobra la más cara y la más barata queda gratis. Puedes combinar productos distintos de la categoría, marca o selección elegida. Una unidad sin pareja se cobra a su precio correspondiente.
                             </p>}
+                            {isSecondUnit && <div className="space-y-1 rounded-lg bg-violet-50 p-3 text-xs leading-relaxed text-violet-900 dark:bg-violet-950/30 dark:text-violet-200">
+                                <p>Por cada 2 unidades participantes, el descuento se aplica a la de menor precio. La más cara se cobra sin este descuento; una unidad sin pareja también.</p>
+                                <p>Con 4 unidades se descuentan las 2 más baratas. El porcentaje es editable y el total se calcula al cotizar el carrito.</p>
+                                {targetScope === "STORE" && <p className="font-semibold">Participan todos los productos de las sucursales seleccionadas.</p>}
+                            </div>}
                         </section>}
 
                         {targetScope === "PRODUCT" && form.discountType !== "BUNDLE" && <section className="space-y-2">
@@ -826,7 +849,9 @@ export function DiscountModal({
 
                         <section className="grid gap-4 sm:grid-cols-2">
                             <div className="space-y-2">
-                                <Label className="text-xs font-bold uppercase tracking-wide text-slate-500">Valor</Label>
+                                <Label htmlFor={isSecondUnit ? "discount-percentage" : undefined} className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                                    {isSecondUnit ? "Descuento en segunda unidad (%)" : "Valor"}
+                                </Label>
                                 {form.discountType === "FIXED_AMOUNT" || form.discountType === "FIXED_PRICE" ? (
                                     <CurrencyInput
                                         value={form.value}
@@ -836,9 +861,11 @@ export function DiscountModal({
                                     />
                                 ) : (
                                     <Input
+                                        id={isSecondUnit ? "discount-percentage" : undefined}
                                         type="number"
-                                        min={1}
-                                        max={form.discountType === "PERCENTAGE" ? 100 : undefined}
+                                        min={isSecondUnit ? 0.01 : 1}
+                                        max={isPercentage ? 100 : undefined}
+                                        step={isSecondUnit ? 0.01 : undefined}
                                         value={form.value}
                                         onChange={(event) => {
                                             let value = event.target.value
@@ -859,6 +886,7 @@ export function DiscountModal({
                                         className="h-10 rounded-xl border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950"
                                     />
                                 )}
+                                {isSecondUnit && <p className="text-xs text-slate-500">Mayor que 0 y hasta 100%, con un máximo de 2 decimales.</p>}
                                 {(form.discountType === "BUY_X_GET_Y" || form.discountType === "BUNDLE") && (
                                     <p className="text-xs text-slate-500">
                                         La promoción usa las cantidades de los productos; no necesitas ingresar un valor.

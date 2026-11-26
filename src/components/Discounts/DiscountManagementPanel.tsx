@@ -108,6 +108,7 @@ const getStoreProductStock = (storeProduct: IStoreProduct) => {
 
 const getOfferValueLabel = (discountType: string, value: number) => {
     if (discountType === "BUY_X_GET_Y") return "2x1"
+    if (discountType === "SECOND_UNIT_PERCENTAGE") return `${value}% en 2.ª unidad`
     if (discountType === "BUNDLE") return "Combo"
     if (discountType === "PERCENTAGE") return `${value}%`
     return formatCurrency(value)
@@ -115,6 +116,7 @@ const getOfferValueLabel = (discountType: string, value: number) => {
 
 const getDiscountTypeMeta = (offer: Pick<ISpecialOffer, "discountType" | "targetScope">) => {
     if (offer.discountType === "BUY_X_GET_Y") return { label: "2x1", tone: "bg-orange-50 text-orange-700" }
+    if (offer.discountType === "SECOND_UNIT_PERCENTAGE") return { label: "2.ª unidad %", tone: "bg-violet-50 text-violet-700" }
     if (offer.discountType === "BUNDLE") return { label: "Combo", tone: "bg-pink-50 text-pink-700" }
     if (offer.targetScope === "STORE") return { label: "Tienda %", tone: "bg-blue-50 text-blue-950" }
     if (offer.targetScope === "CATEGORY") return { label: "Por Categoria", tone: "bg-orange-50 text-orange-700" }
